@@ -1,3 +1,9 @@
+---- YFIESTA ----
+Yildiz Lab (yildizlab.org) adaptations to FIESTA
+Primary contributer: Joseph Slivka
+Email: joseph_slivka@berkeley.edu
+
+---- FIESTA Source ----
 Fluorescence Image Evaluation Software for Tracking and Analysis 1.6.0
 Copyright (C) 2019 Felix Ruhnow
 
