@@ -1,0 +1,90 @@
+function WriteLineFitToFile(handles, fileName)
+% Creates a new file or appends data to an already open file. Fit data is
+% stored in the structure lineResults, which contains the following fields:
+%
+% timeVector: contains the time axis, in seconds
+% dataVector: contains the data that the linear velocity is being fit to
+% lineVector: contains the fitted line. Has the same number of points as
+%               dataVector and timeVector.
+% fitParams: contains the slope and y-intercept of the linear fit (units
+%               are nanometers and seconds)
+% velocity: stores the velocity of the motor
+% filename: name of the original data file
+% runTime: [tBegin, tEnd] - in seconds, the start and end points of the
+%       line-fitter's run. Can be used to screen for overlapping regions
+% runLength: total length of run, in nanometers
+% timeStamp: time of fit as a date vector ([year month day hour minute
+%       seconds]. Can be used to determine which fits are newer and which
+%       are older.
+
+% Created by Vladislav Belyy
+% Last updated on 01/03/2011
+
+
+% Determine if the file already exists:
+loadFail = 0;
+
+try
+    load(fileName);    
+catch %#ok<CTCH>
+    loadFail = 1;
+    disp('This file does not exist; creating a new one');
+end
+
+if loadFail % generate new lineResults structure
+    lineResults = struct('timeVector', [], 'dataVector', [], ... 
+        'lineVector', [], 'fitParams', [],  'filename', '', ...
+        'runTime', [], 'runLength', [], 'timeStamp', []);
+    
+    ind = 1; % start writing to the first field of the srtucture
+
+else
+    ind = length(lineResults)+1; %#ok<NODEF> % add data to lineResults
+end
+
+% Determine which way is up and which way is down
+button = questdlg( ...
+    'In this trace, which direction is "forwards" for the motor?', ...
+    'Select directionality','Up','Down','Up');
+if strcmp(button, 'Up')
+    flipVelocity = 1; % do not flip the slope
+else
+    flipVelocity = -1; % flip slope
+end
+
+
+% Write data:
+
+% determine indices of first and last points
+noNaNLine = handles.lineVector;
+noNaNLine(isnan(noNaNLine)) = 0; % replace nans with zeros
+
+iStart = find(noNaNLine, 1, 'first'); % index of first sample
+iEnd = find(noNaNLine, 1, 'last'); % index of last sample
+
+
+lineResults(ind).timeVector = handles.currentPlotT(iStart:iEnd);
+lineResults(ind).dataVector = handles.currentPlotPSD_Long(iStart:iEnd);
+lineResults(ind).lineVector = handles.lineVector(iStart:iEnd);
+
+lineResults(ind).fitParams = handles.lineFitCoeffs;
+lineResults(ind).velocity = handles.lineFitCoeffs(1)*flipVelocity;
+
+lineResults(ind).filename =  get(handles.FileName, 'String');
+
+tStart = lineResults(ind).timeVector(1);
+tEnd = lineResults(ind).timeVector(end);
+lineResults(ind).runTime = [tStart, tEnd];
+
+lineResults(ind).runLength = abs(handles.lineFitCoeffs(1)*(tEnd-tStart));
+
+lineResults(ind).timeStamp = clock; %#ok<NASGU>
+
+% save data
+save(fileName, 'lineResults');
+
+
+
+
+
+

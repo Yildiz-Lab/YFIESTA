@@ -1,0 +1,122 @@
+function fitted_trace = parse_and_fit(x,y,usage,thresh)
+
+%test function for running the step fitter
+
+%breaks up a single trace (actually columns 1, 2, and 6, passed as HORIZONTAL vectors) into
+%sub-traces based on usage. Each piece is de-NaN-ified and fit using the
+%SIC fitter. Returned chunks from the SIC fitter are stiched back into a
+%step vector. For now return a 6-column trace including a changepoint. In
+%future could just return off and on-axis steps
+
+%for off-axis steps...will have to add manually...or fit reisduals from
+%on-axis trace?
+
+%for making dwell locations good, add changepoints right after usage
+%windows and fit as one long mean
+
+%for cosmetic purposes might just want to only plot using a user-supplied
+%usage threshold...but that will happen in plot_traces
+
+usage_mask = (usage >= thresh);
+
+counter = 0;
+if usage_mask(1) == 1
+    start = 1;
+else
+    start = 0;
+end
+sub_traces_x = [];
+sub_traces_y = [];
+sub_traces_ind = [];
+for (i=2:length(usage_mask))   %gonna do some ugly matlab jujitsu here...sorry mom!
+    if usage_mask(i) == 1 && usage_mask(i-1) == 0  %if we transition from non-use to use, set start of sub_trace
+        start = i;
+    end
+    if usage_mask(i) == 0 && usage_mask(i-1) == 1  %if we transition from use to non-use, make the sub_traces
+        counter = counter + 1;  
+        sub_traces_x{counter} = x(start:i-1);
+        sub_traces_y{counter} = y(start:i-1);
+        sub_traces_ind{counter} = (start:i-1);
+    end
+end
+
+%now strip out the NaNs from all the sub_traces
+for (i=1:length(sub_traces_x))
+    for (j = 4:length(sub_traces_x{i}) )
+        if (isnan(sub_traces_x{i}(j)))
+            sub_traces_x{i}(j) = mean(sub_traces_x{i}(j-3:j-1));        %use average of previous three points as the fake value
+            sub_traces_y{i}(j) = mean(sub_traces_y{i}(j-3:j-1));
+        end
+    end
+    disp (sum(isnan(sub_traces_x{i})));
+end
+
+% fitted_trace.x = sub_traces_x;
+% fitted_trace.y = sub_traces_y;
+% fitted_trace.ind = sub_traces_ind;
+
+
+%so...now we have a set of sub traces with NaNs removed
+%run through step fitter, get changepoints
+%then apply cps to off-axis trace, subtract fit and then fit residuals
+
+for (i = 1:length(sub_traces_x))  %fit each sub trace with the SIC step fitter
+    fit = SICstepFinder(sub_traces_x{i});
+    changepoints_x = [ 0  ( ( fit.StepFit(1:length(fit.StepFit)-1) - fit.StepFit(2:length(fit.StepFit)) ) ~= 0) ]; %make a changepoints array (1=step, 0=no step)
+    last = 1;               %then build a fit to the off-axis using the on-axis changepoints.
+    ytracetemp = NaN(1,1:length(changepoints_x));
+    for (j=2:length(changepoints_x))
+       if changepoints_x(j) == 1
+           ytracetemp(last:j-1) = nanmean(sub_traces_y{i}(last:j-1));   %if a changepoint is reached, fit = mean from last cp to right before current cp
+           last = j;
+       end
+    end
+    ytracetemp(last:j) = nanmean(sub_traces_y{i}(last:j));
+    disp (sum(isnan(ytracetemp)));  %check to make sure we have fit data for every inputed usage data...also will throw errors if you pass nans to stepfinder
+    residual = sub_traces_y{i} - ytracetemp;
+    fit = SICstepFinder(residual);  %fit the residual (difference between off-axis data and fit) with SIC fitter, and apply new cps to both traces...see how this goes!
+    %changepoints_y = [ 0  ( ( fit.StepFit(1:length(fit.StepFit)-1) - fit.StepFit(2:length(fit.StepFit)) ) ~= 0) ];
+    %changepoints_all{i} = (changepoints_x + changepoints_y) > 0;  %Use the two fits to make a unified list of changepoints...this could be an issue at some point!
+    changepoints_all{i} = changepoints_x;
+    last = 1;   %Use the main changeopoints array to construct the fit of the sub_trace
+    fit_traces_x{i} = NaN(1,length(changepoints_all{i}));
+    fit_traces_y{i} = NaN(1,length(changepoints_all{i}));
+    for (j=2:length(changepoints_all{i}))
+       if changepoints_all{i}(j) == 1
+           fit_traces_x{i}(last:j-1) = nanmean(sub_traces_x{i}(last:j-1));
+           fit_traces_y{i}(last:j-1) = nanmean(sub_traces_y{i}(last:j-1));
+           last = j;
+       end
+    end
+    fit_traces_x{i}(last:j) = nanmean(sub_traces_x{i}(last:j));
+    fit_traces_y{i}(last:j) = nanmean(sub_traces_y{i}(last:j));
+    disp (sum(isnan(fit_traces_x{i})));
+    disp (sum(isnan(fit_traces_y{i})));
+end
+
+%pre-build four of the columns of the trace
+fitted_trace = NaN(length(x),6);
+fitted_trace(1:length(x),[1 2 5 6]) = [x' y' zeros(length(x),1) usage' ];
+
+%then use the sub_traces and their indices to write out a 6-column trace
+%object
+%future versions of this function will re-structure output based on
+%FIONAviewer's handles object, right?
+for (i=1:length(sub_traces_x))
+    fitted_trace(sub_traces_ind{i},3:6) = [ fit_traces_x{i}' fit_traces_y{i}' changepoints_all{i}' usage(sub_traces_ind{i})'];
+    pre_cp_ind = sub_traces_ind{i}(1) - 1; %after each usage zone, add in a changepoint to make sure fitted values can't change once its keyed in (might ditch this some point)
+    post_cp_ind = sub_traces_ind{i}(length(sub_traces_ind{i})) + 1;
+    if (pre_cp_ind > 1)
+        fitted_trace(pre_cp_ind,5) = 1;
+    end
+    if (post_cp_ind < length(x) )
+        fitted_trace(post_cp_ind,5) = 1;
+    end
+end
+
+
+
+
+
+
+

@@ -1,0 +1,34 @@
+function dataWithoutNaNs = RemoveNaNs(rawData)
+% Removes NaNs interspersed in data by taking the average of the last data
+% point before the string of NaNs and the first point after.
+%
+% Written by Vladislav Belyy
+% Last modified on 03/08/2012
+
+% Remove leading and trailing nans:
+
+lastNotNaN = find(~isnan(rawData), 1, 'last');
+
+if isnan(rawData(1))
+    firstNotNaN = find(~isnan(rawData), 1, 'first');
+    rawData(1
+
+nanIndices = find(isnan(rawData)); % find indices of all NaN's in rawData
+
+indicesBeforeNaNs = nanIndices - 1;
+indicesBeforeNans = indicesBeforeNaNs(~isnan(rawData(indicesBeforeNaNs)));
+
+indicesAfterNaNs = nanIndices + 1;
+indicesAfterNans = indicesAfterNaNs(~isnan(rawData(indicesAfterNaNs)));
+
+% Calculate average values
+avgValues = ...
+    mean([rawData(indicesAfterNans); rawData(indicesBeforeNans)],1);
+
+dataWithoutNaNs = rawData;
+for i = 1:length(indicesBeforeNans)
+   % replace NaNs with averages
+   dataWithoutNaNs(indicesBeforeNans(i)+1:indicesAfterNans(i)-1) = ...
+                avgValues(i);
+end
+        

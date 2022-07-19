@@ -1,0 +1,17 @@
+11:45:20  Analysing frame 1
+11:45:20  START SCANNING
+11:45:20  create black&white image
+11:45:20  scan area 3
+11:45:20  scan area 4
+11:45:20  scan area 5
+11:45:20  scan area 6
+11:45:20  scan area 7
+11:45:20  5 objects found
+11:45:20  start fine scan
+11:45:20  fit remaining intermediate points
+11:45:20  process object 1 with 5 points
+11:45:20  process object 2 with 6 points
+11:45:21  process object 3 with 9 points
+11:45:21  process object 4 with 8 points
+11:45:21  process object 5 with 7 points
+11:45:21  interpolate data between points
