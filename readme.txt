@@ -1,9 +1,3 @@
----- YFIESTA ----
-Yildiz Lab (yildizlab.org) adaptations to FIESTA
-Primary contributer: Joseph Slivka
-Email: joseph_slivka@berkeley.edu
-
----- FIESTA Source ----
 Fluorescence Image Evaluation Software for Tracking and Analysis 1.6.0
 Copyright (C) 2019 Felix Ruhnow
 
@@ -32,3 +26,10 @@ GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+---- YFIESTA ----
+Yildiz Lab (yildizlab.org) adaptations to FIESTA
+Primary contributer: Joseph Slivka
+Email: joseph_slivka@berkeley.edu
+
+---- FIESTA Source ----
