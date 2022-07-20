@@ -79,7 +79,7 @@ while A~=0
 end
 A=A_start;
 TiffInfo = struct('ImageWidth',cell(1,NumFrames),'ImageLength',cell(1,NumFrames),'BitsPerSample',cell(1,NumFrames),...
-                  'StripOffsets',cell(1,NumFrames),'RowsPerStrip',cell(1,NumFrames),'StripByteCounts',cell(1,NumFrames));              
+                  'StripOffsets',cell(1,NumFrames),'RowsPerStrip',cell(1,NumFrames),'StripByteCounts',cell(1,NumFrames));             
 for N=1:NumFrames
     fseek(file, A, 'bof');
     %number of directory entries
@@ -250,6 +250,20 @@ else
         r = cell2mat(Region);
         xblock = min(r(:,1))*x;
         yblock = min(r(:,2))*y;
+        % JS Edit 2022/07/19 to deal with the problem of odd splitting,
+        % which shouldn't happen but just in case someone is careless
+        if mod(xblock,2)
+            xblock = floor(xblock);
+            warning("Warning: Odd number of pixel dimension, changing frame")
+        end
+        if mod(yblock,2)
+            yblock = floor(yblock);
+            warning("Warning: Odd number of pixel dimension, changing frame")
+        end
+        % This is just to stop strange parsing errors which should work if
+        % centered. This is also where custom options should exist by using
+        % region rather than blocks
+        
         for n = 1:nChannels
             Region{n} = [x*Region{n}(1)-xblock+1 y*Region{n}(2)-yblock+1 x*Region{n}(1) y*Region{n}(2)];
         end

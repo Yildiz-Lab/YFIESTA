@@ -126,11 +126,7 @@ hMenu.mFindMoving = uimenu('Parent',hMenu.mEdit,'Callback','fMenuEdit(''FindMovi
                            'Label','Find all Moving objects','Tag','mFindMoving','Separator','on','UserData','moving');     
                        
 hMenu.mFindStatic = uimenu('Parent',hMenu.mEdit,'Callback','fMenuEdit(''FindMoving'',getappdata(0,''hMainGui''));','Enable','off',...
-                           'Label','Find all static objects','Tag','mFindStatic','UserData','static');   
-
-% JS Edit 220603
-% hMenu.mFindStepping = uimenu('Parent',hMenu.mEdit,'Callback','fMenuEdit(''FindMoving'',getappdata(0,''hMainGui''));','Enable','off',...
-%                            'Label','Find all Moving objects','Tag','mFindMoving','UserData','moving');     
+                           'Label','Find all static objects','Tag','mFindStatic','UserData','static');        
                        
 hMenu.mFindReference = uimenu('Parent',hMenu.mEdit,'Callback','fMenuEdit(''FindReference'',getappdata(0,''hMainGui''));','Enable','off',...
                            'Label','Find best reference molecules','Tag','mFindReference','UserData','reference');                          

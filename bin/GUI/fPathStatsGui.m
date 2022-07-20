@@ -713,7 +713,13 @@ global Config;
 checkdir = Config.Directory{1};
 actualdir = uigetdir(checkdir);
 
-StepandDwellHist_v2(actualdir, 0, Config.Time/1000);
+if length(Config.Time) > 1
+    time = Config.Time(1);
+else
+    time = Config.Time;
+end
+
+StepandDwellHist_v2(actualdir, 0, time/1000);
 
 
 function Draw(hPathsStatsGui)
