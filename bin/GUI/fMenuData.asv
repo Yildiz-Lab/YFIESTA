@@ -225,9 +225,9 @@ if ~isempty(fOpenStruct)
             if mode(1)
                 region{1} = [1 0.5];
                 region{2} = [1 1];
-                if ~isnan(cw)
-                    region{1} = [1024 cw(1)];
-                    region{2} = [1024 cw(1)+cw(2)];
+                if ~isempty(cw)
+                    region{1} = [1 cw(1)];
+                    region{2} = [1 (cw(1)+cw(2))];
                 end
             elseif mode(2)         
                 region{1} = [0.5 1];
