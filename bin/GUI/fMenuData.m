@@ -225,6 +225,7 @@ if ~isempty(fOpenStruct)
             if mode(1)
                 region{1} = [1 0.5];
                 region{2} = [1 1];
+                % JS Edit 2022/07/27 custom horizontal string option
                 if ~isnan(cw)
                     region{1} = [1024 cw(1)];
                     region{2} = [1024 cw(1)+cw(2)];

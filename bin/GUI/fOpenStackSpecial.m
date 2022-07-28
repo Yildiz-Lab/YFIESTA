@@ -257,7 +257,8 @@ else
     [FileName,PathName] = uigetfile({'*.stk;*.nd;*.nd2;*.dv;*.zvi;*.tif;*.tiff','Image Stacks (*.stk,*.nd,*.nd2,*.dv,*.zvi,*.tif,*.tiff)'},'Select the Stack',FiestaDir.Stack,'MultiSelect','on'); %open dialog for *.stk files
     if PathName~=0
         FiestaDir.Stack=PathName;
-        % JS Edit 2022/07/27 to load in custom string
+        % JS Edit 2022/07/27 to load in custom string for horizontal
+        % splitting
         c=get(findobj('Parent',hOpenSpecial.pSpatialSplitting,'Tag','rTwoHorizontalCustom1'),'String');
         w=get(findobj('Parent',hOpenSpecial.pSpatialSplitting,'Tag','rTwoHorizontalCustom2'),'String');
         output.Data = {FileName,PathName,get(findobj('Parent',hOpenSpecial.pSpatialSplitting,'-and','Style','radiobutton'),'Value'),[str2double(c),str2double(w)]};

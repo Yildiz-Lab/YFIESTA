@@ -274,7 +274,7 @@ else
         % region rather than blocks
         
         for n = 1:nChannels
-            if max(r) > 1
+            if max(r) > 1 % JS Edit 2022/07/27 for custom horizontal cut
                 Region{n} = [x/1024*Region{n}(1)-xblock+1 y/1024*Region{n}(2)-yblock+1 x/1024*Region{n}(1) y/1024*Region{n}(2)];
             else
                 Region{n} = [x*Region{n}(1)-xblock+1 y*Region{n}(2)-yblock+1 x*Region{n}(1) y*Region{n}(2)];
