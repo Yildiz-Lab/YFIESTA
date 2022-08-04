@@ -123,13 +123,13 @@ hOpenSpecial.pSpatial.rTwoHorizontalCustom1text = uicontrol('Parent',hOpenSpecia
                                         'String','center','Style','text','Tag','rTwoHorizontalCustom','BackgroundColor',c);
 
 hOpenSpecial.pSpatial.rTwoHorizontalCustom1 = uicontrol('Parent',hOpenSpecial.pSpatialSplitting,'Units','normalized','Position',[0.65 0.8 0.1 0.15],'Enable','on','FontSize',12,...
-                                        'String','513','Style','edit','Tag','rTwoHorizontalCustom1','BackgroundColor',c);
+                                        'String','508','Style','edit','Tag','rTwoHorizontalCustom1','BackgroundColor',c);
      
 hOpenSpecial.pSpatial.rTwoHorizontalCustom2text = uicontrol('Parent',hOpenSpecial.pSpatialSplitting,'Units','normalized','Position',[0.77 0.8 0.1 0.15],'Enable','on','FontSize',12,...
                                         'String','width','Style','text','Tag','rTwoHorizontalCustom','BackgroundColor',c);
 
 hOpenSpecial.pSpatial.rTwoHorizontalCustom2 = uicontrol('Parent',hOpenSpecial.pSpatialSplitting,'Units','normalized','Position',[0.87 0.8 0.1 0.15],'Enable','on','FontSize',12,...
-                                        'String','500','Style','edit','Tag','rTwoHorizontalCustom2','BackgroundColor',c);
+                                        'String','498','Style','edit','Tag','rTwoHorizontalCustom2','BackgroundColor',c);
 % End of JS Edit
                                     
                                     
