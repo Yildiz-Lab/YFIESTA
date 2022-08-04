@@ -230,9 +230,14 @@ if ~isempty(fOpenStruct)
                     region{1} = [1024 cw(1)];
                     region{2} = [1024 cw(1)+cw(2)];
                 end
-            elseif mode(2)         
+            elseif mode(2)    
                 region{1} = [0.5 1];
                 region{2} = [1 1];
+                % JS Edit 2022/08/04 custom vertical string option
+                if ~isnan(cw)
+                    region{1} = [cw(1) 1024];
+                    region{2} = [cw(1)+cw(2) 1024];
+                end
             elseif mode(3)
                 region{1} = [0.5 0.5];
                 region{2} = [0.5 1];

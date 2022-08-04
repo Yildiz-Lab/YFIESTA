@@ -252,8 +252,13 @@ else
         % horizontal and does not account for vertical
         
         if max(r) > 1 %cheating if we are in pixels instead and want to do the difference thing
+            if r(4)-r(2) > 0
             xblock = min(r(:,1));
             yblock = r(4)-r(2);
+            else % if we want to split vertically
+            xblock = r(3)-r(1);
+            yblock = min(r(:,2));
+            end
         else
         xblock = min(r(:,1))*x;
         yblock = min(r(:,2))*y;

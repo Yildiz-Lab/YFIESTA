@@ -111,15 +111,29 @@ scatter(Ch1(:,1),Ch1(:,2),'r','DisplayName','Ch1')
 scatter(Ch2(:,1),Ch2(:,2),'g','DisplayName','Ch2')
 uv = [Ch2(:,1)-C(2), Ch2(:,2)-C(3)];
 uv = radfit(C,Ch2).*uv./vecnorm(uv')';
-scatter(Ch2(:,1)+uv(:,1), Ch2(:,2)+uv(:,2),'b','DisplayName','Ch2 Corrected')
+
+% add in the direction since we only deal with magnitude and the code
+% doesn't know which way to apply
+
+pd = mean(vecnorm(Ch1(mnan,:)' - Ch2(idx_store(mnan),:)'+uv(idx_store(mnan),:)'));
+md = mean(vecnorm(Ch1(mnan,:)' - Ch2(idx_store(mnan),:)'-uv(idx_store(mnan),:)'));
+if pd > md
+    uv = -uv;
+end
+
+scatter(Ch2(:,1)-uv(:,1), Ch2(:,2)-uv(:,2),'b','DisplayName','Ch2 Corrected')
 legend()
 
+scatter(C(2), C(3), 100, 'filled')
+
 fprintf(strcat('Mean Distance Off:  ', num2str(mean(vecnorm(Ch1(mnan,:)' - Ch2(idx_store(mnan),:)'))),'\n'))
-fprintf(strcat('Mean Distance Off following radial correction:  ', num2str(mean(vecnorm(Ch1(mnan,:)' - Ch2(idx_store(mnan),:)'-uv(idx_store(mnan),:)'))),'\n'))
+fprintf(strcat('Mean Distance Off following radial correction:  ', num2str(mean(vecnorm(Ch1(mnan,:)' - Ch2(idx_store(mnan),:)'+uv(idx_store(mnan),:)'))),'\n'))
 
 
 mean_correction = mean(val_store,'omitnan') * mean(dir_store,'omitnan');
-scatter(Ch2(:,1)-mean_correction(1), Ch2(:,2)+uv(:,2)-mean_correction(2),'k','DisplayName','Translation Ch2 Corrected')
+scatter(Ch2(:,1)-mean_correction(1), Ch2(:,2)-mean_correction(2),'k','DisplayName','Translation Ch2 Corrected')
+OOON = ones(length(idx_store(mnan)),1); % I was sick of writing ones(length(idx_store(mnan)),1)
+fprintf(strcat('Mean Distance Off following translational correction:  ', num2str(mean(vecnorm(Ch1(mnan,:)' - (Ch2(idx_store(mnan),:) - [mean_correction(1)*OOON, mean_correction(2)*OOON])' ))),'\n'))
 
 % do a 2d quiver plot to check that gradients are not too large (small
 % spherical aberration
