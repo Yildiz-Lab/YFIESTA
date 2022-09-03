@@ -77,10 +77,12 @@ end
 % mask out nan
 mnan = ~isnan(dir_store(:,1));
 
-z = val_store(mnan,1).*dir_store(mnan,:);
+Ch1(mnan,:)
+Ch2(idx_store(mnan),:)
+z = val_store(mnan,1).*dir_store(mnan,:)
 
-deltax = fCubicSplineInterp(Ch2(idx_store(mnan),1), Ch2(idx_store(mnan),2), z(:,1))
-deltay = fCubicSplineInterp(Ch2(idx_store(mnan),1), Ch2(idx_store(mnan),2), z(:,2))
+deltax = fCubicSplineInterp(Ch1(mnan,1), Ch1(
+deltay = fCubicSplineInterp(
 
 %% calculate the mean separation of the molecules and plot a heatmap depending on their x,y positions
 % Ideally, we would get a uniform heat map close to zero, but it is a real

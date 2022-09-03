@@ -1,0 +1,65 @@
+function delta = fCubicSplineInterp(x, y, vals, xreturn, yreturn)
+%Use x1, x2, y1 and y2 expected vals to get how to change data from 2 to get to 1
+
+% Using griddata, a built in MATLAB function: https://www.mathworks.com/help/matlab/ref/griddata.html
+
+% Should then make meshgrid interpolant function using below
+% Could use interpolant if data was super gridded, but don't think that is
+% possible with our version of data: https://www.mathworks.com/help/matlab/ref/griddedinterpolant.html
+
+
+if length(y) ~= length(x) 
+    error("sizes must be the same for interpolation")
+end
+
+% if you want to do a test of the validity of the Cubic Spline
+% Interpolation, simply don't add in xyreturn
+if nargin < 4
+    train_fraction = 0.7;
+    border_size = 100; %nm
+    
+    % interpolation only works within the min/max domain. Hence, let's make
+    % sure that the min and max in each direction are in the training data.
+    mnxi = find(x < min(x)+border_size); mxxi = find(x > max(x)-border_size);
+    mnyi = find(y < min(y)+border_size); mxyi = find(y > max(y)-border_size);
+    
+    must_train = unique([mnxi', mxxi', mnyi', mxyi']);
+    sample = setdiff(1:length(vals), must_train);
+    
+    % and split according to how much training fraction one wants
+    if length(sample) < round(length(vals)*train_fraction)-length(must_train)
+        error("Too little non-border points sampled. Decrease train_fraction")
+    end
+    trainidx = randsample(length(sample), round(length(vals)*train_fraction)-length(must_train));
+    trainidx = sort([sample(trainidx), must_train]);
+    testidx = setdiff(1:length(vals),trainidx);
+    
+    % Now do the interpolation
+    delta = griddata(x(trainidx), y(trainidx), vals(trainidx), x(testidx), y(testidx), 'cubic');
+    
+    % plot for visualization of where things could be going wrong
+    if sum(isnan(delta))
+        warning(" Your Triangular Interpolation Region is not very uniform resulting in a point outside your region, consider: increasing border_width OR using a better data mask ")
+        figure(84)
+        hold on
+        title("WARNING: Data Points Outside Interpolation Region were Found!")
+        scatter(x(trainidx), y(trainidx), 'b')
+        scatter(x(must_train), y(must_train), 'g')
+        scatter(x(testidx), y(testidx), 'k')
+        scatter(x(testidx(isnan(delta))), y(testidx(isnan(delta))), 'r')
+    end
+    
+    
+    
+    %Estimate Error
+    FitError = mean(abs(delta(~isnan(delta)) - vals(testidx(~isnan(delta)))))
+    
+else
+    delta = griddata(x, y, vals, xreturn, yreturn, 'cubic');
+    
+end
+
+
+
+end
+

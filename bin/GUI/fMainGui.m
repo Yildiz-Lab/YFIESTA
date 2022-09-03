@@ -239,8 +239,9 @@ for n = 1:c
     hMainGui.Values.MinStack(n)=mean(PixMin);
 
     hMainGui.Values.MaxRelThresh(n)=2000;
-
-    hMainGui.Values.Thresh(n)=min([round(mean2(Stack{n}(:,:,1))+5*std2(Stack{n}(:,:,1))) hMainGui.Values.PixMax(n)]);
+    
+    SA = double(Stack{n}(:,:,1)); %JS Edit 2022/09/01 for r2022a
+    hMainGui.Values.Thresh(n)=min([round(mean(Stack{n}(:,:,1),'all')+5*std(SA(:))) hMainGui.Values.PixMax(n)]);
     hMainGui.Values.ScaleMin(n)=round(mean(PixMin));
     hMainGui.Values.ScaleMax(n) = hMainGui.Values.Thresh(n);
     hMainGui.Values.RelThresh(n)=200;
@@ -664,26 +665,7 @@ if ~strcmp(get(hMainGui.fig,'Pointer'),'watch')
                        hMainGui.Region(nRegion+1).X=cp(1);
                        hMainGui.Region(nRegion+1).Y=cp(2);
                        hMainGui.Plots.Region(nRegion+1)=line(hMainGui.MidPanel.aView,cp(1),cp(2),'Color','white','LineStyle','--');
-                       hMainGui.Values.CursorDownPos=cp;
-%                     elseif strcmp(hMainGui.CursorMode,'SegLineRegion') %JS Edit 2022/06/29 to get cursor to pop up
-%                        cp=round(cp);
-%                        nRegion=length(hMainGui.Region);
-%                        hMainGui.CurrentKey
-%                        if isempty(hMainGui.CurrentKey)
-%                            hMainGui.Region(nRegion+1).X=cp(1);
-%                            hMainGui.Region(nRegion+1).Y=cp(2);
-%                            hMainGui.Plots.Region(nRegion+1)=line(hMainGui.MidPanel.aView,cp(1),cp(2),'Color','white','LineStyle','--');
-%                            hMainGui.Values.CursorDownPos=cp;
-%                            hMainGui.CurrentKey = 98 %random a for identifier
-%                        elseif hMainGui.CurrentKey == 98
-% %                            hMainGui.Region(nRegion).X = cp(1)
-% %                            hMainGui.Region(nRegion).Y = cp(2)
-%                            hMainGui.Values.CursorDownPos=cp;
-%                            bx=[hMainGui.Region(nRegion).X cp(1)]
-%                            by=[hMainGui.Region(nRegion).Y cp(2)]
-%                            set(hMainGui.Plots.Region(nRegion),'XData',bx,'YData',by);
-%                        end
-                       
+                       hMainGui.Values.CursorDownPos=cp;                       
                     elseif ~isempty(strfind(hMainGui.CursorMode,'Scan'))
                         fShared('DeleteScan',hMainGui);
                         hMainGui=getappdata(0,'hMainGui');
@@ -1546,8 +1528,9 @@ if ~strcmp(get(hMainGui.fig,'Pointer'),'watch')
         hMainGui.Measure(nMeasure).LenArea=sum(sum(Area))*hMainGui.Values.PixSize^2/1000^2;
         Image=double(Stack{idx(1)}(:,:,idx(2)));        
         hMainGui.Measure(nMeasure).Integral=sum(sum(double(Area).*double(Image)));
-        hMainGui.Measure(nMeasure).Mean=mean2(Image(Area));
-        hMainGui.Measure(nMeasure).STD=std2(Image(Area));
+        hMainGui.Measure(nMeasure).Mean=mean(Image(Area),'all');
+        IA = double(Stack{n}(:,:,1)); %JS Edit 2022/09/01 for r2022a
+        hMainGui.Measure(nMeasure).STD=std(IA);
         fRightPanel('UpdateMeasure',hMainGui);
     end
 end
@@ -1615,11 +1598,7 @@ if ~strcmp(get(hMainGui.fig,'Pointer'),'watch')
         hMainGui.CursorMode='Pan';   
         hMainGui=DeleteSelectRegion(hMainGui);
     end
-    %JS Edit 2022/06/30
-%     if any(key==13) && strcmp(hMainGui.CursorMode,'SegLineRegion')==1
-%         hMainGui.CurrentKey = '';
-%         hMainGui.Values.CursorDownPos=[0 0];
-%     end
+
     if ~isempty(key)
         if key==127 || key==8
             if strcmp(get(hMainGui.RightPanel.pData.panel,'Visible'),'on') || strcmp(get(hMainGui.RightPanel.pTools.panel,'Visible'),'on')
