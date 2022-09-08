@@ -1,22 +1,27 @@
-function delta = fCubicSplineInterp(x, y, vals, xreturn, yreturn)
-%Use x1, x2, y1 and y2 expected vals to get how to change data from 2 to get to 1
-
-% Using griddata, a built in MATLAB function: https://www.mathworks.com/help/matlab/ref/griddata.html
-
-% Should then make meshgrid interpolant function using below
-% Could use interpolant if data was super gridded, but don't think that is
-% possible with our version of data: https://www.mathworks.com/help/matlab/ref/griddedinterpolant.html
+function delta = fCubicSplineInterp(x, y, vals, getfunc)
+% JS 2022/09/03
+% Description:
+%    helper function for fCalcAlignCorrection to interpolate x,y data, using MATLAB resources:
+%     https://www.mathworks.com/help/matlab/ref/boundary.html
+%     https://www.mathworks.com/help/matlab/ref/scatteredinterpolant.html
+%     https://www.mathworks.com/help/matlab/ref/griddata.html
+% Input:
+%    x,y,vals: array to trace out 3d to interpolate
+%    getfunc (optional): if nonempty will skip testing and rather just
+%    return the function
+% Output:
+%    output will be either the tested delta mean error (for x,y,vals)
+%    OR will be the interpolation function to apply to correct for offsets
 
 
 if length(y) ~= length(x) 
     error("sizes must be the same for interpolation")
 end
 
-% if you want to do a test of the validity of the Cubic Spline
-% Interpolation, simply don't add in xyreturn
+% if no fourth argument to get function, just do a test
 if nargin < 4
-    train_fraction = 0.9;
-    num_tests = 20;
+    train_fraction = 0.95; %train with 95% of the points
+    num_tests = 20; %how many different train/test sets to get an average
     
     % interpolation only works within the interior. So let's make sure that
     % we include the boundary in the training data
@@ -24,7 +29,7 @@ if nargin < 4
     must_train = unique(boundary(x,y))';
     sample = setdiff(1:length(vals), must_train);
     
-    FitError = ones(1,num_tests);
+    %FitError = ones(1,num_tests);
     FitErrorF = ones(1,num_tests);
     for test = 1:num_tests
     
@@ -37,9 +42,9 @@ if nargin < 4
         testidx = setdiff(1:length(vals),trainidx);
 
         % Now do the interpolation
-        delta = griddata(x(trainidx), y(trainidx), vals(trainidx), x(testidx), y(testidx), 'cubic');
+        %delta = griddata(x(trainidx), y(trainidx), vals(trainidx), x(testidx), y(testidx), 'cubic');
         %Estimate Error
-        FitError(test) = mean(abs(delta(~isnan(delta)) - vals(testidx(~isnan(delta)))));
+        %FitError(test) = mean(abs(delta(~isnan(delta)) - vals(testidx(~isnan(delta)))));
         
         % Or get a function F(x,y) using scatteredInterpolant. It seems like C1
         % derivative continuity (this is quadratic I believe) gives a
@@ -49,8 +54,10 @@ if nargin < 4
         FitErrorF(test) = mean(abs(F(x(testidx), y(testidx)) - vals(testidx)));
     end
     
-    AverageFitError = mean(FitError)
-    AverageFitErrorF = mean(FitErrorF)
+    %AverageFitError = mean(FitError);
+    AverageFitErrorF = mean(FitErrorF);
+    
+    delta = mean(AverageFitErrorF);
     
     % plot for visualization
 %     figure()
@@ -64,13 +71,11 @@ if nargin < 4
     
 else
     
-    delta = griddata(x, y, vals, xreturn, yreturn, 'cubic');
+    %delta = griddata(x, y, vals, xreturn, yreturn, 'cubic');
     Fdelta = scatteredInterpolant(x, y, vals, 'natural');
-    delta = Fdelta(xreturn, yreturn);
+    delta = Fdelta;
     
 end
-
-
 
 end
 

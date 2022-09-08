@@ -204,7 +204,14 @@ hMenu.mSaveCorrections = uimenu('Parent',hMenu.mOptions,'Callback','fMenuOptions
                       
 hMenu.mLoadCorrections = uimenu('Parent',hMenu.mOptions,'Callback','fMenuOptions(''LoadCorrections'',getappdata(0,''hMainGui''));',...
                           'Label','Load corrections','Tag','mLoadCorrections');                       
-                        
+
+% JS Edit 2022/09/03 for loading multichannel corrections
+hMenu.mSetMaskCorrections = uimenu('Parent',hMenu.mOptions,'Callback','fMenuOptions(''SetMaskCorrections'',getappdata(0,''hMainGui''));',...
+                          'Label','Set Multichannel Corrections','Tag','mSetMaskCorrections','Separator','On');       
+                      
+hMenu.mApplyMultiCorrections = uimenu('Parent',hMenu.mOptions,'Callback','fMenuOptions(''ApplyMultiChannelCorrections'',getappdata(0,''hMainGui''));','Enable','off',...
+                          'Label','Toggle Multichannel Corrections','Tag','mApplyMultiCorrections');       
+                      
 %create Tools menu
 
 fMenuTools(''); %create dependency for compiling;

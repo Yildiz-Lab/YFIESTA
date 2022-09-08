@@ -465,6 +465,8 @@ if ~isempty(Stack)
         set(hMainGui.MidPanel.pNoData,'Visible','On');
         set(hMainGui.MidPanel.tNoData,'String','No Stack or Tracks present','Visible','on');          
     end
+    % JS Edit to reset toggle for mask correction applied
+    setappdata(hMainGui.fig,'MaskCorrectionApplied',0)
     Stack={};
     TimeInfo={};
     Config.StackName=[];

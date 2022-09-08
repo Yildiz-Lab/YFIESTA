@@ -323,12 +323,17 @@ fBackUpData(hMainGui);
 MolSelect=ones(1,length(Molecule));
 FilSelect=ones(1,length(Filament));
 DeleteTracks(hMainGui,MolSelect,FilSelect);
+% JS Edit to reset toggle for applying correction
+setappdata(hMainGui.fig,'MaskCorrectionApplied',0)
+
 if isempty(Stack)
     set(hMainGui.MidPanel.pView,'Visible','off');
     set(hMainGui.MidPanel.pNoData,'Visible','on')
     set(hMainGui.MidPanel.tNoData,'String','No Stack or Tracks present','Visible','on');      
     drawnow
 end 
+
+
 
 function SetReference(hMainGui)
 global Molecule;
