@@ -149,6 +149,9 @@ if ~isempty(fOpenStruct)
         TformChannel = cell(1,nChannels);
         nFrames = zeros(1,nChannels);
         filetype = cell(1,nChannels);
+        % We currently can't get separate files loading using this "summing
+        % of frames" convention which we can fix later.
+        %options.SumFrames = fOpenStruct.PostSumFrames; %JS Edit 2022/09/09
         for n = 1:nChannels
             FileName = fOpenStruct.Data{n,1};
             PathName = fOpenStruct.Data{n,2};
@@ -275,6 +278,7 @@ if ~isempty(fOpenStruct)
         end
         options.Block = block;
         options.Region = region;
+        options.SumFrames = fOpenStruct.PostSumFrames;
         try
             if strcmp(filetype,'ND')||strcmp(filetype,'ND2')||strcmp(filetype,'ZVI')||strcmp(filetype,'DV')
                 [Stack,TimeInfo,PixSize]=fReadND2([PathName FileName],options);

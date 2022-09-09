@@ -248,8 +248,6 @@ else
         Region{1} = [1 1 x y];
     else
         r = cell2mat(Region);
-        % JS Edit 2022/07/27 % Beware this only currently works for
-        % horizontal and does not account for vertical
         
         if max(r) > 1 %cheating if we are in pixels instead and want to do the difference thing
             if r(4)-r(2) > 0
@@ -298,9 +296,9 @@ else
     N = sum(NperChannel);
 end
 sBlock = sum(Block);
-cBlock = [0 cumsum(Block(1:end-1))]; 
+cBlock = [0 cumsum(Block(1:end-1))];
 TimeInfo = cell(1,nChannels);
-Stack = cell(1,nChannels);   
+Stack = cell(1,nChannels); 
 for n = 1:nChannels
     if length(Region)>1
         y = Region{n}(4)-Region{n}(2)+1;
@@ -308,6 +306,7 @@ for n = 1:nChannels
     end
     Stack{n} = zeros(y,x,NperChannel(n),datatype);
 end
+
 for n = 1:N
     x = ImageWidth(1,n);
     y = ImageLength(1,n);
@@ -336,9 +335,22 @@ for n = 1:N
         end
         for m = 1:numel(Region)
             Image = Img(Region{m}(2):Region{m}(4),Region{m}(1):Region{m}(3));
-            Stack{idx(m)}(:,:,frame) = Image;   
+            Stack{idx(m)}(:,:,frame) = Image;
+            % JS Edit 2022/09/09 for uneven summing of channels (antiblocks)
+            if isempty(options)
+                antiblock = {1,1,1,1};
+            else
+                antiblock = options.SumFrames;
+            end
+            if mod(frame,antiblock{idx(m)}) == 0
+                framesum = sum(Stack{idx(m)}(:,:,frame-antiblock{idx(m)}+1:frame),3);
+                %add sum and reshape into appropriate array
+                Stack{idx(m)}(:,:,frame-antiblock{idx(m)}+1:frame) = framesum.*ones(size(framesum,1),size(framesum,2),antiblock{idx(m)});
+            end
+            % End of JS Edit 2022/09/09
             TimeInfo{idx(m)}(frame) = MetaInfo.CreationTime(n);
         end 
+        
     catch   
         progressdlg(1);      
         warning('MATLAB:outOfMemory','Out of memory - read %4.0f of %4.0f frames',n-1,N);

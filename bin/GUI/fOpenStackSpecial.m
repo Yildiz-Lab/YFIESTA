@@ -149,12 +149,40 @@ hOpenSpecial.pSpatial.rFourHorizontal = uicontrol('Parent',hOpenSpecial.pSpatial
 hOpenSpecial.pPostProcessing = uipanel('Parent',hOpenSpecial.fig,'Units','normalized','Position',[0.05 0.05 0.6 0.2],...
                                      'Title','Optional Postprocessing','Tag','pPostProcessing','FontSize',10,'BackgroundColor',c);          
                                  
-hOpenSpecial.pPost.cParallax = uicontrol('Parent',hOpenSpecial.pPostProcessing,'Units','normalized','Position',[0.05 0.525 0.9 0.4],'Enable','on','FontSize',12,...
+hOpenSpecial.pPost.cParallax = uicontrol('Parent',hOpenSpecial.pPostProcessing,'Units','normalized','Position',[0.05 0.725 0.9 0.25],'Enable','on','FontSize',12,...
                                         'Callback',@PostSelect,'String','Parallax 3D Tracking','Style','checkbox','Tag','cParallax','HorizontalAlignment','left','BackgroundColor',c);     
                                     
-hOpenSpecial.pPost.cPolTIRF = uicontrol('Parent',hOpenSpecial.pPostProcessing,'Units','normalized','Position',[0.05 0.075 0.9 0.4],'Enable','on','FontSize',12,...
+hOpenSpecial.pPost.cPolTIRF = uicontrol('Parent',hOpenSpecial.pPostProcessing,'Units','normalized','Position',[0.05 0.4 0.9 0.25],'Enable','on','FontSize',12,...
                                         'Callback',@PostSelect,'String','PolTIRF Orientation Tracking','Style','checkbox','Tag','cPolTIRF','HorizontalAlignment','left','BackgroundColor',c);  
-                                 
+
+                                    % JS Edit 2022/09/09 for summing frames
+                                    % (antiblock)
+hOpenSpecial.pPost.rAntiblockCh1text = uicontrol('Parent',hOpenSpecial.pPostProcessing,'Units','normalized','Position',[0.02 0.1 0.15 0.25],'Enable','on','FontSize',10,...
+                                        'String','Ch1','Style','text','Tag','rAntiblockCh1text','BackgroundColor',c);
+                                    
+hOpenSpecial.pPost.rAntiblockCh1 = uicontrol('Parent',hOpenSpecial.pPostProcessing,'Units','normalized','Position',[0.15 0.1 0.1 0.25],'Enable','on','FontSize',12,...
+                                        'String','1','Style','edit','Tag','rAntiblockCh1','BackgroundColor',c);
+
+hOpenSpecial.pPost.rAntiblockCh2text = uicontrol('Parent',hOpenSpecial.pPostProcessing,'Units','normalized','Position',[0.25 0.1 0.15 0.25],'Enable','on','FontSize',10,...
+                                        'String','Ch2','Style','text','Tag','rAntiblockCh2text','BackgroundColor',c);
+                                    
+hOpenSpecial.pPost.rAntiblockCh2 = uicontrol('Parent',hOpenSpecial.pPostProcessing,'Units','normalized','Position',[0.4 0.1 0.1 0.25],'Enable','on','FontSize',12,...
+                                        'String','1','Style','edit','Tag','rAntiblockCh2','BackgroundColor',c);                                    
+
+hOpenSpecial.pPost.rAntiblockCh3text = uicontrol('Parent',hOpenSpecial.pPostProcessing,'Units','normalized','Position',[0.5 0.1 0.15 0.25],'Enable','on','FontSize',10,...
+                                        'String','Ch3','Style','text','Tag','rAntiblockCh3text','BackgroundColor',c);
+                                    
+hOpenSpecial.pPost.rAntiblockCh3 = uicontrol('Parent',hOpenSpecial.pPostProcessing,'Units','normalized','Position',[0.65 0.1 0.1 0.25],'Enable','on','FontSize',12,...
+                                        'String','1','Style','edit','Tag','rAntiblockCh3','BackgroundColor',c);  
+                                    
+hOpenSpecial.pPost.rAntiblockCh4text = uicontrol('Parent',hOpenSpecial.pPostProcessing,'Units','normalized','Position',[0.75 0.1 0.15 0.25],'Enable','on','FontSize',10,...
+                                        'String','Ch4','Style','text','Tag','rAntiblockCh4text','BackgroundColor',c);
+                                    
+hOpenSpecial.pPost.rAntiblockCh4 = uicontrol('Parent',hOpenSpecial.pPostProcessing,'Units','normalized','Position',[0.9 0.1 0.1 0.25],'Enable','on','FontSize',12,...
+                                        'String','1','Style','edit','Tag','rAntiblockCh4','BackgroundColor',c);  
+
+                                    % End of JS Edit 2022/09/09 
+                                    
 hOpenSpecial.bLoadStack = uicontrol('Parent',hOpenSpecial.fig,'Units','normalized','Position',[0.7 0.05 0.25 0.15],'Enable','on','FontSize',14,...
                                 'String','Load Stack','Style','pushbutton','Tag','bLoadStack','HorizontalAlignment','center',...
                                 'Callback',@LoadStack);  
@@ -271,5 +299,14 @@ output.Optional = get(ch(select==1),'Tag');
 if ~isempty(output.Optional)
     output.Optional(1) = [];    
 end
+
+%JS Edit 2022/09/09 for antiblock
+ch1 = get(findobj('Parent',hOpenSpecial.pPostProcessing,'Tag','rAntiblockCh1'),'String');
+ch2 = get(findobj('Parent',hOpenSpecial.pPostProcessing,'Tag','rAntiblockCh2'),'String');
+ch3 = get(findobj('Parent',hOpenSpecial.pPostProcessing,'Tag','rAntiblockCh3'),'String');
+ch4 = get(findobj('Parent',hOpenSpecial.pPostProcessing,'Tag','rAntiblockCh4'),'String');
+output.PostSumFrames = {str2num(ch1), str2num(ch2), str2num(ch3), str2num(ch4)};
+%End of JS Edit 2022/09/09 for antiblock
+
 setappdata(hOpenSpecial.fig,'output',output);
 uiresume(gcbf);
