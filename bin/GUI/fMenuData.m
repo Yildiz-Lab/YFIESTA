@@ -440,8 +440,9 @@ global Molecule;
 global Filament;
 global Config;
 if ~isempty(Stack)
+    % JS Edit 2022/09/13 to save regions for next time
     % If we don't want to delete all regions, just comment this line out
-    hMainGui=DeleteAllRegions(hMainGui);    
+    %hMainGui=DeleteAllRegions(hMainGui);
     set(hMainGui.MidPanel.sFrame,'Enable','off');
     set(hMainGui.MidPanel.eFrame,'Enable','off','String','');  
     set(hMainGui.fig,'Name',hMainGui.Name);
@@ -456,6 +457,8 @@ if ~isempty(Stack)
     hMainGui.Values.FrameIdx = [1 1];
     hMainGui.Values.MaxIdx = [1 1];
     hMainGui.Values.PostSpecial = [];
+    % JS Edit 2022/09/13 to save threshold value for next time
+    hMainGui.Values.PrevThresh = hMainGui.Values.Thresh
     set(hMainGui.ToolBar.ToolChannels,'Visible','off','State','off');
     set(hMainGui.ToolBar.ToolColors,'Visible','off');
     try

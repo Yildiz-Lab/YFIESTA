@@ -242,6 +242,11 @@ for n = 1:c
     
     SA = double(Stack{n}(:,:,1)); %JS Edit 2022/09/01 for r2022a
     hMainGui.Values.Thresh(n)=min([round(mean(Stack{n}(:,:,1),'all')+5*std(SA(:))) hMainGui.Values.PixMax(n)]);
+    % JS Edit 2022/09/13 for reloading previous threshold value
+    % comment out if want to do fresh every time
+    if isfield(hMainGui.Values,'PrevThresh')
+        hMainGui.Values.Thresh(n) = hMainGui.Values.PrevThresh(n);
+    end
     hMainGui.Values.ScaleMin(n)=round(mean(PixMin));
     hMainGui.Values.ScaleMax(n) = hMainGui.Values.Thresh(n);
     hMainGui.Values.RelThresh(n)=200;

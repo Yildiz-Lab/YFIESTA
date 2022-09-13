@@ -259,7 +259,7 @@ set(hMainGui.LeftPanel.pThresh.panel,'Visible','on');
 if isfield(hMainGui,'Values')
     Update(hMainGui);
     fShow('Image');
-    fShow('Tracks');    
+    fShow('Tracks');
 end
 
 function RegUpdateList(hMainGui)
