@@ -91,7 +91,7 @@ if PathName~=0
         Time = -round(mean(TimeInfo{1}(2:end)-TimeInfo{1}(1:end-1)),2);
     end
     if isempty(PixSize)
-        PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','100'));    
+        PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','160'));    
     else
         PixSize = str2double(fInputDlg('Enter Pixel Size in nm:',num2str(PixSize,4)));    
     end
@@ -332,7 +332,7 @@ if ~isempty(fOpenStruct)
             end
         end
         if isempty(PixSize)
-            PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','100'));    
+            PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','160'));    
         else
             PixSize = str2double(fInputDlg('Enter Pixel Size in nm:',num2str(PixSize,4)));    
         end
@@ -400,7 +400,7 @@ if FileName~=0
     progressdlg('Title','Loading Stack','String','Reading stack from MATLAB file','Indeterminate','on');
     load([PathName FileName],'Stack','TimeInfo'); 
     progressdlg('close');
-    PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','100'));
+    PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','160'));
     nFrames = zeros(size(Stack));
     for n = 1:length(Stack)
         nFrames(n) = size(Stack{n},3);
@@ -440,6 +440,7 @@ global Molecule;
 global Filament;
 global Config;
 if ~isempty(Stack)
+    % If we don't want to delete all regions, just comment this line out
     hMainGui=DeleteAllRegions(hMainGui);    
     set(hMainGui.MidPanel.sFrame,'Enable','off');
     set(hMainGui.MidPanel.eFrame,'Enable','off','String','');  
