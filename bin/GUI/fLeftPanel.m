@@ -70,6 +70,7 @@ else
     end
     strThresh=int2str(Thresh);
 end
+
 slider_step(1) = 1/double(Max);
 slider_step(2) = sStep/double(Max);
 if (max(slider_step)>=1)||(min(slider_step)<=0)
@@ -336,3 +337,5 @@ if FileName~=0
     save(file,'Region');
 end
 fShared('ReturnFocus');
+
+   

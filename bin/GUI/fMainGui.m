@@ -1543,6 +1543,7 @@ end
 
 function keypress(src,evnt) %#ok<INUSL>
 global Queue;
+global Config;
 hMainGui=getappdata(0,'hMainGui');
 if ~strcmp(get(hMainGui.fig,'Pointer'),'watch')
     key = double(evnt.Character);
@@ -1578,7 +1579,14 @@ if ~strcmp(get(hMainGui.fig,'Pointer'),'watch')
                 set(hMainGui.MidPanel.eFrame,'String',int2str(hMainGui.Values.FrameIdx(n)));
                 set(hMainGui.MidPanel.sFrame,'Value',hMainGui.Values.FrameIdx(n));
                 setappdata(0,'hMainGui',hMainGui);
-                fMidPanel('Update',hMainGui);            
+                fMidPanel('Update',hMainGui);
+            % JS Edit 2022/09/13 to toggle binary/thresh easily
+            case 32
+                if strcmp(get(hMainGui.ToolBar.ToolNormImage,'State'),'on')
+                    fToolBar('ThreshImage',getappdata(0,'hMainGui'));
+                elseif strcmp(get(hMainGui.ToolBar.ToolThreshImage,'State'),'on')
+                    fToolBar('NormImage',getappdata(0,'hMainGui'));
+                end
         end
         Zoom=hMainGui.ZoomView;
         if xy{1}(1)<Zoom.globalXY{1}(1)
@@ -1603,7 +1611,26 @@ if ~strcmp(get(hMainGui.fig,'Pointer'),'watch')
         hMainGui.CursorMode='Pan';   
         hMainGui=DeleteSelectRegion(hMainGui);
     end
-
+    
+    % JS Edit 2022/09/13 to add ability to change amount moved with
+    % arrow keys
+%     slider = gco;
+%     if strcmp(get(slider,'Style'),'slider') && strcmp(get(slider,'Tag'),'pThresh.sScale')
+%         currThresh = str2double(get(hMainGui.LeftPanel.pThresh.eScale,'String'));
+%         switch(key)
+%             case 28 %left
+%                 set(hMainGui.LeftPanel.pThresh.eScale,'String',int2str(currThresh - 10))
+%                 
+%                 
+%                 fLeftPanel('eScale',getappdata(0,'hMainGui'))
+%                 fLeftPanel('Update',hMainGui)
+%                 %fLeftPanel('eScale',getappdata(0,'hMainGui'))
+%             case 29 %right
+%                 %fLeftPanel('eScale',getappdata(0,'hMainGui'))
+%         end
+%         
+%     end
+    
     if ~isempty(key)
         if key==127 || key==8
             if strcmp(get(hMainGui.RightPanel.pData.panel,'Visible'),'on') || strcmp(get(hMainGui.RightPanel.pTools.panel,'Visible'),'on')
