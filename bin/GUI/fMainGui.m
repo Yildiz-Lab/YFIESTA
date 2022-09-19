@@ -825,7 +825,8 @@ global Molecule;
 global Filament;
 global KymoTrackMol;
 global KymoTrackFil;
-global Region
+global Region;
+Mode
 if strcmp(button,'normal') && ~strcmp(hMainGui.CurrentKey,'control')
     for j=1:length(Molecule)
         if Molecule(j).Selected==1
@@ -1193,11 +1194,12 @@ if ~strcmp(get(hMainGui.fig,'Pointer'),'watch')
     nMeasure=length(hMainGui.Measure);
     nRegion=length(hMainGui.Region);
     %check for left button
+%     tag=get(get(gco,'Parent'),'Tag')
     if strcmp(get(hMainGui.fig,'SelectionType'),'normal')
         
         %check if mouse click is on right panel
-        tag=get(get(gco,'Parent'),'Tag');
-        if ~isempty(strfind(tag,'Pan'))
+        tag=get(get(gco,'Parent'),'Tag')
+        if ~isempty(strfind(tag,'Pan'));
             pause(0.1);                    
             if strcmp(get(hMainGui.fig,'SelectionType'),'normal')
             %check if molecule or filament pan
@@ -1215,10 +1217,15 @@ if ~strcmp(get(hMainGui.fig,'Pointer'),'watch')
         
         % JS Edit 2022/07/12
         % check if mouse click is on left panel/region, then show if it is a scan
+        
         if strcmp(tag,'RegionsPan')
             SelectObject(hMainGui,'Region',get(gco,'UserData'),'normal')
         end
         
+%         % check if mouse click is on left panel/threshold
+%         if strcmp(tag,'pThresh.aScaleBar') || strcmp(tag,'pRedNorm.aScaleBar') || strcmp(tag,'pGreenNorm.aScaleBar')
+%             
+%         end
 
         %if cursor normal and track info is shown then select object
         if strcmp(hMainGui.CursorMode,'Normal')
@@ -1581,7 +1588,9 @@ if ~strcmp(get(hMainGui.fig,'Pointer'),'watch')
                 setappdata(0,'hMainGui',hMainGui);
                 fMidPanel('Update',hMainGui);
             % JS Edit 2022/09/13 to toggle binary/thresh easily
-            case 32
+            % JS modification 2022/09/19 change to t rather than space
+            % since caused weird issues
+            case 116 %t
                 if strcmp(get(hMainGui.ToolBar.ToolNormImage,'State'),'on')
                     fToolBar('ThreshImage',getappdata(0,'hMainGui'));
                 elseif strcmp(get(hMainGui.ToolBar.ToolThreshImage,'State'),'on')

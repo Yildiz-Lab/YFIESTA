@@ -1056,12 +1056,16 @@ if isfield(hMainGui,'Plots')
     if isfield(hMainGui,'Region')
         nRegion=length(hMainGui.Region);
         if nRegion>0
-            color=get(hMainGui.Plots.Region(nRegion),'Color');    
+            try % JS Edit to allow for plots to be closed
+            color=get(hMainGui.Plots.Region(nRegion),'Color');   
             if sum(color)==3 % only remove if it is white
-                hMainGui.Values.CursorDownPos(:)=0; 
+                hMainGui.Values.CursorDownPos(:)=0;
                 delete(hMainGui.Plots.Region(nRegion));
                 hMainGui.Region(nRegion)=[];
                 hMainGui.Plots.Region(nRegion)=[];
+            end
+            catch
+                color = 0;
             end
         end
     end

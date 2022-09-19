@@ -41,8 +41,12 @@ else
     smoothing_sigma = str2double(fInputDlg('Define Sigma to smooth image by gaussian filtering (Default 0 is no smoothing):','0'));  
     
     k = strfind(filename, '.');
-
+    slash = [strfind(filename, '/'), strfind(filename,'\')];
+    
+    % JS Edit 2022/09/19 to make it so that dots can be in folder naming
+    % convention
     if length(k) > 1
+        k = k(k>slash(end)); %find dot only after we are within the folder
         k = k(1);
     end
 
