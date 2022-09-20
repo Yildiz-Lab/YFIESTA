@@ -127,7 +127,7 @@ hOpenSpecial.pSpatial.rTwoHorizontalCustom1text = uicontrol('Parent',hOpenSpecia
                                         'String','center','Style','text','Tag','rTwoHorizontalCustom','BackgroundColor',c);
 
 hOpenSpecial.pSpatial.rTwoHorizontalCustom1 = uicontrol('Parent',hOpenSpecial.pSpatialSplitting,'Units','normalized','Position',[0.65 0.715 0.1 0.15],'Enable','on','FontSize',12,...
-                                        'String','508','Style','edit','Tag','rTwoHorizontalCustom1','BackgroundColor',c);
+                                        'String','525','Style','edit','Tag','rTwoHorizontalCustom1','BackgroundColor',c);
      
 hOpenSpecial.pSpatial.rTwoHorizontalCustom2text = uicontrol('Parent',hOpenSpecial.pSpatialSplitting,'Units','normalized','Position',[0.77 0.715 0.1 0.15],'Enable','on','FontSize',12,...
                                         'String','width','Style','text','Tag','rTwoHorizontalCustom','BackgroundColor',c);

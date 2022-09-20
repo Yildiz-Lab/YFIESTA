@@ -1198,7 +1198,7 @@ if ~strcmp(get(hMainGui.fig,'Pointer'),'watch')
     if strcmp(get(hMainGui.fig,'SelectionType'),'normal')
         
         %check if mouse click is on right panel
-        tag=get(get(gco,'Parent'),'Tag')
+        tag=get(get(gco,'Parent'),'Tag');
         if ~isempty(strfind(tag,'Pan'));
             pause(0.1);                    
             if strcmp(get(hMainGui.fig,'SelectionType'),'normal')
