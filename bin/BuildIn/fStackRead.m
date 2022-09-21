@@ -307,6 +307,12 @@ for n = 1:nChannels
     Stack{n} = zeros(y,x,NperChannel(n),datatype);
 end
 
+% JS Edit 2022/09/09 for uneven summing of channels (antiblocks)
+if isempty(options)
+    antiblock = {1,1,1,1};
+else
+    antiblock = options.SumFrames;
+end
 for n = 1:N
     x = ImageWidth(1,n);
     y = ImageLength(1,n);
@@ -337,11 +343,6 @@ for n = 1:N
             Image = Img(Region{m}(2):Region{m}(4),Region{m}(1):Region{m}(3));
             Stack{idx(m)}(:,:,frame) = Image;
             % JS Edit 2022/09/09 for uneven summing of channels (antiblocks)
-            if isempty(options)
-                antiblock = {1,1,1,1};
-            else
-                antiblock = options.SumFrames;
-            end
             if mod(frame,antiblock{idx(m)}) == 0
                 framesum = sum(Stack{idx(m)}(:,:,frame-antiblock{idx(m)}+1:frame),3);
                 %add sum and reshape into appropriate array
