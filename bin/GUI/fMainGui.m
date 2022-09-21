@@ -245,7 +245,11 @@ for n = 1:c
     % JS Edit 2022/09/13 for reloading previous threshold value
     % comment out if want to do fresh every time
     if isfield(hMainGui.Values,'PrevThresh')
-        hMainGui.Values.Thresh(n) = hMainGui.Values.PrevThresh(n);
+        if size(hMainGui.Values.PrevThresh) == c
+            hMainGui.Values.Thresh(n) = hMainGui.Values.PrevThresh(n);
+        else
+            hMainGui.Values.Thresh(n) = hMainGui.Values.PrevThresh(1);
+        end
     end
     hMainGui.Values.ScaleMin(n)=round(mean(PixMin));
     hMainGui.Values.ScaleMax(n) = hMainGui.Values.Thresh(n);

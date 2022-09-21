@@ -251,11 +251,11 @@ else
         
         if max(r) > 1 %cheating if we are in pixels instead and want to do the difference thing
             if r(4)-r(2) > 0
-            xblock = min(r(:,1));
+            xblock = min(r(:,1),x);
             yblock = r(4)-r(2);
             else % if we want to split vertically
             xblock = r(3)-r(1);
-            yblock = min(r(:,2));
+            yblock = min(r(:,2),y);
             end
         else
         xblock = min(r(:,1))*x;
@@ -277,7 +277,7 @@ else
         % region rather than blocks
         
         for n = 1:nChannels
-            if max(r) > 1 % JS Edit 2022/07/27 for custom horizontal cut
+            if max(r) > 1 % JS Edit 2022/07/27 for custom horizontal/vertical cut
                 Region{n} = [x/1024*Region{n}(1)-xblock+1 y/1024*Region{n}(2)-yblock+1 x/1024*Region{n}(1) y/1024*Region{n}(2)];
             else
                 Region{n} = [x*Region{n}(1)-xblock+1 y*Region{n}(2)-yblock+1 x*Region{n}(1) y*Region{n}(2)];
@@ -339,6 +339,7 @@ for n = 1:N
             idx = 1:nChannels;
             frame = n;
         end
+        
         for m = 1:numel(Region)
             Image = Img(Region{m}(2):Region{m}(4),Region{m}(1):Region{m}(3));
             Stack{idx(m)}(:,:,frame) = Image;
