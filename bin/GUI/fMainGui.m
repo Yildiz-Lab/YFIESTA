@@ -830,7 +830,7 @@ global Filament;
 global KymoTrackMol;
 global KymoTrackFil;
 global Region;
-Mode
+
 if strcmp(button,'normal') && ~strcmp(hMainGui.CurrentKey,'control')
     for j=1:length(Molecule)
         if Molecule(j).Selected==1
