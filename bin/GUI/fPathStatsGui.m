@@ -674,36 +674,46 @@ xy = PathStats(n).PathData(:,4:5);
 % with a certain tolerance of blinking
 
 % Below this does separate files for any missing frame, a pause
+% frames = PathStats(n).Results(:,1);
+% frame1 = frames(1); laststart = 1; ii=1; currDarkFrames = 0; thealphabet = char(97:122);
+% 
+% minFrames = str2double(fInputDlg('Minimum number of frames to save file:',string(getappdata(hPathsStatsGui.pOptions,'minFrames'))));  
+% blinkTolerance = str2double(fInputDlg('Maximum number of dark frames (blink) to concatenate into same file:',string(getappdata(hPathsStatsGui.pOptions,'blinkTolerance')))); 
+% setappdata(hPathsStatsGui.pOptions,'minFrames',minFrames); setappdata(hPathsStatsGui.pOptions,'blinkTolerance',blinkTolerance);
+% 
+% for i = 1:size(xy,1)
+%     curr = frame1 + i - laststart + currDarkFrames;
+%     if frames(i) ~= curr
+%         if frames(i) - curr < blinkTolerance % no abs since should only be positive
+%             currDarkFrames = currDarkFrames + frames(i) - curr;
+%         else %if not equivalent and not within blinkTolerance, then save as separate file
+%             if (i - laststart) >= minFrames
+%                 writematrix(xy(laststart:i-1,:)-min(xy(laststart:i-1,:)), strcat(Config.Directory{1},PathStats(n).Name(10:end),thealphabet(ii),'_fiona.txt'), 'Delimiter', 'tab');
+%                 ii = ii + 1;
+%             end
+%             laststart = i;
+%             frame1 = frames(i);
+%             currDarkFrames = 0;
+%         end
+%     end
+% end
+% % make sure to save the end
+% if (i - laststart) >= minFrames
+%     writematrix(xy(laststart:i,:)-min(xy(laststart:i,:)), strcat(Config.Directory{1},PathStats(n).Name(10:end),thealphabet(ii),'_fiona.txt'), 'Delimiter', 'tab');
+
+% JS Edit 2022/05/29 to make FIONA
+% put in NaN for the blank spots. Shouldn't affect the fitting or any post
+% processing
 frames = PathStats(n).Results(:,1);
-frame1 = frames(1); laststart = 1; ii=1; currDarkFrames = 0; thealphabet = char(97:122);
-
-minFrames = str2double(fInputDlg('Minimum number of frames to save file:',string(getappdata(hPathsStatsGui.pOptions,'minFrames'))));  
-blinkTolerance = str2double(fInputDlg('Maximum number of dark frames (blink) to concatenate into same file:',string(getappdata(hPathsStatsGui.pOptions,'blinkTolerance')))); 
-setappdata(hPathsStatsGui.pOptions,'minFrames',minFrames); setappdata(hPathsStatsGui.pOptions,'blinkTolerance',blinkTolerance);
-
+frame1 = frames(1); framef = frames(end);
+xynew = nan(framef-frame1+1,2);
 for i = 1:size(xy,1)
-    curr = frame1 + i - laststart + currDarkFrames;
-    if frames(i) ~= curr
-        if frames(i) - curr < blinkTolerance % no abs since should only be positive
-            currDarkFrames = currDarkFrames + frames(i) - curr;
-        else %if not equivalent and not within blinkTolerance, then save as separate file
-            if (i - laststart) >= minFrames
-                writematrix(xy(laststart:i-1,:)-min(xy(laststart:i-1,:)), strcat(Config.Directory{1},PathStats(n).Name(10:end),thealphabet(ii),'_fiona.txt'), 'Delimiter', 'tab');
-                ii = ii + 1;
-            end
-            laststart = i;
-            frame1 = frames(i);
-            currDarkFrames = 0;
-        end
-    end
+    xynew(frames(i),:) = xy(i,:);
 end
+writematrix(xynew,strcat(Config.Directory{1},PathStats(n).Name(10:end),'_fiona.txt'), 'Delimiter', 'tab'); 
 
-% make sure to save the end
-if (i - laststart) >= minFrames
-    writematrix(xy(laststart:i,:)-min(xy(laststart:i,:)), strcat(Config.Directory{1},PathStats(n).Name(10:end),thealphabet(ii),'_fiona.txt'), 'Delimiter', 'tab');
-end
 % at the end run FIONAviewer
-FIONAviewer(strcat(Config.Directory{1},PathStats(n).Name(10:end),thealphabet(1),'_fiona.txt'))
+FIONAviewer(strcat(Config.Directory{1},PathStats(n).Name(10:end),'_fiona.txt'))
 
 
 % JS Edit 2022/06/03 to compile plots with the click of a button
