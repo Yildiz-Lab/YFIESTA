@@ -664,6 +664,7 @@ end
 % JS Edit 2022/05/29 to make FIONA in 
 function FIONA(hPathsStatsGui)
 global Config;
+global Molecule;
 n = get(hPathsStatsGui.lAll,'Value');
 PathStats=getappdata(hPathsStatsGui.fig,'PathStats');
 % That is stored in PathStats(n).PathData
@@ -711,9 +712,22 @@ for i = 1:size(xy,1)
     xynew(frames(i),:) = xy(i,:);
 end
 writematrix(xynew,strcat(Config.Directory{1},PathStats(n).Name(10:end),'_fiona.txt'), 'Delimiter', 'tab'); 
+% and the yx file
+writematrix(xynew(:,[2,1]),strcat(Config.Directory{1},PathStats(n).Name(10:end),'_yx_fiona.txt'), 'Delimiter', 'tab'); 
+
+plotNeighbors = 1;
+if plotNeighbors == 1
+    neighbors = findNeighbors(PathStats.PathData(:,1:2));
+    for m = 1:length(neighbors)
+        ntime = Molecule(neighbors(m)).Results(:,1) - frame1;
+        npos = Molecule(neighbors(m)).Results(:,3:4) - PathStats(n).PathData(1,1:2);
+    end
+else
+    neighbors = [];
+end
 
 % at the end run FIONAviewer
-FIONAviewer(strcat(Config.Directory{1},PathStats(n).Name(10:end),'_fiona.txt'))
+FIONAviewer(strcat(Config.Directory{1},PathStats(n).Name(10:end),'_fiona.txt'), neighbors)
 
 
 % JS Edit 2022/06/03 to compile plots with the click of a button
@@ -1197,3 +1211,76 @@ while n<=nData
 end
 param(end+1,:) = XYZ(end,:);
 Path = EvalCurvedPath(param,XYZ);
+
+%JS Edit 2022/09/26 for finding nearby molecules
+function nbs = findNeighbors(MolXY, CheckChannel)
+global Molecule;
+
+if nargin < 2
+    CheckChannel = 2;
+end
+
+% Copied from fRightPanel NewScan
+nX=MolXY(:,1);
+nY=MolXY(:,2);
+ScanSize=10;
+d=[0; cumsum(sqrt((nX(2:end)-nX(1:end-1)).^2 + (nY(2:end)-nY(1:end-1)).^2))];
+dt=max(d)/round(max(d));
+id=(0:round(max(d)))'*dt;
+scan_length=length(id);
+idx = nearestpoint(id,d);
+X=zeros(scan_length,1);
+Y=zeros(scan_length,1);
+dis = id-d(idx);
+dis(1)=0;
+dis(end)=0;
+X(dis==0) = nX(idx(dis==0));
+Y(dis==0) = nY(idx(dis==0));
+X(dis>0) = nX(idx(dis>0))+(nX(idx(dis>0)+1)-nX(idx(dis>0)))./(d(idx(dis>0)+1)-d(idx(dis>0))).*dis(dis>0);
+Y(dis>0) = nY(idx(dis>0))+(nY(idx(dis>0)+1)-nY(idx(dis>0)))./(d(idx(dis>0)+1)-d(idx(dis>0))).*dis(dis>0);
+X(dis<0) = nX(idx(dis<0))+(nX(idx(dis<0)-1)-nX(idx(dis<0)))./(d(idx(dis<0)-1)-d(idx(dis<0))).*dis(dis<0);
+Y(dis<0) = nY(idx(dis<0))+(nY(idx(dis<0)-1)-nY(idx(dis<0)))./(d(idx(dis<0)-1)-d(idx(dis<0))).*dis(dis<0);
+iX=zeros(2*ScanSize+1,scan_length);
+iY=zeros(2*ScanSize+1,scan_length);
+n=zeros(scan_length,3);
+for i=1:length(X)
+    if i==1   
+        v=[X(i+1)-X(i) Y(i+1)-Y(i) 0];
+        n(i,:)=[v(2) -v(1) 0]/norm(v); 
+    elseif i==length(X)
+        v=[X(i)-X(i-1) Y(i)-Y(i-1) 0];
+        n(i,:)=[v(2) -v(1) 0]/norm(v);
+    else
+        v1=[X(i+1)-X(i) Y(i+1)-Y(i) 0];
+        v2=-[X(i)-X(i-1) Y(i)-Y(i-1) 0];
+        n(i,:)=v1/norm(v1)+v2/norm(v2); 
+        if norm(n(i,:))==0
+            n(i,:)=[v1(2) -v1(1) 0]/norm(v1);
+        else
+            n(i,:)=n(i,:)/norm(n(i,:));
+        end
+        z=cross(v1,n(i,:));
+        if z(3)>0
+            n(i,:)=-n(i,:);
+        end
+    end
+    iX(:,i)=linspace(X(i)+ScanSize*n(i,1),X(i)-ScanSize*n(i,1),2*ScanSize+1)';
+    iY(:,i)=linspace(Y(i)+ScanSize*n(i,2),Y(i)-ScanSize*n(i,2),2*ScanSize+1)';
+end
+
+iX = reshape(iX,numel(iX),1);
+iY = reshape(iY,numel(iY),1);
+% find boundary for our polygon
+bd = boundary(iX,iY);
+
+% check if in polygon for all molecules in other channel (rudimentary, but
+% fair)
+nbs = [];
+for j = 1:length(Molecule)
+    if Molecule(j).Channel == CheckChannel %only do if in opposite channel
+        inbd = inpolygon(Molecule(j).Results(:,3), Molecule(j).Results(:,4), iX(bd), iY(bd));
+        if any(inbd > 0)
+            nbs = [nbs, j];
+        end
+    end
+end
