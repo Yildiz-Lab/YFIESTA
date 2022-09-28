@@ -1,4 +1,4 @@
-function handles = PlotData(hObject, handles, keepLimits)
+function handles = PlotData(hObject, handles, keepLimits, neighbors)
 % Plots the trap data with all the current settings.
 % Generates the following variables in handles: currentPlotT, 
 % currentPlotPSD_Long, currentPlotPSD_Short, currentPlotTrap_Long,
@@ -11,6 +11,7 @@ function handles = PlotData(hObject, handles, keepLimits)
 % by Vladislav Belyy
 % Last updated on 11/18/2011
 
+%JS Edit 2022/09/27 Add neighbors into plot
 
 
 %method=1 for PS, =0 for Data display
@@ -279,6 +280,14 @@ if length(handles.stepVector) == length(handles.currentPlotT)
     
         end
     end
+end
+
+% JS Edit 2022/09/27 add in neighbors from other channel
+colorlist = copper(length(handles.neighbors{1}));
+for n = 1:length(handles.neighbors{1})
+    nb = handles.neighbors{1}{n};
+    scatter(nb(:,1), nb(:,2), 4, colorlist(n,:), 'tag', 'neighbors')
+    scatter(nb(:,1), nb(:,3), 4, colorlist(n,:), 'tag', 'neighbors')
 end
 
 % Plot fitted line:

@@ -31,7 +31,6 @@ end
 
 % --- Executes just before FIONAviewer is made visible.
 function FIONAviewer_OpeningFcn(hObject, eventdata, handles, varargin) %#ok
-global Molecule;
 % This function has no output args, see OutputFcn.
 % hObject    handle to figure
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -123,13 +122,10 @@ if ~isempty(varargin)
     neighbors = varargin(2);
     % run what LoadFile_Callback usually does
     handles = LoadNewDataFile(hObject, handles, fullfile(pathname,'/'), strcat(filename,ext));
+    handles.neighbors = varargin(2);
     
     keepLimits = 0; % reset Y-limits
     handles = PlotData(hObject, handles, keepLimits); % Plot the data
-    
-    for n = 1:numel(neighbors{1})
-        Molecule(neighbors{1}(n)).Name
-    end
     
     set(handles.StepsFilename, 'String', fullfile(pathname, strcat(filename(1:end-6),'_xy.mat')));
 end

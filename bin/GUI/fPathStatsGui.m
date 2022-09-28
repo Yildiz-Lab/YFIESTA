@@ -132,10 +132,14 @@ hPathsStatsGui.bReset = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','norm
 hPathsStatsGui.bDisregard = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized','Callback','fPathStatsGui(''Update'',getappdata(0,''hPathsStatsGui''));',...
                             'Position',[0.75 0.28 0.225 0.23],'String','Disregard','Tag','bReset');                            
 
-% JS Edit 2022/05/29 to add direct line to FIONA                  
+% JS Edit 2022/05/29 to add direct line to FIONA 
 hPathsStatsGui.bFiona = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized',...
                             'Callback','fPathStatsGui(''FIONA'',getappdata(0,''hPathsStatsGui''));',...
-                            'Position',[0.75 0.025 0.225 0.23],'String','FIONA stepping','Tag','bReset');                            
+                            'Position',[0.75 0.025 0.225 0.23],'String','FIONA stepping','Tag','bReset'); 
+
+%JS Edit 2022/09/28 for ability to plot neighbors in other channel
+hPathsStatsGui.cNeighbor = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized','Position',[0.52 0.025 0.225 0.23],'Enable','on',...
+                                        'String','Show Neighbors','Style','checkbox','Tag','neighbors','HorizontalAlignment','left','BackgroundColor',c);  
 % End of JS Edit 2022/05/29
                         
 hPathsStatsGui.rLinear = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized','Callback','fPathStatsGui(''Update'',getappdata(0,''hPathsStatsGui''));',...
@@ -158,12 +162,12 @@ hPathsStatsGui.rAverage = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','no
                             'Position',[0.1 0.2 0.6 0.15],'String','Average path','Style','radiobutton','BackgroundColor',c,'Tag','rAverage','Value',0);   
 
 hPathsStatsGui.tRegion = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized','Enable','off','HorizontalAlignment','left',...
-                              'Position',[0.15 0.02 0.15 0.14],'String','Region:','Style','text','Tag','tRegion','BackgroundColor',c);                         
+                              'Position',[0.03 0.02 0.15 0.14],'String','Region:','Style','text','Tag','tRegion','BackgroundColor',c);                         
 
 hPathsStatsGui.eAverage = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized','Callback','fPathStatsGui(''Update'',getappdata(0,''hPathsStatsGui''));','Enable','off',...
-                              'Position',[0.3 0.02 0.3 0.14],'String','1000','FontSize',8,'Style','edit','Tag','eAverage','BackgroundColor',[1 1 1]);                         
+                              'Position',[0.12 0.02 0.3 0.14],'String','1000','FontSize',8,'Style','edit','Tag','eAverage','BackgroundColor',[1 1 1]);                         
                           
-hPathsStatsGui.tNM = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized','Position',[0.62 0.02 0.1 0.14],'Enable','off',...
+hPathsStatsGui.tNM = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized','Position',[0.45 0.02 0.05 0.14],'Enable','off',...
                                'String','nm','Style','text','Tag','tNM','HorizontalAlignment','left','BackgroundColor',c);
 
 hPathsStatsGui.pPlotDistPanel = uipanel('Parent',hPathsStatsGui.fig,'Position',[0.025 0.28 0.95 0.335],'Tag','PlotPanel','BackgroundColor','white');
@@ -715,19 +719,26 @@ writematrix(xynew,strcat(Config.Directory{1},PathStats(n).Name(10:end),'_fiona.t
 % and the yx file
 writematrix(xynew(:,[2,1]),strcat(Config.Directory{1},PathStats(n).Name(10:end),'_yx_fiona.txt'), 'Delimiter', 'tab'); 
 
-plotNeighbors = 1;
+plotNeighbors = get(hPathsStatsGui.cNeighbor,'Value');
 if plotNeighbors == 1
     neighbors = findNeighbors(PathStats.PathData(:,1:2));
+    neighbor_txy = cell(length(neighbors),1);
     for m = 1:length(neighbors)
-        ntime = Molecule(neighbors(m)).Results(:,1) - frame1;
-        npos = Molecule(neighbors(m)).Results(:,3:4) - PathStats(n).PathData(1,1:2);
+        Res = Molecule(neighbors(m)).Results;
+        txy_reorient = nan( Res(end,1)-Res(1,1) ,3);
+        for p = 1:size(Res,1)
+            [npos, nidx] = min( sqrt( (PathStats(n).PathData(:,1) - Res(p,3)).^2 + (PathStats(n).PathData(:,2) - Res(p,4)).^2) );
+            mpos = norm (PathStats(n).PathData(nidx,1:2) - PathStats(n).PathData(1,1:2));
+            txy_reorient(Res(p,1)-Res(1,1)+1,:) = [Res(p,1) - frame1 + 1, mpos, npos];
+        end
+        neighbor_txy{m,1} = txy_reorient;
     end
 else
-    neighbors = [];
+    neighbor_txy = {};
 end
 
 % at the end run FIONAviewer
-FIONAviewer(strcat(Config.Directory{1},PathStats(n).Name(10:end),'_fiona.txt'), neighbors)
+FIONAviewer(strcat(Config.Directory{1},PathStats(n).Name(10:end),'_fiona.txt'), neighbor_txy)
 
 
 % JS Edit 2022/06/03 to compile plots with the click of a button
