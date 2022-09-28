@@ -110,8 +110,8 @@ set(hMainGui.Menu.mApplyMultiCorrections,'Enable','On');
 setappdata(0,'hMainGui',hMainGui);
 
 function ApplyMultiChannelCorrections(hMainGui)
-global Stack
-global Molecule
+global Stack;
+global Molecule;
 
 F = getappdata(hMainGui.fig,'MaskCorrect');
 Fx = F{1}; Fy = F{2};
@@ -134,8 +134,8 @@ end
 for i = 1:length(Molecule)
     if Molecule(i).Channel == 2
         % for some reason it needs to be a double array
-        Molecule(i).Results(:,3) = Molecule(i).Results(:,3) + pm*Fx(double(Molecule(i).Results(:,3:4)));
-        Molecule(i).Results(:,4) = Molecule(i).Results(:,4) + pm*Fy(double(Molecule(i).Results(:,3:4)));
+        Molecule(i).Results(:,3) = Molecule(i).Results(:,3) - pm*Fx(double(Molecule(i).Results(:,3:4)));
+        Molecule(i).Results(:,4) = Molecule(i).Results(:,4) - pm*Fy(double(Molecule(i).Results(:,3:4)));
         
     end
     
