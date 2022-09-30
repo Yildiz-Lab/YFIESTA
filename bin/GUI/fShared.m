@@ -700,6 +700,7 @@ end
 function disregard=CheckConfig(Config,Mode,Stack)
 if strcmp(Mode,'Reconnect')
     disregard = 0;
+    ignorefuture = 0;
 else
     nObjects = 0;
     hMainGui=getappdata(0,'hMainGui');
@@ -709,6 +710,7 @@ else
     set(hMainGui.fig,'Pointer','watch');
     drawnow expose update
     disregard = 0;
+    ignorefuture = 0;
     
     params.bw_region = Config.Region;
     params.drift = Config.Drift;
@@ -772,16 +774,24 @@ else
             nObjects=round((nObjects+length(Objects))/2);
         end
     end
-    if nObjects>100
-        button =  fQuestDlg('FIESTA found more than 100 objects with the current configuration. Make sure that the threshold is set correctly. Do you want to continue? (Note: Tracking of more than 100 objects per frame might requires a lot of time and resources)','FIESTA Warning',{'Add anyway','Disregard Stack'},'Disregard Stack');       
-        if isempty(button) || strcmp(button,'Disregard Stack')
-            disregard = 1;
-        end
+    % JS Edit 2022/09/28 to ignore in future flat out. Uncomment if want
+    % back
+    if nObjects>100 
+        fprintf("Warning: FIESTA found more than 100 objects with the current configuration. Make sure that the threshold is set correctly. \n")
+        fprintf("To reimplement these warnings in GUI, go to bin/GUI/fShared under CheckConfig, search for JS Edit 2022/09/28 \n")
     end
+%     if nObjects>100 
+%         button =  fQuestDlg('FIESTA found more than 100 objects with the current configuration. Make sure that the threshold is set correctly. Do you want to continue? (Note: Tracking of more than 100 objects per frame might requires a lot of time and resources)','FIESTA Warning',{'Add anyway','Disregard Stack'},'Add anyway');       
+%         if isempty(button) || strcmp(button,'Disregard Stack')
+%             disregard = 1;
+% %         elseif strcmp(button,'Add & Ignore') 
+% %             ignorefuture = 1;
+%         end
+%     end
     set(hMainGui.MidPanel.pView,'Visible','on');
     set(hMainGui.MidPanel.pNoData,'Visible','off');    
-    set(hMainGui.MidPanel.tNoData,'String','No Stack or Data present','Visible','off');  
-    set(hMainGui.fig,'Pointer','arrow');        
+    set(hMainGui.MidPanel.tNoData,'String','No Stack or Data present','Visible','off');
+    set(hMainGui.fig,'Pointer','arrow');  
 end
 
 function AddStack(hMainGui)
@@ -794,6 +804,11 @@ global DirRoot;
 global DirCurrent;
 addConfig=Config;
 Mode=get(gcbo,'UserData');
+% JS Edit 2022/09/28 Temp fix for keyboard shortcut to add to queue
+if isempty(Mode)
+    Mode = 'Local';
+end
+% End of JS Edit
 if strcmp(Mode,'Server')
     %check if FIESTA tracking server available
     DirServer = CheckServer;
@@ -988,7 +1003,7 @@ if isempty(FileName) || iscell(FileName)
             addConfig.Region = addRegion;
             addConfig.NumCores = addConfig.NumCores;
             k = min([length(Stack)*ones(size(k)); k]);
-            if ~CheckConfig(addConfig,Mode,Stack(k))
+            if ~CheckConfig(addConfig,Mode,Stack(k));
                 if strcmp(Mode,'Server')==1
                     ServerQueue = addConfig;                  
                     save([DirServer 'Queue' filesep 'FiestaQueue(' datestr(clock,'yyyymmddTHHMMSS') '-' num2str(fix(rand*1000),'%04.0f') ').mat'],'ServerQueue');

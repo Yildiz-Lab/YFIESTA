@@ -1198,7 +1198,7 @@ if ~strcmp(get(hMainGui.fig,'Pointer'),'watch')
     nMeasure=length(hMainGui.Measure);
     nRegion=length(hMainGui.Region);
     %check for left button
-%     tag=get(get(gco,'Parent'),'Tag')
+    %tag=get(get(gco,'Parent'),'Tag')
     if strcmp(get(hMainGui.fig,'SelectionType'),'normal')
         
         %check if mouse click is on right panel
@@ -1599,6 +1599,27 @@ if ~strcmp(get(hMainGui.fig,'Pointer'),'watch')
                     fToolBar('ThreshImage',getappdata(0,'hMainGui'));
                 elseif strcmp(get(hMainGui.ToolBar.ToolThreshImage,'State'),'on')
                     fToolBar('NormImage',getappdata(0,'hMainGui'));
+                end
+            % JS Edit 2022/09/28 keyboard shortcut r to add stack to queue
+            case 121 %y
+                fShared('AddStack',getappdata(0,'hMainGui'));
+            case 97  %a
+                fShared('AnalyseQueue',getappdata(0,'hMainGui'));
+            % JS Edit 2022/09/30 keyboard shortcut to change between
+            % channels using qwer right below 1-4
+            case 113 %q
+                fToolBar('SwitchChannel',1);
+            case 119 %w
+                if length(Config.Time) > 1 %Config.Time tells number of channels
+                fToolBar('SwitchChannel',2);
+                end
+            case 101 %e
+                if length(Config.Time) > 2
+                fToolBar('SwitchChannel',3);
+                end
+            case 114 %r
+                if length(Config.Time) > 3
+                fToolBar('SwitchChannel',4);
                 end
         end
         Zoom=hMainGui.ZoomView;

@@ -70,7 +70,7 @@ if PathName~=0
     f=[PathName FileName];
     try
         if strcmp(filetype,'ND')||strcmp(filetype,'ND2')||strcmp(filetype,'ZVI')||strcmp(filetype,'DV')
-            [Stack,TimeInfo,PixSize]=fReadND2(f); 
+            [Stack,TimeInfo,PixSize]=fReadND2(f);
         else
             [Stack,TimeInfo,PixSize]=fStackRead(f);
         end
@@ -479,7 +479,7 @@ if ~isempty(Stack)
     TimeInfo={};
     Config.StackName=[];
     setappdata(0,'hMainGui',hMainGui);
-    fShared('UpdateMenu',hMainGui);   
+    fShared('UpdateMenu',hMainGui);
     fShow('Tracks');
 end
 
