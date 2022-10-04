@@ -1611,17 +1611,21 @@ if ~strcmp(get(hMainGui.fig,'Pointer'),'watch')
             % channels using qwer right below 1-4
             case 113 %q
                 fToolBar('SwitchChannel',1);
+                hMainGui.Values.FrameIdx(1) = 1;
             case 119 %w
                 if length(Config.Time) > 1 %Config.Time tells number of channels
                 fToolBar('SwitchChannel',2);
+                hMainGui.Values.FrameIdx(1) = 2;
                 end
             case 101 %e
                 if length(Config.Time) > 2
                 fToolBar('SwitchChannel',3);
+                hMainGui.Values.FrameIdx(1) = 3;
                 end
             case 114 %r
                 if length(Config.Time) > 3
                 fToolBar('SwitchChannel',4);
+                hMainGui.Values.FrameIdx(1) = 4;
                 end
         end
         Zoom=hMainGui.ZoomView;
