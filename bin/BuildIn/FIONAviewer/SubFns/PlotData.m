@@ -283,11 +283,14 @@ if length(handles.stepVector) == length(handles.currentPlotT)
 end
 
 % JS Edit 2022/09/27 add in neighbors from other channel
-colorlist = gray(length(handles.neighbors{1})+1);
+%colorlist = gray(length(handles.neighbors{1})+1);
+colorlist = summer(round(1.2*length(handles.neighbors{1})+1)); %shift so that only green
 for n = 1:length(handles.neighbors{1})
     nb = handles.neighbors{1}{n};
-    scatter(nb(:,1), nb(:,2), 4, colorlist(n,:), 'tag', 'neighbors')
-    scatter(nb(:,1), nb(:,3), 4, colorlist(n,:), 'tag', 'neighbors')
+%     scatter(nb(:,1), nb(:,2), 4, colorlist(n,:), 'tag', 'neighbors')
+%     scatter(nb(:,1), nb(:,3), 4, colorlist(n,:), 'tag', 'neighbors')
+    plot(nb(:,1), nb(:,2), 'Color', colorlist(n,:), 'tag', 'neighbors')
+    plot(nb(:,1), nb(:,3), 'Color', colorlist(n,:), 'tag', 'neighbors')
 end
 
 % Plot fitted line:
