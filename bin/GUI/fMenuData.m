@@ -593,17 +593,17 @@ if ~isempty(fOpenStruct)
         if PathName~=0
             PixSize = [];
         %     if strcmpi(FileName(end-3:end),'.stk')
-        %         filetype = 'MetaMorph';
+        %         filetype{1} = 'MetaMorph';
         %     elseif strcmpi(FileName(end-2:end),'.nd')
-        %         filetype = 'ND';
+        %         filetype{1} = 'ND';
         %     elseif strcmpi(FileName(end-3:end),'.nd2')
-        %         filetype = 'ND2';
+        %         filetype{1} = 'ND2';
         %     elseif strcmpi(FileName(end-3:end),'.zvi')
-        %         filetype = 'ZVI';
+        %         filetype{1} = 'ZVI';
         %     elseif strcmpi(FileName(end-2:end),'.dv')
-        %         filetype = 'DV';
+        %         filetype{1} = 'DV';
         %     else
-                filetype = 'TIFF';
+                filetype{1} = 'TIFF';
                 % JS Edit 2022/10/05 to do stacking
                 FileName = load_smooth_tif(fullfile(PathName));
         %     end
