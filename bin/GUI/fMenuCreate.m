@@ -11,6 +11,9 @@ hMenu.mData=uimenu('Parent',hMainGui.fig,'Label','Data','Tag','mData');
 hMenu.mOpenStack = uimenu('Parent',hMenu.mData,'Callback','fMenuData(''OpenStack'',getappdata(0,''hMainGui''));',...
                           'Label','Open Stack','Tag','mOpenStack','Accelerator','S');               
 
+hMenu.mOpenFolderStack = uimenu('Parent',hMenu.mData,'Callback','fMenuData(''OpenFolderStack'',getappdata(0,''hMainGui''));',...
+                          'Label','Open Folder as Stack','Tag','mOpenFolderStack'); 
+                      
 hMenu.mOpenStackSpecial = uimenu('Parent',hMenu.mData,'Callback','fMenuData(''OpenStackSpecial'',getappdata(0,''hMainGui''));',...
                           'Label','Open Stack Special','Tag','mOpenStackSpecial'); 
                       
