@@ -458,7 +458,9 @@ if ~isempty(Stack)
     hMainGui.Values.MaxIdx = [1 1];
     hMainGui.Values.PostSpecial = [];
     % JS Edit 2022/09/13 to save threshold value for next time
-    hMainGui.Values.PrevThresh = hMainGui.Values.Thresh
+    hMainGui.Values.PrevThresh = hMainGui.Values.Thresh;
+    hMainGui.Values.PrevScaleMin = hMainGui.Values.ScaleMin;
+    hMainGui.Values.PrevScaleMax = hMainGui.Values.ScaleMax;
     set(hMainGui.ToolBar.ToolChannels,'Visible','off','State','off');
     set(hMainGui.ToolBar.ToolColors,'Visible','off');
     try
