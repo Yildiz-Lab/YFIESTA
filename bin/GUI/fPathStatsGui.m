@@ -378,6 +378,7 @@ for n=1:length(PathStats)
     end
 end
 close(hPathsStatsGui.fig);
+fShow('Tracks');
     
 function Cancel(hPathsStatsGui)
 close(hPathsStatsGui.fig);
