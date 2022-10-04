@@ -7,6 +7,8 @@ switch func
         OpenFolderStack(varargin{1});
     case 'OpenStackSpecial'
         OpenStackSpecial(varargin{1});
+    case 'OpenFolderStackSpecial' %JS Edit 2022/10/04
+        OpenFolderStackSpecial(varargin{1});
     case 'LoadStack'
         LoadStack; 
     case 'SaveStack'
@@ -452,7 +454,241 @@ else
     set(hMainGui.MidPanel.tNoData,'String','No Stack or Tracks present','Visible','on');    
 end
 set(hMainGui.fig,'Pointer','arrow');
- 
+
+function OpenFolderStackSpecial(hMainGui)
+global Stack;
+global TimeInfo;
+global Config;
+global Molecule;
+global Filament;
+set(hMainGui.MidPanel.pNoData,'Visible','on')
+set(hMainGui.MidPanel.tNoData,'String','Loading Stack...','Visible','on');
+set(hMainGui.MidPanel.pView,'Visible','off');
+fOpenStruct = fOpenFolderStackSpecial;
+if ~isempty(fOpenStruct)
+    set(hMainGui.fig,'Pointer','watch');   
+    CloseStack(hMainGui);
+    Config.StackName = [];
+    Config.Directory = [];
+    hMainGui=getappdata(0,'hMainGui');
+    if strcmp(fOpenStruct.Mode,'rSeparateFiles')
+        nChannels = size(fOpenStruct.Data,1);
+        Stack = cell(1,nChannels);
+        TimeInfo = cell(1,nChannels);
+        TformChannel = cell(1,nChannels);
+        nFrames = zeros(1,nChannels);
+        filetype = cell(1,nChannels);
+        % We currently can't get separate files loading using this "summing
+        % of frames" convention which we can fix later.
+        %options.SumFrames = fOpenStruct.PostSumFrames; %JS Edit 2022/09/09
+        for n = 1:nChannels
+            PathName = fOpenStruct.Data{n,2};
+            FileName = load_smooth_tif(fullfile(PathName,'/'));
+            try
+                if strcmpi(FileName(end-3:end),'.nd2')
+                    [Stack(n),TimeInfo(n),PixSize]=fReadND2([PathName FileName]);
+                else
+                    [Stack(n),TimeInfo(n),PixSize]=fStackRead([PathName FileName]);
+                end
+            catch ME
+                fMsgDlg(ME.message,'error');
+                Stack = {};
+                TimeInfo = {};
+                break;
+            end
+            Config.StackName{n}=FileName;
+            Config.Directory{n}=PathName;
+            Config.StackReadOptions = [];
+            nFrames(n)=size(Stack{n},3);
+            if nFrames == 1
+                Config.Time(n) = 0;
+                if nFrames(n)==1
+                    TimeInfo{n} = 0;
+                end
+            elseif isempty(TimeInfo{n}) || length(unique(TimeInfo{n}))<length(TimeInfo{n}) 
+                Config.Time(n) = str2double(fInputDlg('No creation time  - Enter plane time difference in ms:','100'));  
+                if ~isnan(Config.Time(n))
+                    TimeInfo{n}=(0:nFrames-1)*Config.Time(n);
+                else
+                    Config.Time(n) = 0;
+                    TimeInfo{n}=(0:nFrames-1);
+                end
+            else
+               Config.Time(n) = -round(mean(TimeInfo{n}(2:end)-TimeInfo{n}(1:end-1)),2);
+            end
+            nFrames(n) = size(Stack{n},3);
+            if strcmpi(FileName(end-3:end),'.stk')
+                filetype{n} = 'MetaMorph';
+            elseif strcmpi(FileName(end-3:end),'.nd')
+                filetype{n} = 'ND';
+            elseif strcmpi(FileName(end-3:end),'.nd2')
+                filetype{n} = 'ND2';
+            elseif strcmpi(FileName(end-3:end),'.zvi')
+                filetype{n} = 'ZVI';
+            elseif strcmpi(FileName(end-2:end),'.dv')
+                filetype{n} = 'DV';
+            else
+                filetype{n} = 'TIFF'; 
+            end
+            TformChannel{n} = [1 0 0; 0 1 0; 0 0 n];
+        end
+    else
+        if strcmp(fOpenStruct.Mode,'rSequentialSplitting')
+            nChannels = fOpenStruct.Data{3};
+            mode = flipud(cell2mat(fOpenStruct.Data{4}));
+            if mode(1)
+                block(1:nChannels) = 1;
+            else
+                block = str2double(fOpenStruct.Data{5});
+                block(nChannels+1:end) =[];
+                if isnan(block(end))
+                    block(end)=Inf;
+                end
+            end
+            region = [];
+        else
+            region = {};
+            if length(fOpenStruct.Data) > 3
+                cw = fOpenStruct.Data{4};
+            else
+                cw = [];
+            end
+            mode = flipud(cell2mat(fOpenStruct.Data{3}));
+            if mode(1)
+                region{1} = [1 0.5];
+                region{2} = [1 1];
+                % JS Edit 2022/07/27 custom horizontal string option
+                if ~isnan(cw)
+                    region{1} = [1024 cw(1)];
+                    region{2} = [1024 cw(1)+cw(2)];
+                end
+            elseif mode(2)    
+                region{1} = [0.5 1];
+                region{2} = [1 1];
+                % JS Edit 2022/08/04 custom vertical string option
+                if ~isnan(cw)
+                    region{1} = [cw(1) 1024];
+                    region{2} = [cw(1)+cw(2) 1024];
+                end
+            elseif mode(3)
+                region{1} = [0.5 0.5];
+                region{2} = [0.5 1];
+                region{3} = [1 0.5];
+                region{4} = [1 1];
+            elseif mode(4)
+                region{1} = [1 0.25];
+                region{2} = [1 0.5];
+                region{3} = [1 0.75];
+                region{4} = [1 1];
+            elseif mode(5)
+                region{1} = [1 0.25];
+                region{2} = [1 0.5];
+                region{3} = [1 0.75];
+                region{4} = [1 1];
+            end
+            block = 1;
+        end
+        % FileName = fOpenStruct.Data{1};
+        PathName = strcat(fOpenStruct.Data{2},'/');
+        if PathName~=0
+            PixSize = [];
+        %     if strcmpi(FileName(end-3:end),'.stk')
+        %         filetype = 'MetaMorph';
+        %     elseif strcmpi(FileName(end-2:end),'.nd')
+        %         filetype = 'ND';
+        %     elseif strcmpi(FileName(end-3:end),'.nd2')
+        %         filetype = 'ND2';
+        %     elseif strcmpi(FileName(end-3:end),'.zvi')
+        %         filetype = 'ZVI';
+        %     elseif strcmpi(FileName(end-2:end),'.dv')
+        %         filetype = 'DV';
+        %     else
+                filetype = 'TIFF';
+                % JS Edit 2022/10/05 to do stacking
+                FileName = load_smooth_tif(fullfile(PathName));
+        %     end
+        end
+        options.Block = block;
+        options.Region = region;
+        options.SumFrames = fOpenStruct.PostSumFrames;
+        try
+            if strcmp(filetype,'ND')||strcmp(filetype,'ND2')||strcmp(filetype,'ZVI')||strcmp(filetype,'DV')
+                [Stack,TimeInfo,PixSize]=fReadND2([PathName FileName],options);
+            else
+                [Stack,TimeInfo,PixSize]=fStackRead([PathName FileName],options);
+            end
+        catch ME
+            fMsgDlg(ME.message,'error');
+            Stack = {};
+            TimeInfo = {};
+        end
+        if ~isempty(Stack)
+            nChannels = length(TimeInfo);
+            nFrames = zeros(1,nChannels);
+            for n = 1:nChannels
+                nFrames(n) = size(Stack{n},3);
+            end
+            Config.Directory{1}=PathName;
+            Config.StackName{1}=FileName;
+            Config.StackReadOptions = options;
+            for n = 1:nChannels
+                nFrames(n) = size(Stack{n},3);
+                if nFrames == 1
+                    Config.Time(n) = 0;
+                    if nFrames(n)==1
+                        TimeInfo{n} = 0;
+                    end
+                elseif isempty(TimeInfo{n}) || length(unique(TimeInfo{n}))<length(TimeInfo{n}) 
+                    Config.Time(n) = str2double(fInputDlg('No creation time  - Enter plane time difference in ms:','100'));  
+                    if ~isnan(Config.Time(n))
+                        TimeInfo{n}=(0:nFrames-1)*Config.Time(n);
+                    else
+                        Config.Time(n) = 0;
+                        TimeInfo{n}=(0:nFrames-1);
+                    end
+                else
+                    Config.Time(n) = -round(mean(TimeInfo{n}(2:end)-TimeInfo{n}(1:end-1)),2);
+                end
+            end
+        end
+    end
+    if ~isempty(Stack)
+        n = length(nFrames);
+        if n>1
+            if all(nFrames==nFrames(1))
+                hMainGui.Values.FrameIdx = ones(1,2); 
+                hMainGui.Values.MaxIdx = [n nFrames(1)];
+            else
+                hMainGui.Values.FrameIdx = ones(1,n+1); 
+                hMainGui.Values.MaxIdx = [n nFrames];
+            end
+        end
+        if isempty(PixSize)
+            PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','160'));    
+        else
+            PixSize = str2double(fInputDlg('Enter Pixel Size in nm:',num2str(PixSize,4)));    
+        end
+        Config.PixSize=PixSize;
+        Config.StackType=filetype;
+        hMainGui.Values.PixSize=Config.PixSize;
+        hMainGui.Values.PostSpecial = fOpenStruct.Optional;
+        set(hMainGui.Menu.mApplyCorrections,'Checked','off');
+        set(hMainGui.Menu.mShowCorrections,'Checked','off');
+        set(hMainGui.Menu.mCorrectStack,'Checked','off');
+        fMainGui('InitGui',hMainGui);
+    end
+end
+if ~isempty(Stack)||~isempty(Molecule)||~isempty(Filament)
+    set(hMainGui.MidPanel.pView,'Visible','on');
+    set(hMainGui.MidPanel.tNoData,'Visible','off');        
+    set(hMainGui.MidPanel.tNoData,'String','No Stack or Tracks present','Visible','off');    
+else
+    set(hMainGui.MidPanel.pView,'Visible','off');
+    set(hMainGui.MidPanel.tNoData,'Visible','on');        
+    set(hMainGui.MidPanel.tNoData,'String','No Stack or Tracks present','Visible','on');    
+end
+set(hMainGui.fig,'Pointer','arrow');
+
 function SaveStack
 global Stack;
 global TimeInfo; %#ok<NUSED>

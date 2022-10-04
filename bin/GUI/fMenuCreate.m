@@ -16,6 +16,9 @@ hMenu.mOpenFolderStack = uimenu('Parent',hMenu.mData,'Callback','fMenuData(''Ope
                       
 hMenu.mOpenStackSpecial = uimenu('Parent',hMenu.mData,'Callback','fMenuData(''OpenStackSpecial'',getappdata(0,''hMainGui''));',...
                           'Label','Open Stack Special','Tag','mOpenStackSpecial'); 
+
+hMenu.mOpenFolderStackSpecial = uimenu('Parent',hMenu.mData,'Callback','fMenuData(''OpenFolderStackSpecial'',getappdata(0,''hMainGui''));',...
+                          'Label','Open Folder as Special Stack','Tag','mOpenFolderStackSpecial'); 
                       
 hMenu.mLoadStack = uimenu('Parent',hMenu.mData,'Callback','fMenuData(''LoadStack'');','Enable','on',...
                           'Label','Load Stack (MAT-File)','Tag','mLoadStack');
