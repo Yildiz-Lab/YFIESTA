@@ -139,7 +139,7 @@ hPathsStatsGui.bFiona = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','norm
 
 %JS Edit 2022/09/28 for ability to plot neighbors in other channel
 hPathsStatsGui.cNeighbor = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized','Position',[0.52 0.025 0.225 0.23],'Enable','on',...
-                                        'String','Show Neighbors','Style','checkbox','Tag','neighbors','HorizontalAlignment','left','BackgroundColor',c);  
+                                        'String','Show Neighbors','Style','checkbox','Tag','neighbors','HorizontalAlignment','left','BackgroundColor',c,'Value',1);  
 % End of JS Edit 2022/05/29
                         
 hPathsStatsGui.rLinear = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized','Callback','fPathStatsGui(''Update'',getappdata(0,''hPathsStatsGui''));',...
@@ -533,7 +533,7 @@ if gcbo==hPathsStatsGui.lAll||gcbo==hPathsStatsGui.bReset||gcbo==hPathsStatsGui.
     Draw(hPathsStatsGui);
 % JS Edit 2022/06/03 for ranking steppers
 elseif gcbo == hPathsStatsGui.bStepSort
-    m = str2double(fInputDlg('Expected average stepping rate (nm/frame):', '2.5'));
+    m = str2double(fInputDlg('Expected average stepping rate (nm/frame):', '2.0'));
     neworder = fStepSort(PathStats, m);
     % update list
     tempPathStats = PathStats;
@@ -713,7 +713,7 @@ frames = PathStats(n).Results(:,1);
 frame1 = frames(1); framef = frames(end);
 xynew = nan(framef-frame1+1,2);
 for i = 1:size(xy,1)
-    xynew(frames(i),:) = xy(i,:);
+    xynew(frames(i)-frame1+1,:) = xy(i,:);
 end
 writematrix(xynew,strcat(Config.Directory{1},PathStats(n).Name(10:end),'_fiona.txt'), 'Delimiter', 'tab'); 
 % and the yx file
