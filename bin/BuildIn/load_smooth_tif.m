@@ -50,24 +50,40 @@ else
         k = k(1);
     end
     
+    % JS Edit 2022/10/05 for loading in folder and stacking
     if length(filename) == slash(end) % this is a folder, not a file
+        top_folder=filename;
         % Will go through all files in immediate subfolder for tifs
+        % filename is actually a folder name if we enter this list
         dc = dir(fullfile(top_folder, '*.tif'));
+        dcf = dir(fullfile(top_folder, '*.tiff'));
+        dc(end+1:end+length(dcf)) = dcf;
         contents = dir(top_folder);
         if isempty(dc)
-            fprintf("There are no .tif files in this directory. Trying subfolders... \n")
+            fprintf("There are no .tif/.tiff files in this directory. Trying subfolders... \n")
+            filenames = cell(1,length(contents)-2);
             for i = 3:length(contents)
-
+            
+            %dc = dir(fullfile(top_folder, contents(i).name), '*.tif');
             dc = dir(fullfile(strcat(top_folder, '/', contents(i).name), '*.tif'));
+            if isempty(dc)
+                dc = dir(fullfile(strcat(top_folder, '/', contents(i).name), '*.tiff'));
+            end
 
             fname = dc.name;
             fpath = dc.folder;
-            fname_w_path = strcat(fpath, '/', fname);
+            filenames{i-2} = strcat(fpath, '/', fname)
+            end
+        else
+            filenames = cell(1,length(dc));
+            for i = 1:length(dc)
+                filenames{i} = fullfile(top_folder,dc(i).name);
             end
         end
-        savename = fullfile(filename(1:slash(end)),filename(slash(end-1)+1:slash(end)-1),'.f.tif');
-    else
+        savename = fullfile(top_folder(1:slash(end)),strcat(top_folder(slash(end-1)+1:slash(end)-1),'.f.tif'));
+    else % It isn't a folder, so just load normally
         savename = strcat(filename(1:k-1), '.f.tif');
+        filenames{1} = filename;
     end
     [~,f,type] = fileparts(savename);
     FileName = strcat(f,type);
@@ -81,22 +97,35 @@ else
     %% Load in tiff into stack
     % source for loading and saving tiffs
     %  https://www.mathworks.com/matlabcentral/answers/105739-how-to-show-tiff-stacks
-
-    tiff_infos = imfinfo(filename); % return tiff structure, one element per image
-    tiff_stack = imread(filename, 1); % read in first image
+    
+    tiff_stack = imread(filenames{1}, 1); % read in first image
 
     if smoothing_sigma > 0 % do gaussian filter
     tiff_stack = imgaussfilt(tiff_stack, smoothing_sigma);
     end
-
-    %% concatenate each successive tiff to tiff_stack
-    for ii = 2 : size(tiff_infos, 1)
-        temp_tiff = imread(filename, ii);
-        if smoothing_sigma > 0 %do gaussian filter
-        temp_tiff = imgaussfilt(temp_tiff, smoothing_sigma);% do gauss filter
+    
+    for fi=1:length(filenames)
+        filename = filenames{fi};
+        tiff_infos = imfinfo(filename); % return tiff structure, one element per image
+        
+        if fi > 1 % if not initialized, make sure to include
+            temp_tiff = imread(filename, 1);
+            if smoothing_sigma > 0 %do gaussian filter
+            temp_tiff = imgaussfilt(temp_tiff, smoothing_sigma);% do gauss filter
+            end
+            tiff_stack = cat(3 , tiff_stack, temp_tiff);
         end
-        tiff_stack = cat(3 , tiff_stack, temp_tiff);
-    end
+
+        %% concatenate each successive tiff to tiff_stack
+        for ii = 2 : size(tiff_infos, 1)
+            temp_tiff = imread(filename, ii);
+            if smoothing_sigma > 0 %do gaussian filter
+            temp_tiff = imgaussfilt(temp_tiff, smoothing_sigma);% do gauss filter
+            end
+            tiff_stack = cat(3 , tiff_stack, temp_tiff);
+        end
+    
+    end %of filenames loop
 
     %% Save tiff
     %write a Tiff file, appending each image as a new page

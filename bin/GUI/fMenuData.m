@@ -143,27 +143,27 @@ set(hMainGui.MidPanel.pView,'Visible','off');
 PathName = uigetdir('Image Folder or Superfolder');
 if PathName~=0
     PixSize = [];
-    if strcmpi(FileName(end-3:end),'.stk')
-        filetype = 'MetaMorph';
-    elseif strcmpi(FileName(end-2:end),'.nd')
-        filetype = 'ND';
-    elseif strcmpi(FileName(end-3:end),'.nd2')
-        filetype = 'ND2';
-    elseif strcmpi(FileName(end-3:end),'.zvi')
-        filetype = 'ZVI';
-    elseif strcmpi(FileName(end-2:end),'.dv')
-        filetype = 'DV';
-    else
+%     if strcmpi(FileName(end-3:end),'.stk')
+%         filetype = 'MetaMorph';
+%     elseif strcmpi(FileName(end-2:end),'.nd')
+%         filetype = 'ND';
+%     elseif strcmpi(FileName(end-3:end),'.nd2')
+%         filetype = 'ND2';
+%     elseif strcmpi(FileName(end-3:end),'.zvi')
+%         filetype = 'ZVI';
+%     elseif strcmpi(FileName(end-2:end),'.dv')
+%         filetype = 'DV';
+%     else
         filetype = 'TIFF';
-        % JS Edit 2022/05/26 to do loading in gui
+        % JS Edit 2022/10/05 to do stacking
         FileName = load_smooth_tif(fullfile(PathName,'/'));
-    end
+%     end
     set(hMainGui.fig,'Pointer','watch');   
     CloseStack(hMainGui);
     hMainGui=getappdata(0,'hMainGui');
     failed=0;
     FiestaDir.Stack=PathName;
-    f=[PathName FileName];
+    f=fullfile(PathName, FileName);
     try
         if strcmp(filetype,'ND')||strcmp(filetype,'ND2')||strcmp(filetype,'ZVI')||strcmp(filetype,'DV')
             [Stack,TimeInfo,PixSize]=fReadND2(f);
