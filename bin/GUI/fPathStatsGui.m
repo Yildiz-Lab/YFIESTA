@@ -721,7 +721,7 @@ writematrix(xynew(:,[2,1]),strcat(Config.Directory{1},PathStats(n).Name(10:end),
 
 plotNeighbors = get(hPathsStatsGui.cNeighbor,'Value');
 if plotNeighbors == 1
-    neighbors = findNeighbors(PathStats.PathData(:,1:2));
+    neighbors = findNeighbors(PathStats(n).PathData(:,1:2));
     neighbor_txy = cell(length(neighbors),1);
     for m = 1:length(neighbors)
         Res = Molecule(neighbors(m)).Results;
