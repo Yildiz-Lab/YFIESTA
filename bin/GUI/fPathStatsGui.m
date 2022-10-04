@@ -378,7 +378,7 @@ for n=1:length(PathStats)
     end
 end
 close(hPathsStatsGui.fig);
-fShow('Tracks');
+fShow('Tracks'); %JS Edit to immediately color recolored molecules
     
 function Cancel(hPathsStatsGui)
 close(hPathsStatsGui.fig);
@@ -674,6 +674,31 @@ n = get(hPathsStatsGui.lAll,'Value');
 PathStats=getappdata(hPathsStatsGui.fig,'PathStats');
 % That is stored in PathStats(n).PathData
 xy = PathStats(n).PathData(:,4:5);
+
+% JS Edit 2022/10/05
+% Color your molecule ... in a very roundabout way to refind it
+s = get(hPathsStatsGui.lAll,'String');
+molidx = [];
+for j = 1:length(Molecule)
+    if strcmp(Molecule(j).Name, s{n})
+        molidx = [molidx, j];
+    end
+end
+% if there is more than one molecule labeled the same, then get the one
+% that is closest
+if length(molidx) > 1
+    meandist = 1e10; minj = 0;
+    for j = 1:length(molidx)
+        mm = molidx(j);
+        if size(Molecule(mm).Results,1) == size(PathStats(n).PathData,1)
+            dist = mean( sqrt( (Molecule(mm).Results(:,3) - PathStats(n).PathData(:,1)).^2 + (Molecule(mm).Results(:,3) - PathStats(n).PathData(:,2)).^2) );
+            if dist < meandist
+                meandist = dist; minj = molidx(j);
+            end
+        end
+    end
+end
+Molecule(minj).Color = [0 1 1];
 
 % to save fiona like traces for fiona analysis
 % making a separate file between pauses (option)
