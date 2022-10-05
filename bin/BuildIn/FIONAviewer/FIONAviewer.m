@@ -225,9 +225,9 @@ function YScaleMenu_Callback(hObject, eventdata, handles) %#ok
 contents = get(hObject,'String');
 currSelection = contents{get(hObject,'Value')};
 
-switch currSelection;
+switch currSelection
     case 'nm and rotated'
-        set(handles.GridDiv, 'String', '8 nm');
+        set(handles.GridDiv, 'String', '16 nm');
     case 'Force (pN)'
         set(handles.GridDiv, 'String', '0.5 pN');
     otherwise
@@ -316,6 +316,10 @@ ExportFig = figure('visible','off');
 newax = copyobj(handles.axes1, ExportFig);
 set(newax, 'units', 'normalized', 'position', [0.1 0.1 0.8 0.8]);
 set(ExportFig, 'visible', 'on')
+% JS Edit 2022/10/04 to allow for automatic saving of figs (less hastle)
+[path,name,~] = fileparts(get(handles.StepsFilename,'String'));
+savefig(ExportFig, fullfile(path,strcat(name,'.fig')))
+close(ExportFig)
 
 
 
@@ -560,6 +564,10 @@ if newIndex > 0
 
     keepLimits = 0; % reset Y-limits
     handles = PlotData(hObject, handles, keepLimits); % Plot the data
+    
+    % JS Edit to set for next trace, which is usually a _xy file so save
+    % slightly differently
+    set(handles.StepsFilename, 'String', fullfile(path, strcat(newFilename(1:end-10),'_xy.mat')));
 else
     disp('You''ve reached the beginning of the directory');
 end
@@ -595,6 +603,9 @@ if newIndex <= length(fileNames)
 
     keepLimits = 0; % reset Y-limits
     handles = PlotData(hObject, handles, keepLimits); % Plot the data
+    % JS Edit to set for next trace, which is usually a _yx file so save
+    % slightly differently
+    set(handles.StepsFilename, 'String', fullfile(path, strcat(newFilename(1:end-10),'.mat')));
 else
     disp('You''ve reached the end of the directory');
 end
@@ -826,7 +837,7 @@ guidata(hObject,handles)
 function ChangeStepFilename_Callback(~, ~, handles)
 
 % extract the current directory from filename:
-currFullFileName = get(handles.StepsFilename, 'String')
+currFullFileName = get(handles.StepsFilename, 'String');
 slashPositions = strfind(currFullFileName, '\');
 lastSlashPosition = slashPositions(end);
 currDir = currFullFileName(1:lastSlashPosition);
