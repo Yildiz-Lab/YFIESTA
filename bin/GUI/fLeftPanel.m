@@ -25,6 +25,8 @@ switch func
         eScaleMax(varargin{1});
     case 'eScale'
         eScale(varargin{1});
+    case 'FindRegion' % JS Edit 2022/10/20
+        FindRegion(varargin{1});
     case 'LoadRegion'
         LoadRegion(varargin{1});
     case 'SaveRegion'
@@ -338,4 +340,34 @@ if FileName~=0
 end
 fShared('ReturnFocus');
 
-   
+% JS Edit 2022/10/20 for finding MTs from z-projection
+function FindRegion(hMainGui)
+global Stack
+
+% If you actually want to switch to z-projection view, just run
+% fMenuView option View with idx = -1 for max projection.
+%fMenuView('View',getappdata(0,'hMainGui'),-1)
+
+% taken from fShow function ShowImage
+stidx=hMainGui.Values.FrameIdx(1);
+Image = max(Stack{stidx}(:,:,:),[],3);
+RegionLines = ASSAMM(Image);
+
+if ~isempty(RegionLines.bx)
+    for rl = 1:length(RegionLines.bx)
+        % Pass in new scan parameters
+        hMainGui.Scan(1).X = RegionLines.bx{rl};
+        hMainGui.Scan(1).Y = RegionLines.by{rl};
+        hMainGui.Scan.X = RegionLines.bx{rl};
+        hMainGui.Scan.Y = RegionLines.by{rl};
+        % make way for new
+        fRightPanel('NewScan',hMainGui)
+        hMainGui = getappdata(0,'hMainGui'); % have to reload
+        fRightPanel('ExportScanRegion',hMainGui)
+        hMainGui = getappdata(0,'hMainGui'); % have to reload
+        % clear previous
+        hMainGui.Scan.X = []; hMainGui.Scan.Y = [];
+    end
+
+end
+
