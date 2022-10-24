@@ -851,15 +851,42 @@ if strcmp(Mode,'Molecule')==1
     value=round(get(hMainGui.RightPanel.pData.sMolList,'Value'));
 %JS Edit 2022/07/14 to make it able to select scans for kymographs
 elseif strcmp(Mode,'Region')==1 
-    i = str2double(fInputDlg('Region Number to Select:', '1'));
-    if ~isempty(hMainGui.Region(i).ScanData)
+    %i = str2double(fInputDlg('Region Number to Select:', '1')); %select by
+    %typing rather than number
+    
+    if ~isempty(hMainGui.Region(n).ScanData)
         % set these as a new scan
-        hMainGui.Scan.X = hMainGui.Region(i).ScanData.X;
-        hMainGui.Scan.Y = hMainGui.Region(i).ScanData.Y;
-        hMainGui.Scan.ScanSize = hMainGui.Region(i).ScanData.ScanSize;
+        hMainGui.Scan.X = hMainGui.Region(n).ScanData.X;
+        hMainGui.Scan.Y = hMainGui.Region(n).ScanData.Y;
+        hMainGui.Scan.ScanSize = hMainGui.Region(n).ScanData.ScanSize;
         fRightPanel('NewScan',hMainGui)
+        hMainGui = getappdata(0,'hMainGui');
+        
+        global Config
+        Object=Molecule;
+        KymoObject=KymoTrackMol;
+        % automatically select all molecules inside of it
+        % find boundary for our polygon
+        iX = hMainGui.Scan.InterpX*Config.PixSize; iY = hMainGui.Scan.InterpY*Config.PixSize;
+        iX = reshape(iX,numel(iX),1); iY = reshape(iY,numel(iY),1);
+        bd = boundary(iX,iY);
+
+        % check if in polygon for all molecules in other channel (rudimentary, but
+        % fair)
+        nbs = [];
+        for j = 1:length(Molecule)
+            if Molecule(j).Visible == 1 %only select if visible
+                inbd = inpolygon(Molecule(j).Results(:,3), Molecule(j).Results(:,4), iX(bd), iY(bd));
+                % make it so that >66% of the molecule has to be inside region
+                if sum(inbd > 0)/length(inbd) > 0.66
+                    nbs = [nbs, j]; % for use in selection later
+                    Object(j) = fShared('SelectOne',Object(j),KymoObject,j,1);
+                end
+            end
+        end
+        hMainGui.SelectLast=[];
+        hMainGui.SelectMode=[];
     end
-    return %end here because none of the rest of this is relevant for region mode
 else
     Object=Filament;
     KymoObject=KymoTrackFil;    
@@ -882,7 +909,7 @@ if strcmp(button,'extend')
     end
     hMainGui.SelectLast=[];
     hMainGui.SelectMode=[];
-else
+elseif ~strcmp(Mode,'Region') %JS Edit to ~strcmp so that molecule n isn't selected with region n
     Object(n)=fShared('SelectOne',Object(n),KymoObject,n,[]);
     if Object(n).Selected==1
         hMainGui.SelectLast=n;
@@ -895,7 +922,7 @@ end
 Selected = [Object.Selected];
 hPlot = [Object.PlotHandles];
 uistack(hPlot(Selected==1),'top');
-if strcmp(Mode,'Molecule')==1
+if strcmp(Mode,'Molecule')==1 || strcmp(Mode,'Region')==1
     Molecule=Object;
     KymoTrackMol=KymoObject;
     fRightPanel('UpdateList',hMainGui.RightPanel.pData.MolList,Molecule,hMainGui.RightPanel.pData.sMolList,hMainGui.Menu.ctListMol);
