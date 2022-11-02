@@ -290,7 +290,7 @@ for n = 1:length(handles.neighbors{1})
 %     scatter(nb(:,1), nb(:,2), 4, colorlist(n,:), 'tag', 'neighbors')
 %     scatter(nb(:,1), nb(:,3), 4, colorlist(n,:), 'tag', 'neighbors')
     plot(nb(:,1), nb(:,2), 'Color', colorlist(n,:), 'tag', 'neighbors')
-    plot(nb(:,1), nb(:,3), 'Color', colorlist(n,:), 'tag', 'neighbors')
+    plot(nb(:,1), nb(:,3), '--', 'Color', colorlist(n,:), 'tag', 'neighbors')
 end
 
 % Plot fitted line:

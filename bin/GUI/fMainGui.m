@@ -101,6 +101,9 @@ if strcmp(button,'Yes')
     if isfolder([DirCurrent 'fiestastatus'])
        rmdir([DirCurrent 'fiestastatus'],'s');
     end
+    if isfile([DirCurrent 'logfile.txt'])
+        delete([DirCurrent 'logfile.txt']);
+    end
     delete(findobj('Tag','hAboutGui'));
     delete(findobj('Tag','hAverageSpeedGui'));
     delete(findobj('Tag','hConfigGui'));
