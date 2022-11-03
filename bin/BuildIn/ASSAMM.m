@@ -20,11 +20,20 @@ function NewLines = ASSAMM(I)
 % Extras:
 %   number of hough peaks to use (straighter MTs means more peaks can be
 %   used)
-peaks = 15;
+peaks = 20;
 %   number of best MTs to return
-chk = 12;
+chk = 15;
 %   degree of connection to combine tracks
 degthresh = 5;
+%   neighbors to check
+neighbors_check = 1;
+%   pixel intersection to combine tracks that overlap
+overlapthresh = 7;
+%   for extrapolation post line finding "density" to be considered
+extrapthresh = 0.15;
+%   for cumulative threshold to call MT end (for just using density by
+%   extrapthresh, set cumulthresh to 1)
+cumulthresh = 0.85;
 
 I = imadjust(I);
 % figure
@@ -166,143 +175,131 @@ for tcl = 1:length(toplines) %top contender line
     % For calling a FIESTA Scan, give it the center points in an array
     bx = [AllLines(kbg,1), AllLines(ked,3)];
     by = [AllLines(kbg,2), AllLines(ked,4)];
-
+    
     % to break the for loop over connecting to this line
     extend_beginpoint = 1;
     extend_endpoint = 1;
     already_connected = [k];
-
+    
+%     %% check for spatial overlaps
+%     % make region to check for overlap
+%     pts = interp_region(AllLines(k,1),AllLines(k,3),AllLines(k,2),AllLines(k,4),size(I),0);
+%     for ll = 1:length(lines)
+%         if ~ismember(ll,already_connected)
+%             ptsprime = interp_region(AllLines(ll,1),AllLines(ll,3),AllLines(ll,2),AllLines(ll,4),size(I),0);
+%             % check that a certain number of these points overlap
+%             ptsintersect = intersect(pts,ptsprime,'rows');
+%             if length(ptsintersect) > overlapthresh
+%                 fprintf(strcat("Overlap detected for molecules ", num2str(k), " and ", num2str(ll), "\n"))
+%                 fprintf(strcat(num2str(length(intersect(pts,ptsprime,'rows')))), "\n")
+%                 % append the pts to the backbone in order depending on
+%                 % which is first x-wise
+%                 if bx(1) < AllLines(ll,1)
+%                 bx(2:4) = [ptsintersect(1,1), ptsintersect(end,1), AllLines(ll,3)];
+%                 by(2:4) = [ptsintersect(1,2), ptsintersect(end,2), AllLines(ll,4)];
+%                 else
+%                 % have to switch order here
+%                 bx(1:4) = [AllLines(ll,1), ptsintersect(1,1), ptsintersect(end,1), AllLines(k,3)];
+%                 by(1:4) = [AllLines(ll,2), ptsintersect(1,2), ptsintersect(end,2), AllLines(k,4)];
+%                 end
+%                 % Just to make sure everything is in the minimal line order
+%                 U = unique([bx', by'],'rows','stable');
+%                 [bx, by] = minimize_line(U(:,1)', U(:,2)');
+%                 already_connected = [already_connected, ll];
+%             end
+%         end
+%     end
+    
+    %% Now look to extend lines by connecting with others
     for ll = 1:length(lines)
         if extend_beginpoint
         % Look at first point of k compared to others end points
         M = sqrt((AllLines(kbg,1) - AllLines(:,3)).^2 + (AllLines(kbg,2) - AllLines(:,4)).^2);
         [~,idx] = sort(M);
-
+        
         % Verify that the line hasn't already been added
-        nn = idx(1);
-        for mm = 1:length(already_connected)
-            % Remove self minimum if it happens
-            if ismember(nn,already_connected)
-                nn = idx(mm+1);
-            end
-        end
-
-        % Check that the rho, theta values are relatively similar
-        if (abs(AllLines(kbg,5) - AllLines(nn,5)) < 5) && (abs(AllLines(kbg,6) - AllLines(nn,6)) < 5)
-            % make interpolation
-            xlin = linspace(AllLines(nn,3),AllLines(kbg,1),round(4*M(nn),0));
-            ylin = linspace(AllLines(nn,4),AllLines(kbg,2),round(4*M(nn),0));
-
-            % find the unique points
-            pts = [round(xlin,0)', round(ylin,0)'];
-            pts = unique(pts(:,1:2),'rows');
-            lp = length(pts);
-
-            %then make a region of certain width one just to get nearby weird
-            %rounding
-            width = 1;
-            for p = 1:lp
-                for x = -width:width
-                    for y = -width:width
-                        pts = [pts; pts(p,1) + x, pts(p,2) + y];
-                    end
+        for neighbors = 1:neighbors_check
+            nn = idx(neighbors);
+            for mm = 1:length(already_connected)
+                % Remove self minimum if it happens
+                if ismember(nn,already_connected)
+                    nn = idx(mm+neighbors);
                 end
             end
-            pts = unique(pts(:,1:2),'rows');
-            length(pts);
-            % remove any possible points outside of plot region
-            pts(pts(:,1) < 1) = []; pts(pts(:,2) < 1) = []; 
-            pts(pts(:,1) > size(I,1)) = []; pts(pts(:,2) > size(I,2)) = [];
 
+            % Check that the rho, theta values are relatively similar
+            if (abs(AllLines(kbg,5) - AllLines(nn,5)) < degthresh) && (abs(AllLines(kbg,6) - AllLines(nn,6)) < degthresh)
+                % make region to look for skel
+                
+                pts = interp_region(AllLines(nn,3),AllLines(kbg,1),AllLines(nn,4),AllLines(kbg,2),size(I));
 
-            % check that a certain number of these points are in the skeleton
-            count = 0;
-            for p = 1:length(pts)
-                count = count + double(outBW(pts(p,2),pts(p,1))); % You have to invert it for the image
+                % check that a certain number of these points are in the skeleton
+                count = 0;
+                for p = 1:length(pts)
+                    count = count + double(outBW(pts(p,2),pts(p,1))); % You have to invert it for the image
+                end
+                % If there is a good density of counts. In this case, 1/9 since 1/3
+                % plus three parallel lanes (width = 1)
+                if count > M(nn)/4
+                    %fprintf(strcat("MATCHED with k=",num2str(nn),"! \n"))
+                    bx = [AllLines(nn,1), AllLines(nn,3), bx]; by = [AllLines(nn,2), AllLines(nn,4), by];
+                    kbg = nn;
+                    already_connected = [already_connected, kbg];
+                else
+                    extend_beginpoint = 0;
+                end
+
             end
-            % If there is a good density of counts. In this case, 1/9 since 1/3
-            % plus three parallel lanes (width = 1)
-            if count > M(nn)/3
-                %fprintf(strcat("MATCHED with k=",num2str(nn),"! \n"))
-                bx = [AllLines(nn,1), AllLines(nn,3), bx]; by = [AllLines(nn,2), AllLines(nn,4), by];
-                kbg = nn;
-                already_connected = [already_connected, kbg];
-            else
-                extend_beginpoint = 0;
-            end
-
-        end
+        end 
         end % of first point extension
-
+        
+        
         if extend_endpoint
         % Now same thing, look at last point of k compared to others end points
         M = sqrt((AllLines(ked,3) - AllLines(:,1)).^2 + (AllLines(ked,4) - AllLines(:,2)).^2);
         [~,idx] = sort(M);
 
         % Verify that the line hasn't already been added
-        nn = idx(1);
-        for mm = 1:length(already_connected)
-            % Remove self minimum if it happens
-            if ismember(nn,already_connected)
-                nn = idx(mm+1);
-            end
-        end
-
-        % Check that the rho, theta values are relatively similar
-        if (abs(AllLines(ked,5) - AllLines(nn,5)) < degthresh) && (abs(AllLines(ked,6) - AllLines(nn,6)) < degthresh)
-            % make interpolation
-            xlin = linspace(AllLines(ked,3),AllLines(nn,1),round(4*M(nn),0));
-            ylin = linspace(AllLines(ked,4),AllLines(nn,2),round(4*M(nn),0));
-
-            % find the unique points
-            pts = [round(xlin,0)', round(ylin,0)'];
-            pts = unique(pts(:,1:2),'rows');
-            lp = length(pts);
-
-            %then make a region of certain width one just to get nearby weird
-            %rounding
-            width = 1;
-            for p = 1:lp
-                for x = -width:width
-                    for y = -width:width
-                        pts = [pts; pts(p,1) + x, pts(p,2) + y];
-                    end
+        for neighbors = 1:neighbors_check
+            nn = idx(neighbors);
+            for mm = 1:length(already_connected)
+                % Remove self minimum if it happens
+                if ismember(nn,already_connected)
+                    nn = idx(mm+neighbors);
                 end
             end
-            pts = unique(pts(:,1:2),'rows');
-            length(pts);
-            % remove any possible points outside of plot region
-            pts(pts(:,1) < 1) = []; pts(pts(:,2) < 1) = []; 
-            pts(pts(:,1) > size(I,1)) = []; pts(pts(:,2) > size(I,2)) = [];
 
+            % Check that the rho, theta values are relatively similar
+            if (abs(AllLines(ked,5) - AllLines(nn,5)) < degthresh) && (abs(AllLines(ked,6) - AllLines(nn,6)) < degthresh)
+                % makre region to look for skel
+                pts = interp_region(AllLines(ked,3),AllLines(nn,1),AllLines(ked,4),AllLines(nn,2),size(I));
 
-            % check that a certain number of these points are in the skeleton
-            count = 0;
-            for p = 1:length(pts)
-                count = count + double(outBW(pts(p,2),pts(p,1))); % You have to invert it for the image
+                % check that a certain number of these points are in the skeleton
+                count = 0;
+                for p = 1:length(pts)
+                    count = count + double(outBW(pts(p,2),pts(p,1))); % You have to invert it for the image
+                end
+                % If there is a good density of counts. In this case, 1/9 since 1/3
+                % / three parallel lanes (width = 1)
+                if count > M(nn)/4
+                    %fprintf(strcat("MATCHED with k=",num2str(nn),"! \n"))
+                    bx = [bx, AllLines(nn,1), AllLines(nn,3)]; by = [by, AllLines(nn,2), AllLines(nn,4)];
+                    ked = nn;
+                    already_connected = [already_connected, ked];
+                else
+                    extend_endpoint = 0;
+                end
             end
-            % If there is a good density of counts. In this case, 1/9 since 1/3
-            % plus three parallel lanes (width = 1)
-            if count > M(nn)/3
-                %fprintf(strcat("MATCHED with k=",num2str(nn),"! \n"))
-                bx = [bx, AllLines(nn,1), AllLines(nn,3)]; by = [by, AllLines(nn,2), AllLines(nn,4)];
-                ked = nn;
-                already_connected = [already_connected, ked];
-            else
-                extend_endpoint = 0;
-            end
-        end
 
         end
+        end % of first point extension
 
         if ~extend_beginpoint && ~extend_endpoint
             break
         end
 
     end
-    
-    %NewLines.bx{tcl} = bx;
-    %NewLines.by{tcl} = by;
+
     % Append this to the NewLines array
     NewLinesbx(tcl,1:length(bx)) = bx;
     NewLinesby(tcl,1:length(by)) = by;
@@ -316,7 +313,62 @@ idx = union(xidx, yidx); % it has to not be in both to be unique
 NewLinesbx = NewLinesbx(idx,:);
 NewLinesby = NewLinesby(idx,:);
 
-% Finally, package into a struct to actually be iterable without a bunch of
+% %% Idea: extend ends of lines along the slope. If there is a reasonable density of skel
+% % within, then add it
+% NewLinesbx(:,1:10)
+% for nl = 1:size(NewLinesbx,1)
+%     % FROM RIGHT EDGE
+%     bx = NewLinesbx(nl,:); by = NewLinesby(nl,:);
+%     bx = bx(bx > 0); by = by(by > 0); % only nonzero
+%     bxend = bx(end-1:end); byend = by(end-1:end); % only the last two points to make line
+%     pts = extrap_region(bxend(1),bxend(2),byend(1),byend(2),size(I));
+%     % check that a certain number of these points are in the skeleton
+%     ct = 0;
+%     counts = zeros(1,length(pts));
+%     [m,~] = find(isnan(pts)); pts(m,:) = [];
+%     for p = 1:length(pts)
+%         ct = ct + double(outBW(pts(p,2),pts(p,1)));
+%         counts(p) = ct;
+%     end
+%     
+%     nl
+%     ct/length(counts)
+%     % do some integration method to find best cut off
+%     % if want to just use extrapthresh, then set 
+%     if ct/length(counts) > extrapthresh
+%         M = abs(counts - cumulthresh*max(counts));
+%         [~,idx] = sort(M);
+%         NewLinesbx(nl,length(bx)) = pts(idx(1),1);
+%         NewLinesby(nl,length(by)) = pts(idx(1),2);
+%     end
+%     
+%     % FROM LEFT EDGE
+%     bx = bx(bx > 0); by = by(by > 0); % only nonzero
+%     bxbegin = bx(1:2); bybegin = by(1:2); % only the last two points to make line
+%     pts = extrap_region(bxbegin(2),bxbegin(1),bybegin(2),bybegin(1),size(I));
+%     % check that a certain number of these points are in the skeleton
+%     ct = 0;
+%     counts = zeros(1,length(pts));
+%     [m,~] = find(isnan(pts)); pts(m,:) = [];
+%     for p = 1:length(pts)
+%         ct = ct + double(outBW(pts(p,2),pts(p,1)));
+%         counts(p) = ct;
+%     end
+%     
+%     ct/length(counts)
+%     % do some integration method to find best cut off
+%     % if want to just use extrapthresh, then set 
+%     if ct/length(counts) > extrapthresh
+%         M = abs(counts - cumulthresh*max(counts));
+%         [~,idx] = sort(M);
+%         NewLinesbx(nl,1) = pts(idx(1),1);
+%         NewLinesby(nl,1) = pts(idx(1),2);
+%     end
+%     
+% end
+% NewLinesbx(:,1:10)
+
+%% Finally, package into a struct to actually be iterable without a bunch of
 % extra nans
 NewLines = struct('bx',{[]},'by',{[]});
 avg_MT_length = 0;
@@ -337,4 +389,71 @@ for nl = 1:length(NewLines.bx)
 end
 title("Final Regions after connecting likely similar MTs")
 
+
+function pts = interp_region(x1,x2,y1,y2,upperlimits,width)
+    
+if nargin < 6
+    width = 1;
 end
+
+% make interpolation
+d = sqrt((x1-x2)^2 + (y1-y2)^2);
+xlin = linspace(x1,x2,round(4*d,0));
+ylin = linspace(y1,y2,round(4*d,0));
+
+% find the unique points
+pts = [round(xlin,0)', round(ylin,0)'];
+pts = unique(pts(:,1:2),'rows');
+lp = length(pts);
+
+%then make a region of certain width one just to get nearby weird
+%rounding
+for p = 1:lp
+    for x = -width:width
+        for y = -width:width
+            pts = [pts; pts(p,1) + x, pts(p,2) + y];
+        end
+    end
+end
+pts = unique(pts(:,1:2),'rows');
+
+% remove any possible points outside of plot region
+[m1,~] = find(pts(:,1) < 1); pts(m1,:) = [];
+[m1,~] = find(pts(:,2) < 1); pts(m1,:) = [];
+[m1,~] = find(pts(:,1) > upperlimits(1)); pts(m1,:) = [];
+[m1,~] = find(pts(:,2) > upperlimits(2)); pts(m1,:) = [];
+
+
+function pts = extrap_region(x1,x2,y1,y2,upperlimits,length)
+
+d = pdist2(x2-x1,y2-y1);
+if nargin < 6
+    length = 1.5*d;
+end
+t = 1:250;
+tend = t(end) + round(t(end)*length/d);
+%textrap = 251:tend;
+
+cx = polyfit([t(1),t(end)],[x1,x2],1);   % linear parametric fit
+cy = polyfit([t(1),t(end)],[y1,y2],1);   % linear parametric fit
+Xextrap = polyval(cx,tend);
+Yextrap = polyval(cy,tend);
+
+pts = interp_region(x2,Xextrap,y2,Yextrap,upperlimits,1);
+
+
+function [linex, liney] = minimize_line(x,y)
+
+v = perms(1:length(x));
+linex = zeros(1,length(x)); liney = zeros(1,length(x));
+minD = 50000;
+for j = 1:length(v)
+    d = sqrt(sum((x(v(j,2:end))-x(v(j,1:end-1))).^2 + (y(v(j,2:end))-y(v(j,1:end-1))).^2));
+    if d < minD
+        linex = x(v(j,:));
+        liney = y(v(j,:));
+        minD = d;
+    end 
+end
+
+
