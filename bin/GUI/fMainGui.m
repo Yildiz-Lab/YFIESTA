@@ -38,7 +38,7 @@ hMainGui.fig= figure('Units','normalized','DockControls','off','IntegerHandle','
                      'Visible','off','NextPlot','add','InvertHardcopy','off','Interruptible','off','BusyAction','cancel');
 
 if ispc
-    set(hMainGui.fig,'Color',[236 233 216]/255);
+    set(hMainGui.fig,'Color',[50 50 50]/255);
 end
 
 %set(hMainGui.fig,'Units','pixel','Position',[50 50 1280 1024]);
@@ -292,6 +292,7 @@ hMainGui.ZoomView.currentXY=hMainGui.ZoomView.globalXY;
 hMainGui.ZoomView.level=0;
 %show Image
 set(hMainGui.MidPanel.pView,'Visible','on');
+set(hMainGui.MidPanel.pView,'BackgroundColor',get(hMainGui.fig,'Color'));
 set(hMainGui.MidPanel.pNoData,'Visible','off');
 setappdata(0,'hMainGui',hMainGui);
 setappdata(hMainGui.fig,'MaxImage',MaxImage);

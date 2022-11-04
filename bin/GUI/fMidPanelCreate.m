@@ -1,12 +1,14 @@
 function hMidPanel=fMidPanelCreate(hMainGui)
 %create Scale Panel
 c = get(hMainGui.fig,'Color');
+ctext = 0.9*ones(1,3);
+
 hMidPanel.pNoData = uipanel('Parent',hMainGui.fig,'Units','normalized','Bordertype','none',...
                             'Position',[.1 .026 .68 .948],'Tag','pNoData','Visible','on','BackgroundColor',c);
                         
 hMidPanel.tNoData = uicontrol('Parent',hMidPanel.pNoData,'Units','normalized','Style','text',...
                               'Position',[0 .45 1 .04],'Tag','tNoData','FontSize',14,'FontWeight','bold',...
-                              'String','No Stack or Data present','BackgroundColor',c);                        
+                              'String','No Stack or Data present','BackgroundColor',c,'ForegroundColor',ctext);                        
                         
 hMidPanel.pView = uipanel('Parent',hMainGui.fig,'Units','normalized','Bordertype','none',...
                           'Position',[.1 .026 .68 .948],'Tag','pView','Visible','off','BackgroundColor','white');
@@ -15,13 +17,13 @@ hMidPanel.aView = axes('Parent',hMidPanel.pView,'Units','normalized','Visible','
                        'Position',[0 0 1 1],'Tag','aView','NextPlot','add','YDir','reverse','SortMethod','childorder');
                    
 hMidPanel.pKymoGraph = uipanel('Parent',hMainGui.fig,'Units','normalized','Bordertype','none',...
-                               'Position',[.1 .026 .68 .948],'Tag','pKymoGraph','Visible','off','BackgroundColor','white');
+                               'Position',[.1 .026 .68 .948],'Tag','pKymoGraph','Visible','off','BackgroundColor',c);
                                     
 hMidPanel.aKymoGraph = axes('Parent',hMidPanel.pKymoGraph,'Units','normalized','UIContextMenu',hMainGui.Menu.ctKymoGraph,...
                                      'Position',[0 0 1 1],'Tag','aKymoGraph','NextPlot','add','Visible','off');       
 
 hMidPanel.pFrame = uipanel('Parent',hMainGui.fig,'Units','normalized','Bordertype','beveledout',...
-                           'Position',[.1 .974 .68 .026],'Tag','pFrame','Visible','on','BackgroundColor',c);
+                           'Position',[.1 .974 .68 .026],'Tag','pFrame','Visible','on','BackgroundColor',c,'ForegroundColor',ctext);
                       
 hMidPanel.eFrame = uicontrol('Parent',hMidPanel.pFrame,'Style','edit','Units','normalized',...
                              'Position',[.93 .05 .06 .9],'Tag','eFrame','Fontsize',10,...
@@ -37,16 +39,16 @@ addlistener(hMidPanel.sFrame, 'Value', 'PostSet',@sFrameDrag);
 % jScrollBar.AdjustmentValueChangedCallback = @sJFrameDrag;
                        
 hMidPanel.pInfo = uipanel('Parent',hMainGui.fig,'Units','normalized','Bordertype','beveledout',...
-                          'Position',[.1 0 .68 .026],'Tag','pInfo','Visible','on','BackgroundColor',c); 
+                          'Position',[.1 0 .68 .026],'Tag','pInfo','Visible','on','BackgroundColor',c,'ForegroundColor',ctext); 
                       
 hMidPanel.tInfoTime = uicontrol('Parent',hMidPanel.pInfo,'Units','normalized','Style','text','Fontsize',12,...
-                                'Position',[0.01 0 0.18 0.95],'Tag','tInfoTime','String','','HorizontalAlignment','left','BackgroundColor',c);                       
+                                'Position',[0.01 0 0.18 0.95],'Tag','tInfoTime','String','','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);                       
 
 hMidPanel.tInfoImage = uicontrol('Parent',hMidPanel.pInfo,'Units','normalized','Style','text','Fontsize',12,...
-                                'Position',[0.2 0 0.35 0.95],'Tag','tInfoImage','String','','HorizontalAlignment','left','BackgroundColor',c);                       
+                                'Position',[0.2 0 0.35 0.95],'Tag','tInfoImage','String','','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);                       
                        
 hMidPanel.tInfoCoord = uicontrol('Parent',hMidPanel.pInfo,'Units','normalized','Style','text','Fontsize',12,...
-                                'Position',[0.55 0 0.4 0.95],'Tag','tInfoCoord','String','','HorizontalAlignment','left','BackgroundColor',c);    
+                                'Position',[0.55 0 0.4 0.95],'Tag','tInfoCoord','String','','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);    
 
 fMidPanel(''); %create dependency for compiling;
                                               
