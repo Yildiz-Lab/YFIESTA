@@ -530,6 +530,7 @@ for n = 1:size(Image,3)
 end
 set(hMainGui.RightPanel.pTools.pLineScan,'Visible','on');
 set(hMainGui.RightPanel.pTools.aLineScan,'Visible','on');
+set(hMainGui.RightPanel.pTools.aLineScan,'Color',get(hMainGui.fig,'Color'));
 delete(findobj(hMainGui.RightPanel.pTools.aLineScan,'Tag','plotLineScan'));
 if size(I,1)>1
     for n = 1:size(I,1)
@@ -538,11 +539,12 @@ if size(I,1)>1
         line(hMainGui.RightPanel.pTools.aLineScan,hMainGui.Scan.InterpD*hMainGui.Values.PixSize/1000,I(n,:),'Color',c,'LineStyle','-','UIContextMenu',hMainGui.Menu.ctScan,'Tag','plotLineScan');
     end
 else
-    line(hMainGui.RightPanel.pTools.aLineScan,hMainGui.Scan.InterpD*hMainGui.Values.PixSize/1000,I,'Color','black','LineStyle','-','UIContextMenu',hMainGui.Menu.ctScan,'Tag','plotLineScan');
+    line(hMainGui.RightPanel.pTools.aLineScan,hMainGui.Scan.InterpD*hMainGui.Values.PixSize/1000,I,'Color','white','LineStyle','-','UIContextMenu',hMainGui.Menu.ctScan,'Tag','plotLineScan');
 end
 xlim(hMainGui.RightPanel.pTools.aLineScan,[0 max(hMainGui.Scan.InterpD*hMainGui.Values.PixSize/1000)]);
-xlabel(hMainGui.RightPanel.pTools.aLineScan,['Distance [' char(956) 'm]']);
-ylabel(hMainGui.RightPanel.pTools.aLineScan,'Intensity [counts]');
+xlabel(hMainGui.RightPanel.pTools.aLineScan,['Distance [' char(956) 'm]'],'Color','white');
+ylabel(hMainGui.RightPanel.pTools.aLineScan,'Intensity [counts]','Color','white');
+set(hMainGui.RightPanel.pTools.aLineScan,'XColor','white'); set(hMainGui.RightPanel.pTools.aLineScan,'YColor','white'); 
 setappdata(0,'hMainGui',hMainGui);
 
 function NewKymoGraph(hMainGui)
@@ -841,7 +843,7 @@ if ~isempty(plotScan)
     cla(hMainGui.RightPanel.pTools.aLineScan,'reset');
     set(hMainGui.RightPanel.pTools.bLineScanExport,'Enable','off');
     set(hMainGui.RightPanel.pTools.bLineScanExportRegion,'Enable','off'); %JS Edit 2022/07/11
-    set(get(hMainGui.RightPanel.pTools.pKymoGraph,'Children'),'Enable','off');
+    set(get(hMainGui.RightPanel.pTools.pKymoGraph,'Children'),'Enable','inactive');
     fToolBar('NormImage',hMainGui);
 else
     setappdata(0,'hMainGui',hMainGui);    
@@ -1210,7 +1212,7 @@ for i=1:QueueLength
         case 1
             bgcolor=[0 0 0.8];
         case 0
-            fgcolor=[0 0 0];
+            fgcolor=[0.9 0.9 0.9];
     end            
     if strcmp(mode,'Local')
         set(hQueue.Pan(i),'Visible','on','UIContextMenu',hMainGui.Menu.ctListLoc);    

@@ -697,6 +697,8 @@ if length(molidx) > 1
             end
         end
     end
+else
+    minj = molidx;
 end
 Molecule(minj).Color = [0 1 1];
 
