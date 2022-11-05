@@ -856,7 +856,6 @@ if strcmp(Mode,'Molecule')==1
 elseif strcmp(Mode,'Region')==1 
     %i = str2double(fInputDlg('Region Number to Select:', '1')); %select by
     %typing rather than number
-    
     if ~isempty(hMainGui.Region(n).ScanData)
         % set these as a new scan
         hMainGui.Scan.X = hMainGui.Region(n).ScanData.X;
@@ -889,6 +888,8 @@ elseif strcmp(Mode,'Region')==1
         end
         hMainGui.SelectLast=[];
         hMainGui.SelectMode=[];
+    else % it isn't a scan, so don't do anything
+        return
     end
 else
     Object=Filament;

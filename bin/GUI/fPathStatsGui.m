@@ -697,7 +697,10 @@ if length(molidx) > 1
             end
         end
     end
+else
+    minj = molidx(1);
 end
+
 Molecule(minj).Color = [0 1 1];
 
 % to save fiona like traces for fiona analysis
@@ -741,9 +744,15 @@ xynew = nan(framef-frame1+1,2);
 for i = 1:size(xy,1)
     xynew(frames(i)-frame1+1,:) = xy(i,:);
 end
-writematrix(xynew,strcat(Config.Directory{1},PathStats(n).Name(10:end),'_fiona.txt'), 'Delimiter', 'tab'); 
+% Store in a separate folder for safekeeping
+FFolderName = fullfile(Config.Directory{1}, Config.StackName{1}(1:end-6));
+if ~isfolder(FFolderName)
+    mkdir(FFolderName);
+end
+fname = fullfile(FFolderName,PathStats(n).Name(10:end));
+writematrix(xynew,strcat(fname,'_fiona.txt'), 'Delimiter', 'tab'); 
 % and the yx file
-writematrix(xynew(:,[2,1]),strcat(Config.Directory{1},PathStats(n).Name(10:end),'_yx_fiona.txt'), 'Delimiter', 'tab'); 
+writematrix(xynew(:,[2,1]),strcat(fname,'_yx_fiona.txt'), 'Delimiter', 'tab'); 
 
 plotNeighbors = get(hPathsStatsGui.cNeighbor,'Value');
 if plotNeighbors == 1
@@ -762,9 +771,8 @@ if plotNeighbors == 1
 else
     neighbor_txy = {};
 end
-
 % at the end run FIONAviewer
-FIONAviewer(strcat(Config.Directory{1},PathStats(n).Name(10:end),'_fiona.txt'), neighbor_txy)
+FIONAviewer(fullfile(FFolderName,strcat(PathStats(n).Name(10:end),'_fiona.txt')), neighbor_txy)
 
 
 % JS Edit 2022/06/03 to compile plots with the click of a button
@@ -1260,7 +1268,7 @@ end
 % Copied from fRightPanel NewScan
 nX=MolXY(:,1);
 nY=MolXY(:,2);
-ScanSize=10;
+ScanSize=100;
 d=[0; cumsum(sqrt((nX(2:end)-nX(1:end-1)).^2 + (nY(2:end)-nY(1:end-1)).^2))];
 dt=max(d)/round(max(d));
 id=(0:round(max(d)))'*dt;
