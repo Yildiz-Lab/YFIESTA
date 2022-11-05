@@ -150,6 +150,7 @@ end
 
 function [Track,Obj]=ConnectTrack(Data,Track,Obj,k,Config)
 Obj(k:k+1,:)=abs(Obj(k:k+1,:));
+Obj(k:k+1,:)
 for i=1:size(Obj,2)
     current=find(Obj(k,:)>0,1);
     if isempty(current)
