@@ -1275,7 +1275,7 @@ end
 % Copied from fRightPanel NewScan
 nX=MolXY(:,1);
 nY=MolXY(:,2);
-ScanSize=10;
+ScanSize=100; % in nm, make it so that they share a point within a pixel
 d=[0; cumsum(sqrt((nX(2:end)-nX(1:end-1)).^2 + (nY(2:end)-nY(1:end-1)).^2))];
 dt=max(d)/round(max(d));
 id=(0:round(max(d)))'*dt;
