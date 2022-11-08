@@ -747,12 +747,17 @@ xynew = nan(framef-frame1+1,2);
 for i = 1:size(xy,1)
     xynew(frames(i)-frame1+1,:) = xy(i,:);
 end
-writematrix(xynew,strcat(Config.Directory{1},PathStats(n).Name(10:end),'_fiona.txt'), 'Delimiter', 'tab'); 
+% Store in a separate folder for safekeeping
+FFolderName = fullfile(Config.Directory{1}, Config.StackName{1}(1:end-6));
+if ~isfolder(FFolderName)
+    mkdir(FFolderName);
+end
+fname = fullfile(FFolderName,PathStats(n).Name(10:end));
+writematrix(xynew,strcat(fname,'_fiona.txt'), 'Delimiter', 'tab'); 
 % and the yx file
-writematrix(xynew(:,[2,1]),strcat(Config.Directory{1},PathStats(n).Name(10:end),'_yx_fiona.txt'), 'Delimiter', 'tab'); 
+writematrix(xynew(:,[2,1]),strcat(fname,'_yx_fiona.txt'), 'Delimiter', 'tab'); 
 
 plotNeighbors = get(hPathsStatsGui.cNeighbor,'Value');
-%definepathNeighbors; %Have neighbors define path
 if plotNeighbors == 1
     neighbors = findNeighbors(PathStats(n).PathData(:,1:2));
     neighbor_txy = cell(length(neighbors),1);
@@ -769,9 +774,8 @@ if plotNeighbors == 1
 else
     neighbor_txy = {};
 end
-
 % at the end run FIONAviewer
-FIONAviewer(strcat(Config.Directory{1},PathStats(n).Name(10:end),'_fiona.txt'), neighbor_txy)
+FIONAviewer(fullfile(FFolderName,strcat(PathStats(n).Name(10:end),'_fiona.txt')), neighbor_txy)
 
 
 % JS Edit 2022/06/03 to compile plots with the click of a button
