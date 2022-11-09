@@ -753,9 +753,9 @@ if ~isfolder(FFolderName)
     mkdir(FFolderName);
 end
 fname = fullfile(FFolderName,PathStats(n).Name(10:end));
-writematrix(xynew,strcat(fname,'_fiona.txt'), 'Delimiter', 'tab'); 
-% and the yx file
-writematrix(xynew(:,[2,1]),strcat(fname,'_yx_fiona.txt'), 'Delimiter', 'tab'); 
+% writematrix(xynew,strcat(fname,'_fiona.txt'), 'Delimiter', 'tab'); 
+% % and the yx file
+% writematrix(xynew(:,[2,1]),strcat(fname,'_yx_fiona.txt'), 'Delimiter', 'tab'); 
 
 plotNeighbors = get(hPathsStatsGui.cNeighbor,'Value');
 if plotNeighbors == 1
@@ -774,8 +774,15 @@ if plotNeighbors == 1
 else
     neighbor_txy = {};
 end
+
+% New way to save
+data.xy = xynew;
+data.yx = xynew(:,[2,1]);
+data.neighbors = neighbor_txy;
+save(strcat(fname,'_fiona.mat'),'data');
+
 % at the end run FIONAviewer
-FIONAviewer(fullfile(FFolderName,strcat(PathStats(n).Name(10:end),'_fiona.txt')), neighbor_txy)
+FIONAviewer(fullfile(FFolderName,strcat(PathStats(n).Name(10:end),'_fiona.mat')))
 
 
 % JS Edit 2022/06/03 to compile plots with the click of a button

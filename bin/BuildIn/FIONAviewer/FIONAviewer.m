@@ -117,17 +117,16 @@ hold off
 % guidata(hObject, handles);
 
 % JS Edit to make it automatically load what was just run
+handles.xydisplayed = 0; %use to keep track whether we are an xy or yx display
 if ~isempty(varargin)
     [pathname, filename, ext] = fileparts(varargin(1));
-    neighbors = varargin(2);
     % run what LoadFile_Callback usually does
     handles = LoadNewDataFile(hObject, handles, fullfile(pathname,'/'), strcat(filename,ext));
-    handles.neighbors = varargin(2);
     
     keepLimits = 0; % reset Y-limits
     handles = PlotData(hObject, handles, keepLimits); % Plot the data
     
-    set(handles.StepsFilename, 'String', fullfile(pathname, strcat(filename(1:end-6),'_xy.mat')));
+    set(handles.StepsFilename, 'String', fullfile(pathname, strcat(filename,'.mat')));
 end
 
 % Choose default command line output for FIONAviewer
@@ -175,11 +174,12 @@ function LoadFile_Callback(hObject, eventdata, handles) %#ok
 
 % Ask user to choose file to display
 pathcat = get(handles.FilePath,'string');
-nameTemplate = [pathcat, '*_FIONA.txt'];
+nameTemplate = [pathcat, '*_fiona.mat'];
 [filename, path, filterindex] = uigetfile(nameTemplate, ...
-    'Select File to Display (_FIONA.txt)'); %#ok
+    'Select File to Display (_fiona.mat)'); %#ok
 
 if filename ~= 0 % user selected a name and didn't hit cancel
+    handles.xydisplayed = 0;
     handles = LoadNewDataFile(hObject, handles, path, filename);
     
     keepLimits = 0; % reset Y-limits
@@ -544,7 +544,7 @@ path = get(handles.FilePath, 'string');
 file = get(handles.FileName, 'string');
 
 % Obtain a list of all PSDsignals.txt files in the current directory
-filenameTemplate = [path, '*_FIONA.txt'];
+filenameTemplate = [path, '*_fiona.mat'];
 dataFilesStruct = dir(filenameTemplate);
 % Convert the structure to cells 
 fileNames = cell(length(dataFilesStruct), 1);
@@ -554,7 +554,9 @@ end
 
 % Find index of the current file
 currentIndex = strmatch(file, fileNames);
-newIndex = currentIndex - 1;
+% If on yx display, keep same index and switch to xy
+% If on xy display, then move to the previous if possible
+newIndex = currentIndex - handles.xydisplayed;
 
 % Do not allow the array to exceed bounds
 if newIndex > 0
@@ -567,7 +569,12 @@ if newIndex > 0
     
     % JS Edit to set for next trace, which is usually a _xy file so save
     % slightly differently
-    set(handles.StepsFilename, 'String', fullfile(path, strcat(newFilename(1:end-10),'_xy.mat')));
+    set(handles.StepsFilename, 'String', fullfile(path, strcat(newFilename)));
+%     if handles.xydisplayed
+%         set(handles.StepsFilename, 'String', fullfile(path, strcat(newFilename(1:end-10),'_xy.mat')));
+%     else
+%         set(handles.StepsFilename, 'String', fullfile(path, strcat(newFilename(1:end-10),'_yx.mat')));
+%     end
 else
     disp('You''ve reached the beginning of the directory');
 end
@@ -583,7 +590,7 @@ path = get(handles.FilePath, 'string');
 file = get(handles.FileName, 'string');
 
 % Obtain a list of all PSDsignals.txt files in the current directory
-filenameTemplate = [path, '*_FIONA.txt'];
+filenameTemplate = [path, '*_fiona.mat'];
 dataFilesStruct = dir(filenameTemplate);
 % Convert the structure to cells 
 fileNames = cell(length(dataFilesStruct), 1);
@@ -593,7 +600,9 @@ end
 
 % Find index of the current file
 currentIndex = strmatch(file, fileNames);
-newIndex = currentIndex + 1;
+% If on xy display, keep same index and switch to yx
+% If on yx display, then move to the next if possible
+newIndex = currentIndex + ~handles.xydisplayed;
 
 % Do not allow the array to exceed bounds
 if newIndex <= length(fileNames)
@@ -605,7 +614,12 @@ if newIndex <= length(fileNames)
     handles = PlotData(hObject, handles, keepLimits); % Plot the data
     % JS Edit to set for next trace, which is usually a _yx file so save
     % slightly differently
-    set(handles.StepsFilename, 'String', fullfile(path, strcat(newFilename(1:end-10),'.mat')));
+    set(handles.StepsFilename, 'String', fullfile(path, strcat(newFilename)));
+%     if handles.xydisplayed
+%         set(handles.StepsFilename, 'String', fullfile(path, strcat(newFilename(1:end-10),'_xy.mat')));
+%     else
+%         set(handles.StepsFilename, 'String', fullfile(path, strcat(newFilename(1:end-10),'_yx.mat')));
+%     end
 else
     disp('You''ve reached the end of the directory');
 end

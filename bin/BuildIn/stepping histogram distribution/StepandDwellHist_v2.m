@@ -34,7 +34,8 @@ end
     
 for i=1:fnum
     fname = f(i).name;
-    trace = load(strcat(cd,'\',fname));
+    steptrace = load(strcat(cd,'\',fname));
+    trace = steptrace.data;
     data = trace.trace;
     
     % Steps
