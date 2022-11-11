@@ -108,12 +108,13 @@ flipSteps = 1; % do not flip steps
         & isnan(handles.stepVector(2:limit) - handles.stepVector(1:limit-1)) == 0 );
     changePoints = [0 changePoints];
     
-% save data
+% save data 
 %save(fileName, 'stepResults');
 trace = [(handles.currentPlotPSD_Long*flipSteps)' (handles.currentPlotPSD_Short*flipSteps)' ...
     (handles.stepVector*flipSteps)' (handles.shortStepVector*flipSteps)'...
     (changePoints)' (handles.usageVector)' ];
 
+% JS Edit 2022/11/11 for .mat files
 data.xy = [(handles.currentPlotPSD_Long*flipSteps)' (handles.currentPlotPSD_Short*flipSteps)'];
 data.yx = data.xy(:,[2,1]);
 
