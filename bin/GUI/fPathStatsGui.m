@@ -787,18 +787,7 @@ FIONAviewer(fullfile(FFolderName,strcat(PathStats(n).Name(10:end),'_fiona.mat'))
 
 % JS Edit 2022/06/03 to compile plots with the click of a button
 function StepStats(hPathsStatsGui)
-global Config;
-
-checkdir = Config.Directory{1};
-actualdir = uigetdir(checkdir);
-
-if length(Config.Time) > 1
-    time = Config.Time(1);
-else
-    time = Config.Time;
-end
-
-StepandDwellHist_v2(actualdir, 0, time/1000);
+fStepStats()
 
 
 function Draw(hPathsStatsGui)

@@ -145,5 +145,5 @@ plot(tt, A*k^2.*tt.*exp(-k.*tt));
 
 %% If neighbors are a thing we want to examine, run to see neighbor statistics
 
-
+,ljkkkk
 
