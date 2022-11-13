@@ -3,7 +3,7 @@
 %/////////////////////////////////////////////////////////////////////////%
 
 function hToolBar=fToolBarCreate(hMainGui)
-hToolBar.bar=uitoolbar('Parent',hMainGui.fig);  
+hToolBar.bar=uitoolbar('Parent',hMainGui.fig);
 hToolBar.ToolCursor=ToolCursor(hToolBar);
 hToolBar.ToolRegion=ToolRegion(hToolBar);
 hToolBar.ToolRectRegion=ToolRectRegion(hToolBar);

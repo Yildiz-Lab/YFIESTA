@@ -55,19 +55,19 @@ function WriteStepsToFile(handles, fileName)
 %     ind = length(stepResults)+1; %#ok<NODEF> % add data to stepResults
 % end
 
-% Determine which way is up and which way is down
-button = questdlg( ...
-    'In this trace, which direction is "forwards" for the motor?', ...
-    'Select directionality','Up','Down','Up');
-if strcmp(button, 'Up')
-    flipSteps = 1; % do not flip steps
-else
-    flipSteps = -1; % flip steps
-end
-
+% JS Edit 2022/11/08 Comment Out because it almost always goes forward
+% % Determine which way is up and which way is down
+% button = questdlg( ...
+%     'In this trace, which direction is "forwards" for the motor?', ...
+%     'Select directionality','Up','Down','Up');
+% if strcmp(button, 'Up')
+%     flipSteps = 1; % do not flip steps
+% else
+%     flipSteps = -1; % flip steps
+% end
+flipSteps = 1; % do not flip steps
 
 % Write data:
-
 
 % iStart = find(noNaNSteps, 1, 'first'); % index of first sample
 % iEnd = find(noNaNSteps, 1, 'last'); % index of last sample
@@ -108,20 +108,32 @@ end
         & isnan(handles.stepVector(2:limit) - handles.stepVector(1:limit-1)) == 0 );
     changePoints = [0 changePoints];
     
-% save data
+% save data 
 %save(fileName, 'stepResults');
 trace = [(handles.currentPlotPSD_Long*flipSteps)' (handles.currentPlotPSD_Short*flipSteps)' ...
     (handles.stepVector*flipSteps)' (handles.shortStepVector*flipSteps)'...
     (changePoints)' (handles.usageVector)' ];
 
+% JS Edit 2022/11/11 for .mat files
+data.xy = [(handles.currentPlotPSD_Long*flipSteps)' (handles.currentPlotPSD_Short*flipSteps)'];
+data.yx = data.xy(:,[2,1]);
 
+if handles.xydisplayed
+    data.trace = trace;
+else
+    data.trace_yx = trace;
+end
+
+scavenge = load(fileName);
+if isfield(scavenge.data, 'trace')
+    data.trace = scavenge.data.trace;
+elseif isfield(scavenge.data, 'trace_yx')
+    data.trace_yx = scavenge.data.trace_yx;
+end
+
+data.neighbors = handles.neighbors;
 %re-worked to get rid of all that stepResults struct business
 %this will now re-write traces so be careful!
 disp([ 'writing current trace to ' fileName ])
-save(fileName,'trace');
+save(fileName,'data');
     
-
-
-
-
-

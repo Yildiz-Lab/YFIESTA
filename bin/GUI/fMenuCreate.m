@@ -270,12 +270,17 @@ hMenu.mStats = uimenu('Parent',hMainGui.fig,'Label','Statistics','Tag','mStats')
 
 hMenu.mPathStats = uimenu('Parent',hMenu.mStats,'Callback','fPathStatsGui(''Create'');',...
                             'Label','Path Statistics','Tag','PathStats');
+
+                        % JS Edit 2022/11/11 to add stepping stats
+                        % compiling outside of the motility gui
+hMenu.mStepStats = uimenu('Parent',hMenu.mStats,'Callback','fStepStats',...
+                            'Label','Stepping Statistics','Tag','StepStats');
                         
 hMenu.mVelocityStats = uimenu('Parent',hMenu.mStats,'Callback','fVelocityStatsGui(''Create'');',...
                              'Label','Velocity Statistics','Tag','mVelocityStats');    
                          
 hMenu.mMotilityParameters = uimenu('Parent',hMenu.mStats,'Callback','fEstimateMotilityParamsGui(''Create'');',...
-                                 'Label','Estimate Motility Parameters','Tag','mMotilityParameters');  
+                                 'Label','Estimate Motility Parameters','Tag','mMotilityParameters','Separator','on');  
 
                              % JS Edit 2022/07/11 to add our own motility gui option
 hMenu.mYildizMotility = uimenu('Parent',hMenu.mStats,'Callback','fMotilityGui(''Create'');',...
@@ -285,7 +290,7 @@ hMenu.mDiffusionAnalysis = uimenu('Parent',hMenu.mStats,'Callback','fMenuStatist
                     'Label','Diffusion Analysis (CVE/MSD)','Tag','mDiffusionAnalysis');            
                 
 hMenu.mAverageFilament = uimenu('Parent',hMenu.mStats,'Callback','fMenuStatistics(''AverageFilament'');',...
-                    'Label','Average Filaments','Tag','mAverageFilament ');    
+                    'Label','Average Filaments','Tag','mAverageFilament ','Separator','on');    
                 
 hMenu.mAlignFilament = uimenu('Parent',hMenu.mStats,'Callback','fMenuStatistics(''AlignFilament'');',...
                     'Label','Align Filaments','Tag','mAlignFilament ');    

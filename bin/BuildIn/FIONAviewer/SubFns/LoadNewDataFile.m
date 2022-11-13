@@ -5,10 +5,9 @@ function handles = LoadNewDataFile(hObject, handles, path, filename)
 % Written by Vladislav Belyy
 % Last updated on 11/18/2011
 
-
 %% Prepare for data reading
 
-tic % debug purposes only - optimizing load time
+%tic % debug purposes only - optimizing load time
 
 % Turn off filtering
 set(handles.FilterData,'string','Filter/Decimate Data?')
@@ -30,9 +29,17 @@ handles.currentPath=DataFilePath;
 
 %% Read data
 
-Data=ReadDataFile(DataFilePath); % fast data read
+%Data=ReadDataFile(DataFilePath); % fast data read
+FIONAData=ReadMatDataFile(DataFilePath); % fast data read
+if handles.xydisplayed
+    Data = FIONAData.yx;
+else
+    Data = FIONAData.xy;
+end
+handles.xydisplayed = ~handles.xydisplayed;
+handles.neighbors = FIONAData.neighbors;
 
-tElapsed = toc; % debug purposes only - optimizing time
+%tElapsed = toc; % debug purposes only - optimizing time
 
 
 set(handles.FileName,'string',filename)
@@ -63,7 +70,7 @@ handles.t = 1:length(Data(:,1));
 
 
 % debug purposes only:
-disp(['Loaded in: ', num2str(tElapsed), ' seconds']);
+%disp(['Loaded in: ', num2str(tElapsed), ' seconds']);
 
 % Update handles structure
 guidata(hObject, handles);

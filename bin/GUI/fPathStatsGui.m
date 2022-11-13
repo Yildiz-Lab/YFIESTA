@@ -33,6 +33,10 @@ global Index;
 global Config;
 global FiestaDir;
 
+% JS Edit for dark theme
+ctext = 0.9*ones(1,3);
+cbutton = [0.16,0.16,0.16];
+
 h=findobj('Tag','hPathsStatsGui');
 close(h)
 
@@ -94,75 +98,75 @@ hPathsStatsGui.fig = figure('Units','normalized','DockControls','off','IntegerHa
                       'Visible','off','Resize','off','WindowStyle','modal');
                   
 if ispc
-    set(hPathsStatsGui.fig,'Color',[236 233 216]/255);
+    set(hPathsStatsGui.fig,'Color',[50 50 50]/255);
 end
 
 c=get(hPathsStatsGui.fig,'Color');
 
-hPathsStatsGui.pPlotXYZPanel = uipanel('Parent',hPathsStatsGui.fig,'Position',[0.45 0.625 0.525 0.35],'Tag','PlotPanel','BackgroundColor','white');
+hPathsStatsGui.pPlotXYZPanel = uipanel('Parent',hPathsStatsGui.fig,'Position',[0.45 0.625 0.525 0.35],'Tag','PlotPanel','BackgroundColor',c);
 
 hPathsStatsGui.tCalcPath = uicontrol('Parent',hPathsStatsGui.pPlotXYZPanel,'Units','normalized','Position',[00 0.3 1 0.4],'FontSize',12,'FontWeight','bold',...
-                        'String','Calculating Path','Style','text','Tag','tCalcPath','HorizontalAlignment','center','BackgroundColor','white');
+                        'String','Calculating Path','Style','text','Tag','tCalcPath','HorizontalAlignment','center','BackgroundColor',c,'ForegroundColor',ctext);
                     
 hPathsStatsGui.aPlotXYZ = axes('Parent',hPathsStatsGui.pPlotXYZPanel,'Units','normalized','OuterPosition',[0 0 1 1],'Tag','aPlotXYZ','Visible','off');
 
 % JS Edit 2022/06/03 for step sorting
 hPathsStatsGui.pMAll = uipanel('Parent',hPathsStatsGui.fig,'Units','normalized','Title','List',...
-                             'Position',[0.025 0.83 0.375 0.15],'Tag','pMAll','BackgroundColor',c);
+                             'Position',[0.025 0.83 0.375 0.15],'Tag','pMAll','BackgroundColor',c,'ForegroundColor',ctext);
 
 % hPathsStatsGui.lAll = uicontrol('Parent',hPathsStatsGui.fig,'Units','normalized','BackgroundColor',[1 1 1],'Callback','fPathStatsGui(''Update'',getappdata(0,''hPathsStatsGui''));',...
 %                           'Position',[0.025 0.83 0.375 0.15],'String',{PathStats.Name},'Style','listbox','Value',1,'Tag','lAll','Max',length(PathStats));                         
 
 hPathsStatsGui.lAll = uicontrol('Parent',hPathsStatsGui.pMAll,'Units','normalized','BackgroundColor',[1 1 1],'Callback','fPathStatsGui(''Update'',getappdata(0,''hPathsStatsGui''));',...
-                           'Position',[0.025 0.05 0.8 0.9],'String',{PathStats.Name},'Style','listbox','Value',1,'Tag','lAll','Max',length(PathStats));                         
+                           'Position',[0.025 0.05 0.8 0.9],'String',{PathStats.Name},'Style','listbox','Value',1,'Tag','lAll','Max',length(PathStats),'BackgroundColor',c,'ForegroundColor',ctext);                         
 
 hPathsStatsGui.bStepSort = uicontrol('Parent',hPathsStatsGui.pMAll,'Units','normalized','Callback','fPathStatsGui(''Update'',getappdata(0,''hPathsStatsGui''));',...
-                            'Position',[0.8375 0.3 0.15 0.4],'String','Sort Best','Tag','bReset'); 
+                            'Position',[0.8375 0.3 0.15 0.4],'String','Sort Best','Tag','bReset','BackgroundColor',cbutton,'ForegroundColor',ctext); 
 % end of JS Edit 2022/06/03 for step sorting
                         
 hPathsStatsGui.pOptions = uipanel('Parent',hPathsStatsGui.fig,'Units','normalized','Title','Options',...
-                             'Position',[0.025 0.625 0.375 0.19],'Tag','pOptions','BackgroundColor',c);
+                             'Position',[0.025 0.625 0.375 0.19],'Tag','pOptions','BackgroundColor',c,'ForegroundColor',ctext);
                         
 hPathsStatsGui.bAuto = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized','Callback','fPathStatsGui(''Update'',getappdata(0,''hPathsStatsGui''));',...
-                            'Position',[0.75 0.79 0.225 0.23],'String','Auto Fit','Tag','bReset');    
+                            'Position',[0.75 0.79 0.225 0.23],'String','Auto Fit','Tag','bReset','BackgroundColor',cbutton,'ForegroundColor',ctext);    
                         
 hPathsStatsGui.bReset = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized','Callback','fPathStatsGui(''Update'',getappdata(0,''hPathsStatsGui''));',...
-                            'Position',[0.75 0.535 0.225 0.23],'String','Reset plots','Tag','bReset');                        
+                            'Position',[0.75 0.535 0.225 0.23],'String','Reset plots','Tag','bReset','BackgroundColor',cbutton,'ForegroundColor',ctext);                        
                         
 hPathsStatsGui.bDisregard = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized','Callback','fPathStatsGui(''Update'',getappdata(0,''hPathsStatsGui''));',...
-                            'Position',[0.75 0.28 0.225 0.23],'String','Disregard','Tag','bReset');                            
+                            'Position',[0.75 0.28 0.225 0.23],'String','Disregard','Tag','bReset','BackgroundColor',cbutton,'ForegroundColor',ctext);                            
 
 % JS Edit 2022/05/29 to add direct line to FIONA 
 hPathsStatsGui.bFiona = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized',...
                             'Callback','fPathStatsGui(''FIONA'',getappdata(0,''hPathsStatsGui''));',...
-                            'Position',[0.75 0.025 0.225 0.23],'String','FIONA stepping','Tag','bReset'); 
+                            'Position',[0.75 0.025 0.225 0.23],'String','FIONA stepping','Tag','bFIONA','BackgroundColor',cbutton,'ForegroundColor',ctext); 
 
 %JS Edit 2022/09/28 for ability to plot neighbors in other channel
 hPathsStatsGui.cNeighbor = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized','Position',[0.52 0.025 0.225 0.23],'Enable','on',...
-                                        'String','Show Neighbors','Style','checkbox','Tag','neighbors','HorizontalAlignment','left','BackgroundColor',c,'Value',1);  
+                                        'String','Show Neighbors','Style','checkbox','Tag','neighbors','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext,'Value',1);  
 % End of JS Edit 2022/05/29
                         
 hPathsStatsGui.rLinear = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized','Callback','fPathStatsGui(''Update'',getappdata(0,''hPathsStatsGui''));',...
-                            'Position',[0.1 0.84 0.6 0.15],'String','Linear path','Style','radiobutton','BackgroundColor',c,'Tag','rLinear','Value',0);                         
+                            'Position',[0.1 0.84 0.6 0.15],'String','Linear path','Style','radiobutton','BackgroundColor',c,'ForegroundColor',ctext,'Tag','rLinear','Value',0);                         
 
 hPathsStatsGui.rPoly2 = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized','Callback','fPathStatsGui(''Update'',getappdata(0,''hPathsStatsGui''));',...
-                            'Position',[0.1 0.68 0.6 0.15],'String','2nd deg polynomial path','Style','radiobutton','BackgroundColor',c,'Tag','rPoly2','Value',0);          
+                            'Position',[0.1 0.68 0.6 0.15],'String','2nd deg polynomial path','Style','radiobutton','BackgroundColor',c,'ForegroundColor',ctext,'Tag','rPoly2','Value',0);          
 
 hPathsStatsGui.rPoly3 = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized','Callback','fPathStatsGui(''Update'',getappdata(0,''hPathsStatsGui''));',...
-                            'Position',[0.1 0.52 0.6 0.15],'String','3rd deg polynomial path','Style','radiobutton','BackgroundColor',c,'Tag','rPoly3','Value',0);                          
+                            'Position',[0.1 0.52 0.6 0.15],'String','3rd deg polynomial path','Style','radiobutton','BackgroundColor',c,'ForegroundColor',ctext,'Tag','rPoly3','Value',0);                          
 
 hPathsStatsGui.rFilament = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized','Callback','fPathStatsGui(''Update'',getappdata(0,''hPathsStatsGui''));',...
-                                    'Position',[0.1 0.36 0.6 0.15],'String','Filament path','Style','radiobutton','BackgroundColor',c,'Tag','rFilament','Value',0);                          
+                                    'Position',[0.1 0.36 0.6 0.15],'String','Filament path','Style','radiobutton','BackgroundColor',c,'ForegroundColor',ctext,'Tag','rFilament','Value',0);                          
 
 if isempty(Filament)
     set(hPathsStatsGui.rFilament,'Enable','off');
 end
 
 hPathsStatsGui.rAverage = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized','Callback','fPathStatsGui(''Update'',getappdata(0,''hPathsStatsGui''));',...
-                            'Position',[0.1 0.2 0.6 0.15],'String','Average path','Style','radiobutton','BackgroundColor',c,'Tag','rAverage','Value',0);   
+                            'Position',[0.1 0.2 0.6 0.15],'String','Average path','Style','radiobutton','BackgroundColor',c,'ForegroundColor',ctext,'Tag','rAverage','Value',0);   
 
 hPathsStatsGui.tRegion = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized','Enable','off','HorizontalAlignment','left',...
-                              'Position',[0.03 0.02 0.15 0.14],'String','Region:','Style','text','Tag','tRegion','BackgroundColor',c);                         
+                              'Position',[0.03 0.02 0.15 0.14],'String','Region:','Style','text','Tag','tRegion','BackgroundColor',c,'ForegroundColor',ctext);                         
 
 hPathsStatsGui.eAverage = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized','Callback','fPathStatsGui(''Update'',getappdata(0,''hPathsStatsGui''));','Enable','off',...
                               'Position',[0.12 0.02 0.3 0.14],'String','1000','FontSize',8,'Style','edit','Tag','eAverage','BackgroundColor',[1 1 1]);                         
@@ -170,24 +174,24 @@ hPathsStatsGui.eAverage = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','no
 hPathsStatsGui.tNM = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized','Position',[0.45 0.02 0.05 0.14],'Enable','off',...
                                'String','nm','Style','text','Tag','tNM','HorizontalAlignment','left','BackgroundColor',c);
 
-hPathsStatsGui.pPlotDistPanel = uipanel('Parent',hPathsStatsGui.fig,'Position',[0.025 0.28 0.95 0.335],'Tag','PlotPanel','BackgroundColor','white');
+hPathsStatsGui.pPlotDistPanel = uipanel('Parent',hPathsStatsGui.fig,'Position',[0.025 0.28 0.95 0.335],'Tag','PlotPanel','BackgroundColor',c,'ForegroundColor',ctext);
 
 hPathsStatsGui.aPlotDist = axes('Parent',hPathsStatsGui.pPlotDistPanel,'Units','normalized','OuterPosition',[0 0 1 1],'Tag','aPlotDist');
 
-hPathsStatsGui.pPlotSidePanel = uipanel('Parent',hPathsStatsGui.fig,'Position',[0.025 0.05 0.95 0.22],'Tag','PlotPanel','BackgroundColor','white');
+hPathsStatsGui.pPlotSidePanel = uipanel('Parent',hPathsStatsGui.fig,'Position',[0.025 0.05 0.95 0.22],'Tag','PlotPanel','BackgroundColor',c,'ForegroundColor',ctext);
 
 hPathsStatsGui.aPlotSide = axes('Parent',hPathsStatsGui.pPlotSidePanel ,'Units','normalized','OuterPosition',[0 0 1 1],'Tag','aPlotSide');
     
 % JS Edit 2022/06/03 to compile stats
 hPathsStatsGui.bPlotStepStats = uicontrol('Parent',hPathsStatsGui.fig,'Units','normalized','Callback','fPathStatsGui(''StepStats'',getappdata(0,''hPathsStatsGui''));',...
-                            'Position',[0.1 0.01 0.175 0.03],'String','Compile Stepping Stats','Tag','bStepStats');
+                            'Position',[0.1 0.01 0.175 0.03],'String','Compile Stepping Stats','Tag','bStepStats','BackgroundColor',cbutton,'ForegroundColor',ctext);
 % end of JS Edit 2022/06/03
 
 hPathsStatsGui.bOk = uicontrol('Parent',hPathsStatsGui.fig,'Units','normalized','Callback','fPathStatsGui(''Ok'',getappdata(0,''hPathsStatsGui''));',...
-                            'Position',[0.575 0.01 0.175 0.03],'String','Ok','Tag','bOk');
+                            'Position',[0.575 0.01 0.175 0.03],'String','Ok','Tag','bOk','BackgroundColor',cbutton,'ForegroundColor',ctext);
 
 hPathsStatsGui.bCancel = uicontrol('Parent',hPathsStatsGui.fig,'Units','normalized','Callback','fPathStatsGui(''Cancel'',getappdata(0,''hPathsStatsGui''));',...
-                             'Position',[0.8 0.01 0.175 0.03],'String','Cancel','Tag','bCancel');                        
+                             'Position',[0.8 0.01 0.175 0.03],'String','Cancel','Tag','bCancel','BackgroundColor',cbutton,'ForegroundColor',ctext);                        
 
 setappdata(0,'hPathsStatsGui',hPathsStatsGui);
 setappdata(hPathsStatsGui.fig,'PathStats',PathStats);
@@ -698,7 +702,7 @@ if length(molidx) > 1
         end
     end
 else
-    minj = molidx(1);
+    minj = molidx;
 end
 
 Molecule(minj).Color = [0 1 1];
@@ -750,9 +754,6 @@ if ~isfolder(FFolderName)
     mkdir(FFolderName);
 end
 fname = fullfile(FFolderName,PathStats(n).Name(10:end));
-writematrix(xynew,strcat(fname,'_fiona.txt'), 'Delimiter', 'tab'); 
-% and the yx file
-writematrix(xynew(:,[2,1]),strcat(fname,'_yx_fiona.txt'), 'Delimiter', 'tab'); 
 
 plotNeighbors = get(hPathsStatsGui.cNeighbor,'Value');
 if plotNeighbors == 1
@@ -771,29 +772,27 @@ if plotNeighbors == 1
 else
     neighbor_txy = {};
 end
+
+% New way to save
+data.xy = xynew;
+data.yx = xynew(:,[2,1]);
+data.neighbors = neighbor_txy;
+save(strcat(fname,'_fiona.mat'),'data');
+
 % at the end run FIONAviewer
-FIONAviewer(fullfile(FFolderName,strcat(PathStats(n).Name(10:end),'_fiona.txt')), neighbor_txy)
+FIONAviewer(fullfile(FFolderName,strcat(PathStats(n).Name(10:end),'_fiona.mat')))
 
 
 % JS Edit 2022/06/03 to compile plots with the click of a button
 function StepStats(hPathsStatsGui)
-global Config;
-
-checkdir = Config.Directory{1};
-actualdir = uigetdir(checkdir);
-
-if length(Config.Time) > 1
-    time = Config.Time(1);
-else
-    time = Config.Time;
-end
-
-StepandDwellHist_v2(actualdir, 0, time/1000);
+fStepStats()
 
 
 function Draw(hPathsStatsGui)
+cline = [0.4, 0.5, 1];
 set(hPathsStatsGui.tCalcPath,'Visible','off');
-set(hPathsStatsGui.aPlotXYZ,'Visible','on');   
+set(hPathsStatsGui.aPlotXYZ,'Visible','on');
+set(hPathsStatsGui.aPlotXYZ,'Color',get(hPathsStatsGui.fig,'Color'));
 PathStats=getappdata(hPathsStatsGui.fig,'PathStats');
 idx=get(hPathsStatsGui.lAll,'Value');
 idx=idx(1);
@@ -821,7 +820,7 @@ data = sortrows(data,1);
 XPlotPath = data(:,2);
 YPlotPath = data(:,3);
 if isempty(ZPlot)
-    plot(hPathsStatsGui.aPlotXYZ,XPlot/scale,YPlot/scale,'Color','blue','LineStyle','-','Marker','*');
+    plot(hPathsStatsGui.aPlotXYZ,XPlot/scale,YPlot/scale,'Color',cline,'LineStyle','-','Marker','*');
     line(hPathsStatsGui.aPlotXYZ,XPlotPath/scale,YPlotPath/scale,'Color','green','LineStyle','-','Marker','none');
     zoom(hPathsStatsGui.aPlotXYZ,'on');
     axis equal
@@ -835,11 +834,13 @@ else
     rotate3d(hPathsStatsGui.aPlotXYZ,'on');
 end
 set(hPathsStatsGui.aPlotXYZ,'YDir','reverse');
-xlabel(hPathsStatsGui.aPlotXYZ,['X-Position ' units]);
-ylabel(hPathsStatsGui.aPlotXYZ,['Y-Position ' units]);
+xlabel(hPathsStatsGui.aPlotXYZ,['X-Position ' units],'Color','White');
+ylabel(hPathsStatsGui.aPlotXYZ,['Y-Position ' units],'COlor','White');
+set(hPathsStatsGui.aPlotXYZ,'XColor','white'); set(hPathsStatsGui.aPlotXYZ,'YColor','white');
 if ~isempty(ZPlot)
-    zlabel(hPathsStatsGui.aPlotXYZ,'z-Position [nm]');
+    zlabel(hPathsStatsGui.aPlotXYZ,'z-Position [nm]','Color','white');
 end
+set(hPathsStatsGui.aPlotXYZ,'Color',get(hPathsStatsGui.fig,'Color'));
 XPlot = PathStats(idx).Results(:,2);
 YPlot = (Dis-Dis(1));
 YPlotOld = PathStats(idx).Results(:,6);
@@ -850,18 +851,21 @@ else
     yscale=1;
     units='[nm]';
 end 
-plot(hPathsStatsGui.aPlotDist,XPlot,YPlotOld/yscale,'Color','red','LineStyle','--','Marker','none');
-line(hPathsStatsGui.aPlotDist,XPlot,YPlot/yscale,'Color','blue','LineStyle','-','Marker','none');
-xlabel(hPathsStatsGui.aPlotDist,'Time [sec]');
-ylabel(hPathsStatsGui.aPlotDist,['Distance along path ' units]);
+plot(hPathsStatsGui.aPlotDist,XPlot,YPlotOld/yscale,'Color','magenta','LineStyle','--','Marker','none');
+line(hPathsStatsGui.aPlotDist,XPlot,YPlot/yscale,'Color',cline,'LineStyle','-','Marker','none');
+xlabel(hPathsStatsGui.aPlotDist,'Time [sec]','Color','white');
+ylabel(hPathsStatsGui.aPlotDist,['Distance along path ' units],'Color','white');
+set(hPathsStatsGui.aPlotDist,'XColor','white'); set(hPathsStatsGui.aPlotDist,'YColor','white'); 
 if ~any(isnan(PathStats(idx).PathData(:,6)))
     yyaxis left;
 end
+set(hPathsStatsGui.aPlotDist,'Color',get(hPathsStatsGui.fig,'Color'));
 XPlot = PathStats(idx).Results(:,2);
 YPlot = PathStats(idx).PathData(:,5);
-plot(hPathsStatsGui.aPlotSide,XPlot,YPlot,'Color','blue','LineStyle','-','Marker','none');
-xlabel(hPathsStatsGui.aPlotSide,'Time [sec]');
-ylabel(hPathsStatsGui.aPlotSide,'Sideways motion [nm]');
+plot(hPathsStatsGui.aPlotSide,XPlot,YPlot,'Color',cline,'LineStyle','-','Marker','none');
+xlabel(hPathsStatsGui.aPlotSide,'Time [sec]','Color','white');
+ylabel(hPathsStatsGui.aPlotSide,'Sideways motion [nm]','Color','white');
+set(hPathsStatsGui.aPlotSide,'XColor','white'); set(hPathsStatsGui.aPlotSide,'YColor','white'); 
 if ~any(isnan(PathStats(idx).PathData(:,6)))
     yyaxis right;
     XPlot = PathStats(idx).Results(:,2);
@@ -869,6 +873,7 @@ if ~any(isnan(PathStats(idx).PathData(:,6)))
     plot(hPathsStatsGui.aPlotSide,XPlot,YPlot,'Color','red','LineStyle','-','Marker','none');
     ylabel(hPathsStatsGui.aPlotSide,'Height motion [nm]');   
 end
+set(hPathsStatsGui.aPlotSide,'Color',get(hPathsStatsGui.fig,'Color'));
 setappdata(0,'hPathsStatsGui',hPathsStatsGui);
 
 function res=Linear2D(param,p,XY)
@@ -1268,7 +1273,7 @@ end
 % Copied from fRightPanel NewScan
 nX=MolXY(:,1);
 nY=MolXY(:,2);
-ScanSize=100;
+ScanSize=100; % in nm, make it so that they share a point within a pixel
 d=[0; cumsum(sqrt((nX(2:end)-nX(1:end-1)).^2 + (nY(2:end)-nY(1:end-1)).^2))];
 dt=max(d)/round(max(d));
 id=(0:round(max(d)))'*dt;

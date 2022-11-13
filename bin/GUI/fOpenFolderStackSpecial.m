@@ -1,24 +1,29 @@
 function output = fOpenFolderStackSpecial
 
+c = 1.2*get(gcf,'Color');
+ctext = 0.9*ones(1,3);
+cbutton = [0.16,0.16,0.16];
+ctextbox = [0.12,0.12,0.12];
+
 hOpenSpecial.fig = figure('Units','normalized','WindowStyle','normal','DockControls','off','IntegerHandle','off','MenuBar','none','Name','Open Folder Stack Special',...
                       'NumberTitle','off','Position',[0.65 0.15 0.35 0.7],'HandleVisibility','callback','Tag','hOpenSpecial',...
-                      'Visible','off','Resize','off');
+                      'Visible','off','Resize','off','Color',c);
                   
 fPlaceFig(hOpenSpecial.fig ,'special');
 
 c = get(hOpenSpecial.fig ,'Color');
                   
 hOpenSpecial.pMode = uibuttongroup('Parent',hOpenSpecial.fig,'Units','normalized','Position',[0.05 0.7 0.9 0.275],...
-                                  'Title','Mode','Tag','tRange','FontSize',10,'SelectionChangeFcn',@ModeSelect,'BackgroundColor',c);                  
+                                  'Title','Mode','Tag','tRange','FontSize',10,'SelectionChangeFcn',@ModeSelect,'BackgroundColor',c,'ForegroundColor',ctext);                  
                                   
 % hOpenSpecial.rSeparateFiles = uicontrol('Parent',hOpenSpecial.pMode,'Units','normalized','Position',[0.05 0.675 0.9 0.25],'Enable','on','FontSize',12,...
 %                                    'String','Separate files for each channel','Style','radiobutton','Tag','rSeparateFiles','HorizontalAlignment','left','BackgroundColor',c);
                                 
 hOpenSpecial.rSequentialSplitting = uicontrol('Parent',hOpenSpecial.pMode,'Units','normalized','Position',[0.05 0.375 0.9 0.25],'Enable','on','FontSize',12,...
-                                    'String','Separate frames for each channel','Style','radiobutton','Tag','rSequentialSplitting','HorizontalAlignment','left','BackgroundColor',c);  
+                                    'String','Separate frames for each channel','Style','radiobutton','Tag','rSequentialSplitting','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);  
                                 
 hOpenSpecial.rSpatialSplitting = uicontrol('Parent',hOpenSpecial.pMode,'Units','normalized','Position',[0.05 0.075 0.9 0.25],'Enable','on','FontSize',12,...
-                                    'String','Separate areas for each channel','Style','radiobutton','Tag','rSpatialSplitting','HorizontalAlignment','left','BackgroundColor',c);               
+                                    'String','Separate areas for each channel','Style','radiobutton','Tag','rSpatialSplitting','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);               
                   
 % hOpenSpecial.pSeparateFiles = uipanel('Parent',hOpenSpecial.fig,'Units','normalized','Position',[0.05 0.275 0.9 0.4],'visible','on',...
 %                                   'Title','Separate Files','Tag','pSeparateFiles','FontSize',10,'BackgroundColor',c);
@@ -68,123 +73,123 @@ hOpenSpecial.rSpatialSplitting = uicontrol('Parent',hOpenSpecial.pMode,'Units','
 %                                 'Callback',@ChooseFile); 
      
 hOpenSpecial.pSequentialSplitting = uipanel('Parent',hOpenSpecial.fig,'Units','normalized','Position',[0.05 0.275 0.9 0.4],'visible','on',...
-                                     'Title','Sequential Frames','Tag','pSequentialSplitting','FontSize',10,'BackgroundColor',c);
+                                     'Title','Sequential Frames','Tag','pSequentialSplitting','FontSize',10,'BackgroundColor',c,'ForegroundColor',ctext);
   
 hOpenSpecial.pSequential.tNumberChannels = uicontrol('Parent',hOpenSpecial.pSequentialSplitting,'Units','normalized','Position',[0.05 0.8 0.5 0.15],'Enable','on','FontSize',12,...
-                                   'String','Number of channels:','Style','text','Tag','tNumberChannels','HorizontalAlignment','left','BackgroundColor',c);
+                                   'String','Number of channels:','Style','text','Tag','tNumberChannels','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);
                                
 hOpenSpecial.pSequential.mNumberChannels = uicontrol('Parent',hOpenSpecial.pSequentialSplitting,'Units','normalized','Position',[0.6 0.825 0.3 0.15],'Enable','on','FontSize',12,...
-                                   'String',{'2','3','4'},'Style','popupmenu','Tag','mNumberChannels','HorizontalAlignment','left','BackgroundColor',c,'Callback',@NumberSelect);
+                                   'String',{'2','3','4'},'Style','popupmenu','Tag','mNumberChannels','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext,'Callback',@NumberSelect);
                                
 hOpenSpecial.pSequential.rAlternateFrames = uicontrol('Parent',hOpenSpecial.pSequentialSplitting,'Units','normalized','Position',[0.05 0.65 0.9 0.15],'Value',1,'Enable','on','FontSize',12,...
-                                   'Callback',@SequentialSelect,'String','Alternating frames','Style','radiobutton','Tag','rAlternateFrames','HorizontalAlignment','left','BackgroundColor',c);
+                                   'Callback',@SequentialSelect,'String','Alternating frames','Style','radiobutton','Tag','rAlternateFrames','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);
                                  
 hOpenSpecial.pSequential.rAlternateBlocks = uicontrol('Parent',hOpenSpecial.pSequentialSplitting,'Units','normalized','Position',[0.05 0.45 0.9 0.15],'Enable','on','FontSize',12,...
-                                   'Callback',@SequentialSelect,'String','Alternating blocks','Style','radiobutton','Tag','rAlternateBlocks','HorizontalAlignment','left','BackgroundColor',c);
+                                   'Callback',@SequentialSelect,'String','Alternating blocks','Style','radiobutton','Tag','rAlternateBlocks','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);
                                
 hOpenSpecial.pSequential.rSingleBlocks = uicontrol('Parent',hOpenSpecial.pSequentialSplitting,'Units','normalized','Position',[0.05 0.25 0.9 0.15],'Enable','on','FontSize',12,...
-                                   'Callback',@SequentialSelect,'String','Single blocks','Style','radiobutton','Tag','rSingleBlocks','HorizontalAlignment','left','BackgroundColor',c);
+                                   'Callback',@SequentialSelect,'String','Single blocks','Style','radiobutton','Tag','rSingleBlocks','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);
                                
 hOpenSpecial.pSequential.tCh(1) = uicontrol('Parent',hOpenSpecial.pSequentialSplitting,'Units','normalized','Position',[0.05 0.02 0.09 0.15],'Enable','on','FontSize',12,...
-                                 'String','Ch1:','Style','text','Tag','tCh1','HorizontalAlignment','left','BackgroundColor',c);                 
+                                 'String','Ch1:','Style','text','Tag','tCh1','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);                 
                             
 hOpenSpecial.pSequential.eCh(1) = uicontrol('Parent',hOpenSpecial.pSequentialSplitting,'Units','normalized','Position',[0.15 0.05 0.1 0.15],'Enable','off','FontSize',10,...
-                                'String','','Style','edit','Tag','eCh1','HorizontalAlignment','center','BackgroundColor','white');         
+                                'String','','Style','edit','Tag','eCh1','HorizontalAlignment','center','BackgroundColor',ctextbox,'ForegroundColor',ctext);         
                                                 
 hOpenSpecial.pSequential.tCh(2) = uicontrol('Parent',hOpenSpecial.pSequentialSplitting,'Units','normalized','Position',[0.275 0.02 0.09 0.15],'Enable','on','FontSize',12,...
-                                 'String','Ch2:','Style','text','Tag','tCh2','HorizontalAlignment','left','BackgroundColor',c);                 
+                                 'String','Ch2:','Style','text','Tag','tCh2','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);                 
                             
 hOpenSpecial.pSequential.eCh(2) = uicontrol('Parent',hOpenSpecial.pSequentialSplitting,'Units','normalized','Position',[0.375 0.05 0.1 0.15],'Enable','off','FontSize',10,...
-                                'String','','Style','edit','Tag','eCh2','HorizontalAlignment','center','BackgroundColor','white');         
+                                'String','','Style','edit','Tag','eCh2','HorizontalAlignment','center','BackgroundColor',ctextbox,'ForegroundColor',ctext);         
                                                     
 hOpenSpecial.pSequential.tCh(3) = uicontrol('Parent',hOpenSpecial.pSequentialSplitting,'Units','normalized','Position',[0.5 0.02 0.09 0.15],'Enable','on','FontSize',12,...
-                                 'String','Ch3:','Style','text','Tag','tCh3','HorizontalAlignment','left','BackgroundColor',c);                 
+                                 'String','Ch3:','Style','text','Tag','tCh3','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);                 
                             
 hOpenSpecial.pSequential.eCh(3) = uicontrol('Parent',hOpenSpecial.pSequentialSplitting,'Units','normalized','Position',[0.6 0.05 0.1 0.15],'Enable','off','FontSize',10,...
-                                'String','','Style','edit','Tag','eCh3','HorizontalAlignment','center','BackgroundColor','white');         
+                                'String','','Style','edit','Tag','eCh3','HorizontalAlignment','center','BackgroundColor',ctextbox,'ForegroundColor',ctext);         
  
 hOpenSpecial.pSequential.tCh(4) = uicontrol('Parent',hOpenSpecial.pSequentialSplitting,'Units','normalized','Position',[0.725 0.02 0.09 0.15],'Enable','on','FontSize',12,...
-                                 'String','Ch4:','Style','text','Tag','tCh4','HorizontalAlignment','left','BackgroundColor',c);                 
+                                 'String','Ch4:','Style','text','Tag','tCh4','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);                 
                             
 hOpenSpecial.pSequential.eCh(4) = uicontrol('Parent',hOpenSpecial.pSequentialSplitting,'Units','normalized','Position',[0.825 0.05 0.1 0.15],'Enable','off','FontSize',10,...
-                                'String','','Style','edit','Tag','eCh4','HorizontalAlignment','center','BackgroundColor','white');         
+                                'String','','Style','edit','Tag','eCh4','HorizontalAlignment','center','BackgroundColor',ctextbox,'ForegroundColor',ctext);         
                                                         
 hOpenSpecial.pSpatialSplitting = uibuttongroup('Parent',hOpenSpecial.fig,'Units','normalized','Position',[0.05 0.275 0.9 0.4],'visible','off',...
-                                 'Title','Separate areas','Tag','pSpatialSplitting','FontSize',10,'BackgroundColor',c);   
+                                 'Title','Separate areas','Tag','pSpatialSplitting','FontSize',10,'BackgroundColor',c,'ForegroundColor',ctext);   
 
 hOpenSpecial.pSpatial.rTwoHorizontal = uicontrol('Parent',hOpenSpecial.pSpatialSplitting,'Units','normalized','Position',[0.05 0.8 0.9 0.15],'Enable','on','FontSize',12,...
-                                        'String','Two channels, split horizontal','Style','radiobutton','Tag','rTwoHorizontal','HorizontalAlignment','left','BackgroundColor',c);
+                                        'String','Two channels, split horizontal','Style','radiobutton','Tag','rTwoHorizontal','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);
                                     
                                     
 hOpenSpecial.pSpatial.rTwoVertical = uicontrol('Parent',hOpenSpecial.pSpatialSplitting,'Units','normalized','Position',[0.05 0.625 0.9 0.15],'Enable','on','FontSize',12,...
-                                        'String','Two channels, spilt vertical','Style','radiobutton','Tag','rTwoVertical','HorizontalAlignment','left','BackgroundColor',c);                                    
+                                        'String','Two channels, spilt vertical','Style','radiobutton','Tag','rTwoVertical','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);                                    
                                     
 % JS Edit 2022/07/27 for custom split since the gemini position might not
 % be perfectly centrally aligned. This should take off the translation
 % error
 
 hOpenSpecial.pSpatial.rTwoHorizontalCustom1text = uicontrol('Parent',hOpenSpecial.pSpatialSplitting,'Units','normalized','Position',[0.55 0.715 0.1 0.15],'Enable','on','FontSize',12,...
-                                        'String','center','Style','text','Tag','rTwoHorizontalCustom','BackgroundColor',c);
+                                        'String','center','Style','text','Tag','rTwoHorizontalCustom','BackgroundColor',c,'ForegroundColor',ctext);
 
 hOpenSpecial.pSpatial.rTwoHorizontalCustom1 = uicontrol('Parent',hOpenSpecial.pSpatialSplitting,'Units','normalized','Position',[0.65 0.715 0.1 0.15],'Enable','on','FontSize',12,...
-                                        'String','525','Style','edit','Tag','rTwoHorizontalCustom1','BackgroundColor',c);
+                                        'String','525','Style','edit','Tag','rTwoHorizontalCustom1','BackgroundColor',ctextbox,'ForegroundColor',ctext);
      
 hOpenSpecial.pSpatial.rTwoHorizontalCustom2text = uicontrol('Parent',hOpenSpecial.pSpatialSplitting,'Units','normalized','Position',[0.77 0.715 0.1 0.15],'Enable','on','FontSize',12,...
-                                        'String','width','Style','text','Tag','rTwoHorizontalCustom','BackgroundColor',c);
+                                        'String','width','Style','text','Tag','rTwoHorizontalCustom','BackgroundColor',c,'ForegroundColor',ctext);
 
 hOpenSpecial.pSpatial.rTwoHorizontalCustom2 = uicontrol('Parent',hOpenSpecial.pSpatialSplitting,'Units','normalized','Position',[0.87 0.715 0.1 0.15],'Enable','on','FontSize',12,...
-                                        'String','498','Style','edit','Tag','rTwoHorizontalCustom2','BackgroundColor',c);
+                                        'String','498','Style','edit','Tag','rTwoHorizontalCustom2','BackgroundColor',ctextbox,'ForegroundColor',ctext);
 % End of JS Edit
 
                                     
 hOpenSpecial.pSpatial.rFourSymmetric = uicontrol('Parent',hOpenSpecial.pSpatialSplitting,'Units','normalized','Position',[0.05 0.45 0.9 0.15],'Enable','on','FontSize',12,...
-                                        'String','Four channels, 2x2 symmetric','Style','radiobutton','Tag','rFourSymmetric','HorizontalAlignment','left','BackgroundColor',c);                              
+                                        'String','Four channels, 2x2 symmetric','Style','radiobutton','Tag','rFourSymmetric','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);                              
                                  
 hOpenSpecial.pSpatial.rFourHorizontal = uicontrol('Parent',hOpenSpecial.pSpatialSplitting,'Units','normalized','Position',[0.05 0.275 0.9 0.15],'Enable','on','FontSize',12,...
-                                        'String','Four channels, split horizontal','Style','radiobutton','Tag','rFourHorizontal','HorizontalAlignment','left','BackgroundColor',c); 
+                                        'String','Four channels, split horizontal','Style','radiobutton','Tag','rFourHorizontal','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext); 
     
 hOpenSpecial.pSpatial.rFourHorizontal = uicontrol('Parent',hOpenSpecial.pSpatialSplitting,'Units','normalized','Position',[0.05 0.1 0.9 0.15],'Enable','on','FontSize',12,...
-                                        'String','Four channels, split vertical','Style','radiobutton','Tag','rFourVertical','HorizontalAlignment','left','BackgroundColor',c); 
+                                        'String','Four channels, split vertical','Style','radiobutton','Tag','rFourVertical','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext); 
 
 hOpenSpecial.pPostProcessing = uipanel('Parent',hOpenSpecial.fig,'Units','normalized','Position',[0.05 0.05 0.6 0.2],...
-                                     'Title','Optional Postprocessing','Tag','pPostProcessing','FontSize',10,'BackgroundColor',c);          
+                                     'Title','Optional Postprocessing','Tag','pPostProcessing','FontSize',10,'BackgroundColor',c,'ForegroundColor',ctext);          
                                  
 hOpenSpecial.pPost.cParallax = uicontrol('Parent',hOpenSpecial.pPostProcessing,'Units','normalized','Position',[0.05 0.725 0.9 0.25],'Enable','on','FontSize',12,...
-                                        'Callback',@PostSelect,'String','Parallax 3D Tracking','Style','checkbox','Tag','cParallax','HorizontalAlignment','left','BackgroundColor',c);     
+                                        'Callback',@PostSelect,'String','Parallax 3D Tracking','Style','checkbox','Tag','cParallax','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);     
                                     
 hOpenSpecial.pPost.cPolTIRF = uicontrol('Parent',hOpenSpecial.pPostProcessing,'Units','normalized','Position',[0.05 0.4 0.9 0.25],'Enable','on','FontSize',12,...
-                                        'Callback',@PostSelect,'String','PolTIRF Orientation Tracking','Style','checkbox','Tag','cPolTIRF','HorizontalAlignment','left','BackgroundColor',c);  
+                                        'Callback',@PostSelect,'String','PolTIRF Orientation Tracking','Style','checkbox','Tag','cPolTIRF','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);  
 
                                     % JS Edit 2022/09/09 for summing frames
                                     % (antiblock)
 hOpenSpecial.pPost.rAntiblockCh1text = uicontrol('Parent',hOpenSpecial.pPostProcessing,'Units','normalized','Position',[0.02 0.1 0.15 0.25],'Enable','on','FontSize',10,...
-                                        'String','Ch1','Style','text','Tag','rAntiblockCh1text','BackgroundColor',c);
+                                        'String','Ch1','Style','text','Tag','rAntiblockCh1text','BackgroundColor',c,'ForegroundColor',ctext);
                                     
 hOpenSpecial.pPost.rAntiblockCh1 = uicontrol('Parent',hOpenSpecial.pPostProcessing,'Units','normalized','Position',[0.15 0.1 0.1 0.25],'Enable','on','FontSize',12,...
-                                        'String','1','Style','edit','Tag','rAntiblockCh1','BackgroundColor',c);
+                                        'String','1','Style','edit','Tag','rAntiblockCh1','BackgroundColor',ctextbox,'ForegroundColor',ctext);
 
 hOpenSpecial.pPost.rAntiblockCh2text = uicontrol('Parent',hOpenSpecial.pPostProcessing,'Units','normalized','Position',[0.25 0.1 0.15 0.25],'Enable','on','FontSize',10,...
-                                        'String','Ch2','Style','text','Tag','rAntiblockCh2text','BackgroundColor',c);
+                                        'String','Ch2','Style','text','Tag','rAntiblockCh2text','BackgroundColor',c,'ForegroundColor',ctext);
                                     
 hOpenSpecial.pPost.rAntiblockCh2 = uicontrol('Parent',hOpenSpecial.pPostProcessing,'Units','normalized','Position',[0.4 0.1 0.1 0.25],'Enable','on','FontSize',12,...
-                                        'String','1','Style','edit','Tag','rAntiblockCh2','BackgroundColor',c);                                    
+                                        'String','1','Style','edit','Tag','rAntiblockCh2','BackgroundColor',ctextbox,'ForegroundColor',ctext);                                    
 
 hOpenSpecial.pPost.rAntiblockCh3text = uicontrol('Parent',hOpenSpecial.pPostProcessing,'Units','normalized','Position',[0.5 0.1 0.15 0.25],'Enable','on','FontSize',10,...
-                                        'String','Ch3','Style','text','Tag','rAntiblockCh3text','BackgroundColor',c);
+                                        'String','Ch3','Style','text','Tag','rAntiblockCh3text','BackgroundColor',c,'ForegroundColor',ctext);
                                     
 hOpenSpecial.pPost.rAntiblockCh3 = uicontrol('Parent',hOpenSpecial.pPostProcessing,'Units','normalized','Position',[0.65 0.1 0.1 0.25],'Enable','on','FontSize',12,...
-                                        'String','1','Style','edit','Tag','rAntiblockCh3','BackgroundColor',c);  
+                                        'String','1','Style','edit','Tag','rAntiblockCh3','BackgroundColor',ctextbox,'ForegroundColor',ctext);  
                                     
 hOpenSpecial.pPost.rAntiblockCh4text = uicontrol('Parent',hOpenSpecial.pPostProcessing,'Units','normalized','Position',[0.75 0.1 0.15 0.25],'Enable','on','FontSize',10,...
-                                        'String','Ch4','Style','text','Tag','rAntiblockCh4text','BackgroundColor',c);
+                                        'String','Ch4','Style','text','Tag','rAntiblockCh4text','BackgroundColor',c,'ForegroundColor',ctext);
                                     
 hOpenSpecial.pPost.rAntiblockCh4 = uicontrol('Parent',hOpenSpecial.pPostProcessing,'Units','normalized','Position',[0.9 0.1 0.1 0.25],'Enable','on','FontSize',12,...
-                                        'String','1','Style','edit','Tag','rAntiblockCh4','BackgroundColor',c);  
+                                        'String','1','Style','edit','Tag','rAntiblockCh4','BackgroundColor',ctextbox,'ForegroundColor',ctext);  
 
                                     % End of JS Edit 2022/09/09 
                                     
 hOpenSpecial.bLoadStack = uicontrol('Parent',hOpenSpecial.fig,'Units','normalized','Position',[0.7 0.05 0.25 0.15],'Enable','on','FontSize',14,...
-                                'String','Load Stack','Style','pushbutton','Tag','bLoadStack','HorizontalAlignment','center',...
+                                'String','Load Stack','Style','pushbutton','Tag','bLoadStack','HorizontalAlignment','center','BackgroundColor',cbutton,'ForegroundColor',ctext,...
                                 'Callback',@LoadStack);  
 
 %set(hOpenSpecial.rSeparateFiles,'UserData',hOpenSpecial.pSeparateFiles);
