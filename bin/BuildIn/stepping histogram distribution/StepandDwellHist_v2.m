@@ -14,7 +14,7 @@
 %   will identify all .mat files in the directory, compile them, then
 %   generate the step-size and dwell-time histograms.
 
-function [steps,dwells,dwells_for,dwells_back] = StepandDwellHist_v2(directory,threshold,framerate)
+function [ONsteps,OFFsteps,dwells,dwells_for,dwells_back] = StepandDwellHist_v2(directory,threshold,framerate)
 % Default threshold is 0.
 
 % Gather steps and dwells all in one folder
@@ -22,7 +22,8 @@ cd = directory; %JS Edit 220207
 f = dir(fullfile(cd,'*.mat')); %JS Edit 220207
 fnum = length(f);
 
-steps = [];
+ONsteps = [];
+OFFsteps = [];
 dwells = [];
 dwells_for = [];
 dwells_back = [];
@@ -37,10 +38,14 @@ for i=1:fnum
     steptrace = load(strcat(cd,'\',fname));
     trace = steptrace.data;
     data = trace.trace;
+    data_yx = trace.trace_yx;
     
     % Steps
     [on_steps, off_steps] = add_to_list_6col_steps_v2(data,threshold);
-    steps = [steps;[on_steps', off_steps']];
+    ONsteps = [ONsteps; on_steps'];
+    
+    [on_steps, off_steps] = add_to_list_6col_steps_v2(data_yx,threshold);
+    OFFsteps = [OFFsteps; on_steps'];
 
     % Dwells
     mat = add_to_list_6col_dwells_v2(data,threshold,[],framerate);
@@ -61,7 +66,7 @@ end
 % and for neighbors also.
 % Also option for common titles eventually?
 
-PlotStepStats(steps(:,1), steps(:,2), dwells, dwells_for, fnum)
+PlotStepStats(fnum, ONsteps, OFFsteps, dwells, dwells_for, dwells_back)
 
 
 

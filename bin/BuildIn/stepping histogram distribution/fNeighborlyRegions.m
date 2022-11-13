@@ -34,6 +34,7 @@ end
 
 % Storage for statistics in each region
 RegionStepStats = cell(1,length(xb));
+RegionOffStepStats = cell(1,length(xb));
 RegionDwellStats = cell(1,length(xb));
 RegionDwellForStats = cell(1,length(xb));
 RegionDwellBackStats = cell(1,length(xb));
@@ -44,6 +45,7 @@ for i=1:fnum
     steptrace = load(strcat(actualdir,'\',fname));
     data = steptrace.data;
     trace = data.trace;
+    trace_yx = data.trace_yx;
     
     RM = zeros(length(data.neighbors),6);
     Regions = cell(1,length(xb));
@@ -134,6 +136,9 @@ for i=1:fnum
         [on_steps, off_steps] = add_to_list_6col_steps_v3(trace,NearNeighborRegions{k},0);
         RegionStepStats{k} = [RegionStepStats{k}; [on_steps', off_steps']];
         
+        [on_steps, off_steps] = add_to_list_6col_steps_v3(trace_yx,NearNeighborRegions{k},0);
+        RegionOffStepStats{k} = [RegionOffStepStats{k}; on_steps'];
+        
         % Dwells
         mat = add_to_list_6col_dwells_v3(trace,NearNeighborRegions{k},framerate,0);
         if ~isempty(mat) %check that dwells were found (JS Edit 220310)
@@ -146,13 +151,17 @@ for i=1:fnum
             RegionDwellBackStats{k} = [RegionDwellBackStats{k}; backward];
         end
     end
-    RegionStepStats{1}
-    RegionDwellStats{1}
-    RegionDwellForStats{1}
-    RegionDwellBackStats{1}
+%     RegionStepStats{1}
+%     RegionDwellStats{1}
+%     RegionDwellForStats{1}
+%     RegionDwellBackStats{1}
 end
 
-
+if ~isempty(RegionStepStats{1})
+for k=1:length(xb)
+    PlotStepStats(fnum,RegionStepStats{k},RegionOffStepStats{k},RegionDwellStats{k},RegionDwellForStats{k},RegionDwellBackStats{k})
+end
+end
 
 
 function [x_steps, y_steps] = add_to_list_6col_steps_v3(trace,tchoice,use_thresh)

@@ -1,4 +1,4 @@
-function PlotStepStats(onsteps, offsteps, dwells, dwells_for, tracenum)
+function PlotStepStats(tracenum, onsteps, offsteps, dwells, dwells_for, dwells_back)
 %Plot the characteristic statistics in nice figures
 
 %JS Edit 220213
@@ -13,58 +13,50 @@ n = length(h);
 
 % On-axis step histogram
 figure(n+1)
+subplot(2,3,1)
 histogram(onsteps,'BinWidth',1);
 axis([-40,48,0,40]);
 set(gca, 'XTick', [-80 -32 -24 -16 -8 0 8 16 24 32 40 100]);
 ylim([0 70])
-xlabel('On-axis step size (nm)');
-ylabel('Counts');
-title ('on-axis step size distribution')
+xlabel('step size (nm)');
+title ('on-axis steps')
 legend(sprintf(' traces = %.0f \n N = %.0f \n forward = %.0f \n backward = %.0f', [tracenum, N, Nfor(1), Nback(1)]))
 
 % Off-axis step histogram
-figure(n+2)
+subplot(2,3,2)
 histogram(offsteps,'BinWidth',1);
 axis([-40,48,0,100]);
 set(gca, 'XTick', [-80 -32 -24 -16 -8 0 8 16 24 32 40 100]);
 ylim([0 70])
-xlabel('Off-axis step size (nm)');
-ylabel('Counts');
-title ('off-axis step size distribution')
+xlabel('step size (nm)');
+title ('off-axis steps')
 
 % Dwell histogram
 % JS 220207 IDK who thought setting the xlimits to 0.25 seconds was a good
 % idea, but getting rid of that allows us to see the plots.
-figure(n+3)
-%histogram(dwells,'BinWidth',.001);
+subplot(2,3,3)
 histogram(dwells, 'BinWidth', 1.5);
-%xlim([0 0.25])
-%ylim([0 50])
-xlabel('Time (sec)');
+xlabel('Time (s)');
 ylabel('Counts');
-title ('dwell time distribution')
+title ('dwell times')
+
 % Forward_Dwell histogram
-figure(n+4)
+subplot(2,3,4)
 histogram(dwells_for,'BinWidth',1.5);
-%histogram(dwells, 'BinWidth', 0.3);
-%xlim([0 0.25])
-%ylim([0 30])
-xlabel('Time (sec)');
-ylabel('Counts');
-title ('forward dwell time distribution')
+xlabel('Time (s)');
+title ('forward dwell times')
+
 % BackwardDwell histogram
-figure(n+5)
-% histogram(dwells_back,'BinWidth',.001);
-% %histogram(dwells, 'BinWidth', 0.3);
-% %xlim([0 0.25])
-% ylim([0 20])
-% xlabel('Time (sec)');
-% ylabel('Counts');
-% title ('backward dwell time distribution')
+subplot(2,3,6)
+histogram(dwells_back,'BinWidth',1.5);
+xlabel('Time (s)');
+title ('backward dwell times')
 
 %% JS Edit 220307
 % make a CDF plot and fit
+subplot(2,3,5)
 obj0 = cdfplot(dwells_for);
+xlabel('Time (s)');
 hold on
 
 % Define model according to https://www.mathworks.com/matlabcentral/answers/850245-how-to-do-curve-fitting-by-a-user-defined-function
@@ -77,7 +69,7 @@ fittedmdl = fit(X',Y',mdl_gamma_cdf,'start',[3.])
 plot(fittedmdl)
 legend("Fitted k = "+num2str(fittedmdl.k))
 
-figure(n+4)
+subplot(2,3,4)
 hold on
 ax = gca;
 children = ax.Children;
@@ -86,9 +78,6 @@ A = length(children.Data);
 k = fittedmdl.k;
 tt = linspace(0,max(children.BinEdges),100);
 plot(tt, A*k^2.*tt.*exp(-k.*tt));
-
-% tt
-% k^2.*tt.*exp(-k.*tt)
 
 
 end
