@@ -15,7 +15,11 @@ fnum = length(f);
 % a = after meaning after the motor has passed the MAP mean position
 % after is to exploit possible asymmetry in the MAPs behavior. If you want
 % symmetry, just call them equivalent
-xb = [0,50,100]; yb = [0,200,200]; xa = xb; ya = yb;
+%xb = [0,100]; yb = [0,100];
+%xb = [0,100,200]; yb = [0,200,200];
+xb = [0,75,150,275]; yb = [0,200,200,200];
+%xb = [0,50,100,200]; yb = [0,200,200,200];
+xa = 0.5*xb; ya = yb;
 
 % deal with all the cases of no parameters passed, here are defaults
 % assume symmetry for any cases less than all
@@ -44,6 +48,9 @@ for i=1:fnum
     fname = f(i).name;
     steptrace = load(strcat(actualdir,'\',fname));
     data = steptrace.data;
+    if ~isfield(data,'trace')
+        fnum = fnum - 1;
+    else
     trace = data.trace;
     trace_yx = data.trace_yx;
     
@@ -132,9 +139,10 @@ for i=1:fnum
     
     
     for k=1:length(NearNeighborRegions)
+        
         % Steps
         [on_steps, off_steps] = add_to_list_6col_steps_v3(trace,NearNeighborRegions{k},0);
-        RegionStepStats{k} = [RegionStepStats{k}; [on_steps', off_steps']];
+        RegionStepStats{k} = [RegionStepStats{k}; on_steps'];
         
         [on_steps, off_steps] = add_to_list_6col_steps_v3(trace_yx,NearNeighborRegions{k},0);
         RegionOffStepStats{k} = [RegionOffStepStats{k}; on_steps'];
@@ -151,10 +159,7 @@ for i=1:fnum
             RegionDwellBackStats{k} = [RegionDwellBackStats{k}; backward];
         end
     end
-%     RegionStepStats{1}
-%     RegionDwellStats{1}
-%     RegionDwellForStats{1}
-%     RegionDwellBackStats{1}
+    end %of isfield
 end
 
 if ~isempty(RegionStepStats{1})
@@ -221,10 +226,8 @@ end
 
 
 function [forward,backward] = add_to_list_6col_dwells_for_back_v3(trace,tchoice,framerate)
-xsteps = trace(:,4);
-xsteps = xsteps(~isnan(xsteps));
-ysteps = trace(:,3);
-ysteps = ysteps(~isnan(ysteps));
+xsteps = trace(:,4); xsteps = xsteps(~isnan(xsteps));
+ysteps = trace(:,3); ysteps = ysteps(~isnan(ysteps));
 stepsis = [ysteps xsteps];
 L = length(stepsis);
 forsteps = zeros(L,1);

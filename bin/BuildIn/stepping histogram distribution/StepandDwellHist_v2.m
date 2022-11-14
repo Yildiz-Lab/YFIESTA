@@ -37,6 +37,9 @@ for i=1:fnum
     fname = f(i).name;
     steptrace = load(strcat(cd,'\',fname));
     trace = steptrace.data;
+    if ~isfield(trace,'trace')
+        fnum = fnum - 1;
+    else
     data = trace.trace;
     data_yx = trace.trace_yx;
     
@@ -58,6 +61,7 @@ for i=1:fnum
         dwells_for = [dwells_for; forward];
         dwells_back = [dwells_back; backward];
     end
+    end %if trace exists
     
 end
 
