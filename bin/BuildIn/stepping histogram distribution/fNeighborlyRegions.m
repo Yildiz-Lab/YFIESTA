@@ -15,9 +15,9 @@ fnum = length(f);
 % a = after meaning after the motor has passed the MAP mean position
 % after is to exploit possible asymmetry in the MAPs behavior. If you want
 % symmetry, just call them equivalent
-%xb = [0,100]; yb = [0,100];
+%xb = [0,100]; yb = [0,200];
 %xb = [0,100,200]; yb = [0,200,200];
-xb = [0,75,150,275]; yb = [0,200,200,200];
+xb = [0,75,150,225]; yb = [0,200,200,200];
 %xb = [0,50,100,200]; yb = [0,200,200,200];
 xa = 0.5*xb; ya = yb;
 
@@ -64,11 +64,11 @@ for i=1:fnum
 %         RM(n,5) = mean(rsummod(:,3)); RM(n,6) = std(rsummod(:,3));
         r = data.neighbors{n};
         RM(n,1) = r(1,1); RM(n,2) = r(end,1);
-        RM(n,3) = mean(r(:,2)); RM(n,4) = std(r(:,2));
-        RM(n,5) = mean(r(:,3)); RM(n,6) = std(r(:,3));
+        RM(n,3) = mean(r(:,2),'omitnan'); RM(n,4) = std(r(:,2),'omitnan');
+        RM(n,5) = mean(r(:,3),'omitnan'); RM(n,6) = std(r(:,3),'omitnan');
         
     end
-
+    
     % Now RM has all the information to go through, but most importantly
     % t,tend,xbegin,xend,ybegin,yend for each region defined (think like box border)     
     % it is 3D trace: t, on-axis(x), off-axis(y)
@@ -89,20 +89,22 @@ for i=1:fnum
         % those that haven't been matched by the end should be considered
         % in the final region
         if b == length(xb)
-            notnan = 1:length(trace); notnan = notnan(~isnan(trace(:,1)'));
-            Regions{b} = notnan(~ismember(notnan,Regions{b-1}));
-        end
-        
-        % Finally, if we have a previous region, and we want to exclude
-        % this behavior (like rings rather than a convex circle), then you
-        % should make sure these t points don't exist in the previous
-        % region. This can be optioned out very easily by another passed
-        % param
-        if b > 2
-            RB = Regions{b-1};
-            Regions{b-1} = RB(~ismember(RB,Regions{b-2}));
+            notnan = 1:length(trace);
+            Regions{b} = notnan(~isnan(trace(:,1)'));
         end
 
+    end
+    
+    % Finally, if we have a previous region, and we want to exclude
+    % this behavior (like rings rather than a convex circle), then you
+    % should make sure these t points don't exist in the previous
+    % region. This can be optioned out very easily by another passed
+    % param
+    for m=1:length(xb)
+        for n=m-1:-1:1
+            RB = Regions{m};
+            Regions{m} = RB(~ismember(RB,Regions{n}));
+        end
     end
     
     % we now have time points that are in user defined region. Now, there
@@ -119,9 +121,12 @@ for i=1:fnum
     [idx,~] = find(trace(:,5)==1);
     idx = [1,idx',length(trace)];
     for j = 1:length(idx)-1
-        nummember = -1;        
-        for b = length(xb):-1:1
+        nummember = -1;
+        %for b = length(xb):-1:1
+        for b = 1:length(xb)
             tofind = idx(j):idx(j+1)-1;
+            b;
+            ismember(tofind,Regions{b});
             num = length(tofind(ismember(tofind,Regions{b})==1));
             if num > nummember
                 nummember = num;
