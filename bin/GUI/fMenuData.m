@@ -83,7 +83,7 @@ if PathName~=0
         failed=1;
     end
     if isempty(TimeInfo{1}) || length(unique(TimeInfo{1}))<length(TimeInfo{1})  
-        Time = str2double(fInputDlg('No creation time  - Enter plane time difference in ms:','100'));    
+        Time = str2double(fInputDlg('No creation time  - Enter plane time difference in ms:','70'));    
         nFrames=size(Stack{1},3);
         if ~isnan(Time)
             TimeInfo{1}=(0:nFrames-1)*Time;
@@ -95,7 +95,7 @@ if PathName~=0
         Time = -round(mean(TimeInfo{1}(2:end)-TimeInfo{1}(1:end-1)),2);
     end
     if isempty(PixSize)
-        PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','160'));    
+        PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','86.7'));    
     else
         PixSize = str2double(fInputDlg('Enter Pixel Size in nm:',num2str(PixSize,4)));    
     end
@@ -177,7 +177,7 @@ if PathName~=0
         failed=1;
     end
     if isempty(TimeInfo{1}) || length(unique(TimeInfo{1}))<length(TimeInfo{1})  
-        Time = str2double(fInputDlg('No creation time  - Enter plane time difference in ms:','100'));    
+        Time = str2double(fInputDlg('No creation time  - Enter plane time difference in ms:','70'));    
         nFrames=size(Stack{1},3);
         if ~isnan(Time)
             TimeInfo{1}=(0:nFrames-1)*Time;
@@ -189,7 +189,7 @@ if PathName~=0
         Time = -round(mean(TimeInfo{1}(2:end)-TimeInfo{1}(1:end-1)),2);
     end
     if isempty(PixSize)
-        PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','160'));    
+        PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','86.7'));    
     else
         PixSize = str2double(fInputDlg('Enter Pixel Size in nm:',num2str(PixSize,4)));    
     end
@@ -275,7 +275,7 @@ if ~isempty(fOpenStruct)
                     TimeInfo{n} = 0;
                 end
             elseif isempty(TimeInfo{n}) || length(unique(TimeInfo{n}))<length(TimeInfo{n}) 
-                Config.Time(n) = str2double(fInputDlg('No creation time  - Enter plane time difference in ms:','100'));  
+                Config.Time(n) = str2double(fInputDlg('No creation time  - Enter plane time difference in ms:','70'));  
                 if ~isnan(Config.Time(n))
                     TimeInfo{n}=(0:nFrames-1)*Config.Time(n);
                 else
@@ -405,7 +405,7 @@ if ~isempty(fOpenStruct)
                         TimeInfo{n} = 0;
                     end
                 elseif isempty(TimeInfo{n}) || length(unique(TimeInfo{n}))<length(TimeInfo{n}) 
-                    Config.Time(n) = str2double(fInputDlg('No creation time  - Enter plane time difference in ms:','100'));  
+                    Config.Time(n) = str2double(fInputDlg('No creation time  - Enter plane time difference in ms:','70'));  
                     if ~isnan(Config.Time(n))
                         TimeInfo{n}=(0:nFrames-1)*Config.Time(n);
                     else
@@ -430,7 +430,7 @@ if ~isempty(fOpenStruct)
             end
         end
         if isempty(PixSize)
-            PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','160'));    
+            PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','86.7'));    
         else
             PixSize = str2double(fInputDlg('Enter Pixel Size in nm:',num2str(PixSize,4)));    
         end
@@ -506,7 +506,7 @@ if ~isempty(fOpenStruct)
                     TimeInfo{n} = 0;
                 end
             elseif isempty(TimeInfo{n}) || length(unique(TimeInfo{n}))<length(TimeInfo{n}) 
-                Config.Time(n) = str2double(fInputDlg('No creation time  - Enter plane time difference in ms:','100'));  
+                Config.Time(n) = str2double(fInputDlg('No creation time  - Enter plane time difference in ms:','70'));  
                 if ~isnan(Config.Time(n))
                     TimeInfo{n}=(0:nFrames-1)*Config.Time(n);
                 else
@@ -639,7 +639,7 @@ if ~isempty(fOpenStruct)
                         TimeInfo{n} = 0;
                     end
                 elseif isempty(TimeInfo{n}) || length(unique(TimeInfo{n}))<length(TimeInfo{n}) 
-                    Config.Time(n) = str2double(fInputDlg('No creation time  - Enter plane time difference in ms:','100'));  
+                    Config.Time(n) = str2double(fInputDlg('No creation time  - Enter plane time difference in ms:','70'));  
                     if ~isnan(Config.Time(n))
                         TimeInfo{n}=(0:nFrames-1)*Config.Time(n);
                     else
@@ -664,7 +664,7 @@ if ~isempty(fOpenStruct)
             end
         end
         if isempty(PixSize)
-            PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','160'));    
+            PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','86.7'));    
         else
             PixSize = str2double(fInputDlg('Enter Pixel Size in nm:',num2str(PixSize,4)));    
         end
@@ -732,7 +732,7 @@ if FileName~=0
     progressdlg('Title','Loading Stack','String','Reading stack from MATLAB file','Indeterminate','on');
     load([PathName FileName],'Stack','TimeInfo'); 
     progressdlg('close');
-    PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','160'));
+    PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','86.7'));
     nFrames = zeros(size(Stack));
     for n = 1:length(Stack)
         nFrames(n) = size(Stack{n},3);
