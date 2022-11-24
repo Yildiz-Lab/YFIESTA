@@ -115,12 +115,13 @@ trace = [(handles.currentPlotPSD_Long*flipSteps)' (handles.currentPlotPSD_Short*
     (changePoints)' (handles.usageVector)' ];
 
 % JS Edit 2022/11/11 for .mat files
-data.xy = [(handles.currentPlotPSD_Long*flipSteps)' (handles.currentPlotPSD_Short*flipSteps)'];
-data.yx = data.xy(:,[2,1]);
-
 if handles.xydisplayed
+    data.xy = [(handles.currentPlotPSD_Long*flipSteps)' (handles.currentPlotPSD_Short*flipSteps)'];
+    data.yx = data.xy(:,[2,1]);
     data.trace = trace;
 else
+    data.yx = [(handles.currentPlotPSD_Long*flipSteps)' (handles.currentPlotPSD_Short*flipSteps)'];
+    data.xy = data.yx(:,[2,1]);
     data.trace_yx = trace;
 end
 
