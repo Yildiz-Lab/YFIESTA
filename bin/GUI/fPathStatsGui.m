@@ -774,10 +774,12 @@ else
 end
 
 % New way to save
+if ~isfile(strcat(fname,'_fiona.mat')) % Don't overwrite existing file
 data.xy = xynew;
 data.yx = xynew(:,[2,1]);
 data.neighbors = neighbor_txy;
 save(strcat(fname,'_fiona.mat'),'data');
+end
 
 % at the end run FIONAviewer
 FIONAviewer(fullfile(FFolderName,strcat(PathStats(n).Name(10:end),'_fiona.mat')))

@@ -318,7 +318,12 @@ set(newax, 'units', 'normalized', 'position', [0.1 0.1 0.8 0.8]);
 set(ExportFig, 'visible', 'on')
 % JS Edit 2022/10/04 to allow for automatic saving of figs (less hastle)
 [path,name,~] = fileparts(get(handles.StepsFilename,'String'));
-savefig(ExportFig, fullfile(path,strcat(name,'.fig')))
+if handles.xydisplayed
+    savefig(ExportFig, fullfile(path,strcat(name,'.fig')))
+else
+    name = name(1:end-6);
+    savefig(ExportFig, fullfile(path,strcat(name,'_yx_fiona.fig')))
+end
 close(ExportFig)
 
 
