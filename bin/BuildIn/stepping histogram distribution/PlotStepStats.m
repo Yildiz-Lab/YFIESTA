@@ -30,7 +30,7 @@ set(gca, 'XTick', [-80 -32 -24 -16 -8 0 8 16 24 32 40 100]);
 ylim([0 70])
 xlabel('step size (nm)');
 title ('off-axis steps')
-legend(sprintf(' N = %.0f \n mean = %.3f \n std = %.3f', [length(offsteps), mean(offsteps), std(offsteps)]))
+legend(sprintf(' N = %.0f \n mean = %.3f \n std = %.3f', [length(offsteps), mean(abs(offsteps)), std(abs(offsteps))]))
 
 % Dwell histogram
 % JS 220207 IDK who thought setting the xlimits to 0.25 seconds was a good

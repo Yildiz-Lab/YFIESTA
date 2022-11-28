@@ -1,4 +1,4 @@
-function fNeighborlyRegions(framerate, actualdir, xbefore, ybefore, xafter, yafter)
+function fNeighborlyRegions(framerate, actualdir, xbefore, ybefore, xafter, yafter, noplot)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -15,11 +15,6 @@ fnum = length(f);
 % a = after meaning after the motor has passed the MAP mean position
 % after is to exploit possible asymmetry in the MAPs behavior. If you want
 % symmetry, just call them equivalent
-%xb = [0,100]; yb = [0,200];
-%xb = [0,100,200]; yb = [0,200,200];
-xb = [0,75,150,225]; yb = [0,200,200,200];
-%xb = [0,50,100,200]; yb = [0,200,200,200];
-xa = 0.5*xb; ya = yb;
 
 % deal with all the cases of no parameters passed, here are defaults
 % assume symmetry for any cases less than all
@@ -34,6 +29,9 @@ if nargin > 4
 end
 if nargin > 5
     ya = yafter;
+end
+if nargin < 7
+    noplot = 0;
 end
 
 % Storage for statistics in each region
@@ -167,102 +165,9 @@ for i=1:fnum
     end %of isfield
 end
 
-if ~isempty(RegionStepStats{1})
-for k=1:length(xb)
-    PlotStepStats(fnum,RegionStepStats{k},RegionOffStepStats{k},RegionDwellStats{k},RegionDwellForStats{k},RegionDwellBackStats{k})
-end
-end
-
-
-function [x_steps, y_steps] = add_to_list_6col_steps_v3(trace,tchoice,use_thresh)
-% adapted from add_to_list_6col_steps_v2
-x_steps = [];
-y_steps = [];
-
-limit = length(trace(:,1));
-counter = length(x_steps);
-
-for i=2:limit
-    if ( trace(i,5) >= 1 && prod(trace(i-1:i,6))>=use_thresh^2 ) %check that it is a changepoint
-        %check that the beginning point is within that region
-        % if we want to do end, then check i rather than i-1
-        if ismember(i-1,tchoice) 
-            counter  = counter+1;
-            x_steps(counter) = trace(i,3) - trace(i-1,3);
-            y_steps(counter) = trace(i,4) - trace(i-1,4);
-        end
+if ~isempty(RegionStepStats{1}) && ~noplot
+    for k=1:length(xb)
+        PlotStepStats(fnum,RegionStepStats{k},RegionOffStepStats{k},RegionDwellStats{k},RegionDwellForStats{k},RegionDwellBackStats{k})
     end
 end
 
-
-function dwells = add_to_list_6col_dwells_v3(trace,tchoice,framerate,use_thresh)
-% adapted from add_to_list_6col_dwells_v2
-dwells = [];
-
-cp = trace(:,5);
-usage = trace(:,6);
-limit = length(trace(:,3));
-%limit = length(trace(:,7)); % JS Edit 220207
-
-start = 1;
-counter = length(dwells);
-for i = 2:limit
-    if (cp(i) == 1)
-        dwell = start:i-1;
-        start = i;
-        if ( prod(usage(start:i)) >= use_thresh && start ~= 1)
-            %check that the beginning point is within that region
-            % if we want to do end, then check i rather than i-1
-            if ismember(i-1,tchoice) 
-                counter = counter+1;
-                dwells(counter,1) = trace(i-1,4);
-                dwells(counter,2) = trace(i-1,3);
-                dwells(counter,3) = length(dwell)*framerate;
-
-                if (trace(i-1,3) < -pi/2 || trace(i-1,3) > pi/2 )
-                    dwells(counter,4) = -1;
-                else
-                    dwells(counter,4) = 1;
-                end
-            end
-        end
-    end
-end
-
-
-function [forward,backward] = add_to_list_6col_dwells_for_back_v3(trace,tchoice,framerate)
-xsteps = trace(:,4); xsteps = xsteps(~isnan(xsteps));
-ysteps = trace(:,3); ysteps = ysteps(~isnan(ysteps));
-stepsis = [ysteps xsteps];
-L = length(stepsis);
-forsteps = zeros(L,1);
-for i = 2:L
-    if ysteps(i)> ysteps(i-1)
-        forsteps(i) = 1;
-    elseif ysteps(i)< ysteps(i-1)
-        forsteps(i) = -1;
-    else
-        forsteps(i)= 0;
-    end
-end
-dwell_for=[];
-dwell_back=[];
-cnt=1; %changed count to 1, but should we be careful with our previous function?
-for i=1:length(forsteps)
-    %check that the beginning point is within that region
-    % if we want to do end, then check i rather than i-1
-    if ismember(i-1,tchoice) 
-        if(forsteps(i)==0)
-            cnt=cnt+1;
-        elseif(forsteps(i)==1)
-            dwell_for=[ dwell_for cnt]; cnt=1;
-        else
-            dwell_back=[ dwell_back cnt]; cnt=1;
-        end
-    end
-
-end
-forward = dwell_for .* framerate;
-forward = forward';
-backward = dwell_back .* framerate;
-backward = backward';

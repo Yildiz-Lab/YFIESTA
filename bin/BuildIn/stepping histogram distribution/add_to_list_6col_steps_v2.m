@@ -15,8 +15,8 @@ end
 limit = length(trace(:,1));
 counter = length(x_steps);
 
-for (i=2:limit)
-    if ( trace(i,5) >= 1 && prod(trace(i-1:i,6))>=use_thresh^2 )
+for i=2:limit
+    if trace(i,5) >= 1 && abs(trace(i,3) - trace(i-1,3)) >= use_thresh
         counter  = counter+1;
         x_steps(counter) = trace(i,3) - trace(i-1,3);
         y_steps(counter) = trace(i,4) - trace(i-1,4);

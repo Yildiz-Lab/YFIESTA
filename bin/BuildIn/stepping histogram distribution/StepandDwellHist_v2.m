@@ -1,6 +1,7 @@
 % StepandDwellHist.m                    Created by John Canty 03-06-2017
 
 % Edited by Mohamed Elshenawy 07-31-2017
+% Then by Joseph Slivka 2022/11/17
 
 % Generates histograms from the steps, dwells, forward and backward dwells from FionaViewer.m
 
@@ -17,10 +18,16 @@
 function [ONsteps,OFFsteps,dwells,dwells_for,dwells_back] = StepandDwellHist_v2(directory,threshold,framerate)
 % Default threshold is 0.
 
+% check if directory is a file or a folder
+if isfile(directory)
+    fname = directory;
+    fnum = 1;
+else
 % Gather steps and dwells all in one folder
 cd = directory; %JS Edit 220207
 f = dir(fullfile(cd,'*.mat')); %JS Edit 220207
 fnum = length(f);
+end
 
 ONsteps = [];
 OFFsteps = [];
@@ -34,8 +41,14 @@ if nargin < 2
 end
     
 for i=1:fnum
-    fname = f(i).name;
-    steptrace = load(strcat(cd,'\',fname));
+    
+    if isfile(directory)
+        steptrace = load(fname);
+    else
+        fname = f(i).name;
+        steptrace = load(strcat(cd,'\',fname));
+    end
+    
     trace = steptrace.data;
     if ~isfield(trace,'trace')
         fnum = fnum - 1;
@@ -44,11 +57,11 @@ for i=1:fnum
     data_yx = trace.trace_yx;
     
     % Steps
-    [on_steps, off_steps] = add_to_list_6col_steps_v2(data,threshold);
+    [on_steps, ~] = add_to_list_6col_steps_v2(data,threshold);
     ONsteps = [ONsteps; on_steps'];
     
-    [on_steps, off_steps] = add_to_list_6col_steps_v2(data_yx,threshold);
-    OFFsteps = [OFFsteps; on_steps'];
+    [off_steps, ~] = add_to_list_6col_steps_v2(data_yx,threshold);
+    OFFsteps = [OFFsteps; off_steps'];
 
     % Dwells
     mat = add_to_list_6col_dwells_v2(data,threshold,[],framerate);
@@ -70,11 +83,24 @@ end
 % and for neighbors also.
 % Also option for common titles eventually?
 
+if ~isfile(directory) %only plot for summary
 PlotStepStats(fnum, ONsteps, OFFsteps, dwells, dwells_for, dwells_back)
-
-
 
 %% If neighbors are a thing we want to examine, run to see neighbor statistics
 
-fNeighborlyRegions(framerate,directory) %Options to put in regions here, maybe if a GUI comes
+%xb = [0,100]; yb = [0,200];
+xb = [0,100,200]; yb = [0,200,200];
+%xb = [0,75,150,225]; yb = [0,200,200,200];
+%xb = [0,50,100,200]; yb = [0,200,200,200];
+xa = 0.5*xb; ya = yb;
+
+%Options to put in regions here, maybe if a GUI comes
+fNeighborlyRegions(framerate,directory,xb,yb,xa,ya)
+
+% Finally, compile all the data into some summaries for an excel sheet
+StepInfoUnique(framerate,fullfile(directory,'/'),xb,yb,xa,ya)
+% This is a bit recursive, but it never enters this part of the function
+% once we set StepInfo in motion
+
+end
 
