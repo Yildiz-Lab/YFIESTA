@@ -121,7 +121,7 @@ if isfield(data,'trace')
         NStatsArr(i,1,k) = length(ONsteps(ONsteps>0)); NStatsArr(i,2,k) = mean(ONsteps(ONsteps>0),'omitnan'); NStatsArr(i,3,k) = std(ONsteps(ONsteps>0),'omitnan');
         NStatsArr(i,4,k) = length(ONsteps(ONsteps<0)); NStatsArr(i,5,k) = mean(ONsteps(ONsteps<0),'omitnan'); NStatsArr(i,6,k) = std(ONsteps(ONsteps<0),'omitnan');
         NStatsArr(i,7,k) = length(OFFsteps); NStatsArr(i,8,k) = mean(abs(OFFsteps)); NStatsArr(i,9,k) = std(abs(OFFsteps));
-        NStatsArr(i,10,k) = size(NearNeighborRegions{k},1);
+        NStatsArr(i,10,k) = length(NearNeighborRegions{k});
     end
 end
 
