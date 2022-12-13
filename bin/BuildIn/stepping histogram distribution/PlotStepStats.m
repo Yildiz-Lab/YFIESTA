@@ -1,5 +1,9 @@
-function PlotStepStats(tracenum, onsteps, offsteps, dwells, dwells_for, dwells_back)
+function PlotStepStats(tracenum, onsteps, offsteps, dwells, dwells_for, dwells_back, savename)
 %Plot the characteristic statistics in nice figures
+
+if nargin < 7
+    savename = [];
+end
 
 %JS Edit 220213
 % Some general statistics that I would like to show in the plot legend
@@ -80,6 +84,9 @@ k = fittedmdl.k;
 tt = linspace(0,max(children.BinEdges),100);
 plot(tt, A*k^2.*tt.*exp(-k.*tt));
 
+if ~isempty(savename)
+    savefig(savename)
+end
 
 end
 
