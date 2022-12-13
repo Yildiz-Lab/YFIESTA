@@ -84,21 +84,39 @@ end
 % Also option for common titles eventually?
 
 if ~isfile(directory) %only plot for summary
-PlotStepStats(fnum, ONsteps, OFFsteps, dwells, dwells_for, dwells_back)
+PlotStepStats(fnum, ONsteps, OFFsteps, dwells, dwells_for, dwells_back, fullfile(directory,"AllStats.fig"))
 
 %% If neighbors are a thing we want to examine, run to see neighbor statistics
 
-%xb = [0,100]; yb = [0,200];
-xb = [0,100,200]; yb = [0,200,200];
+%Options to put in regions here, maybe if a GUI comes
+%xb = [0,50,100,100]; yb = [0,25,25,50];
+%xb = [0,100,200]; yb = [0,200,200];
 %xb = [0,75,150,225]; yb = [0,200,200,200];
 %xb = [0,50,100,200]; yb = [0,200,200,200];
-xa = 0.5*xb; ya = yb;
+%xa = 0.2*xb; ya = yb;
+%Forward/Backward Scheme
+xb = [0,75,75,150,150]; yb = [0,35,35,70,70];
+xa = [0,0,75,75,150]; ya = yb;
 
-%Options to put in regions here, maybe if a GUI comes
-fNeighborlyRegions(framerate,directory,xb,yb,xa,ya)
+% Generate an automatic foldername that carries Neighbor Info
+totarr = [xb,yb,xa,ya];
+foldername = '[';
+for j = 1:length(totarr)
+    foldername = strcat(foldername, num2str(totarr(j)), ',');
+    if mod(j,length(xb)) == 0 && j ~= length(totarr)
+        foldername = strcat(foldername(1:end-1), '],[');
+    end
+end
+foldername = strcat(foldername(1:end-1), ']');
+foldername = fullfile(directory,foldername);
+if ~isfolder(foldername)
+    mkdir(foldername)
+end
+
+fNeighborlyRegions(framerate,directory,xb,yb,xa,ya,0,foldername)
 
 % Finally, compile all the data into some summaries for an excel sheet
-StepInfoUnique(framerate,fullfile(directory,'/'),xb,yb,xa,ya)
+StepInfoUnique(framerate,fullfile(directory,'/'),xb,yb,xa,ya,foldername)
 % This is a bit recursive, but it never enters this part of the function
 % once we set StepInfo in motion
 

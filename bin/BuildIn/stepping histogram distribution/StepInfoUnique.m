@@ -1,4 +1,4 @@
-function StepInfoUnique(framerate, rootfolder, xb, yb, xa, ya)
+function StepInfoUnique(framerate, rootfolder, xb, yb, xa, ya, neighborsavefolder)
 
 % JS 2022/11/27
 % Compile Individual Collective Data for Traces to help summarize
@@ -18,6 +18,9 @@ end
 if nargin < 5
     xa = 0.5*xb; ya = yb;
 end
+if nargin < 6
+    neighborsavefolder = [];
+end
 
 
 f = dir(fullfile(rootfolder,'*.mat')); %JS Edit 220207
@@ -31,8 +34,7 @@ fnames = cell(fnum,1);
 for i = 1:fnum
     fnames{i} = f(i).name;
     fullname = strcat(rootfolder,f(i).name);
-    StatsArr = FillStatsArray(StatsArr, fullname, i, framerate);
-    
+    StatsArr = FillStatsArray(StatsArr, fullname, i, framerate); 
 end
 
 StatsTable = ConvertToTable(StatsArr, fnames);
@@ -58,6 +60,9 @@ for k = 1:length(xb)
         else
             StatsTable = ConvertToTable(NStatsArr(:,:,k), fnames);
             writetable(StatsTable,strcat(rootfolder,'AllNeighborStepInfo.xlsx'),'Sheet',strcat('Region ',num2str(k)));
+            if ~isempty(neighborsavefolder)
+                writetable(StatsTable,fullfile(neighborsavefolder,'/','AllNeighborStepInfo.xlsx'),'Sheet',strcat('Region ',num2str(k)));
+            end
         end
     else
         skipped = skipped + 1;
@@ -75,6 +80,7 @@ i = row;
 StatsArr(i,1) = length(ONsteps(ONsteps>0)); StatsArr(i,2) = mean(ONsteps(ONsteps>0),'omitnan'); StatsArr(i,3) = std(ONsteps(ONsteps>0),'omitnan');
 StatsArr(i,4) = length(ONsteps(ONsteps<0)); StatsArr(i,5) = mean(ONsteps(ONsteps<0),'omitnan'); StatsArr(i,6) = std(ONsteps(ONsteps<0),'omitnan');
 StatsArr(i,7) = length(OFFsteps); StatsArr(i,8) = mean(abs(OFFsteps)); StatsArr(i,9) = std(abs(OFFsteps));
+StatsArr(i,10) = length(dwells); StatsArr(i,11) = length(dwells_for); StatsArr(i,12) = mean(dwells_for);
 
 steptrace = load(fullname);
 trace = steptrace.data;
@@ -83,7 +89,7 @@ if isfield(trace,'trace')
 else
     data = [];
 end
-StatsArr(i,10) = size(data,1);
+StatsArr(i,13) = size(data,1);
 
 
 function NStatsArr = FillNeighborStatsArray(NStatsArr, fullname, row, framerate)
@@ -104,24 +110,24 @@ if isfield(data,'trace')
         [ONsteps, ~] = add_to_list_6col_steps_v3(trace,NearNeighborRegions{k},0);
         [OFFsteps, ~] = add_to_list_6col_steps_v3(trace_yx,NearNeighborRegions{k},0);
 
-    %     % Dwells
-    %     mat = add_to_list_6col_dwells_v3(trace,NearNeighborRegions{k},framerate,0);
-    %     if ~isempty(mat) %check that dwells were found (JS Edit 220310)
-    %         % All Dwells
-    %         RegionDwellStats{k} = [RegionDwellStats{k}; mat(:,3)]; %dwell = mat(:,3)
-    % 
-    %         % Forward and Backward dwells
-    %         [forward,backward] = add_to_list_6col_dwells_for_back_v3(trace,NearNeighborRegions{k},framerate);
-    %         RegionDwellForStats{k} = [RegionDwellForStats{k}; forward];
-    %         RegionDwellBackStats{k} = [RegionDwellBackStats{k}; backward];
-    %     end
+        % Dwells
+        dwells = [];
+        dwells_for = [];
+        mat = add_to_list_6col_dwells_v3(trace,NearNeighborRegions{k},framerate,0);
+        if ~isempty(mat) %check that dwells were found (JS Edit 220310)
+            % All Dwells
+            dwells = mat(:,3); %dwell = mat(:,3)
+            % Forward and Backward dwells
+            [dwells_for,dwells_back] = add_to_list_6col_dwells_for_back_v3(trace,NearNeighborRegions{k},framerate);
+        end
         
         % Put whatever individual stats you want, but make sure to change it in
         % FillStatsArray as well
         NStatsArr(i,1,k) = length(ONsteps(ONsteps>0)); NStatsArr(i,2,k) = mean(ONsteps(ONsteps>0),'omitnan'); NStatsArr(i,3,k) = std(ONsteps(ONsteps>0),'omitnan');
         NStatsArr(i,4,k) = length(ONsteps(ONsteps<0)); NStatsArr(i,5,k) = mean(ONsteps(ONsteps<0),'omitnan'); NStatsArr(i,6,k) = std(ONsteps(ONsteps<0),'omitnan');
         NStatsArr(i,7,k) = length(OFFsteps); NStatsArr(i,8,k) = mean(abs(OFFsteps)); NStatsArr(i,9,k) = std(abs(OFFsteps));
-        NStatsArr(i,10,k) = length(NearNeighborRegions{k});
+        NStatsArr(i,10,k) = length(dwells); NStatsArr(i,11,k) = length(dwells_for); NStatsArr(i,12,k) = mean(dwells_for);
+        NStatsArr(i,13,k) = length(NearNeighborRegions{k});
     end
 end
 
@@ -131,7 +137,7 @@ function StatsTable = ConvertToTable(StatsArr, fnames)
 % Make a table to save
 StatsTable = table;
 StatsTable.Name = fnames;
-StatsTable.NDataPts = StatsArr(:,10);
+StatsTable.NDataPts = StatsArr(:,13);
 StatsTable.ONNum = StatsArr(:,1);
 StatsTable.ONMean = StatsArr(:,2);
 StatsTable.ONStd = StatsArr(:,3);
@@ -141,3 +147,6 @@ StatsTable.BACKStd = StatsArr(:,6);
 StatsTable.OFFNum = StatsArr(:,7);
 StatsTable.OFFMean = StatsArr(:,8);
 StatsTable.OFFStd = StatsArr(:,9);
+StatsTable.AllDwells = StatsArr(:,10);
+StatsTable.FORDwells = StatsArr(:,11);
+StatsTable.DwellTime = StatsArr(:,12);

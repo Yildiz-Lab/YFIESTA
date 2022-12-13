@@ -1,4 +1,4 @@
-function fNeighborlyRegions(framerate, actualdir, xbefore, ybefore, xafter, yafter, noplot)
+function fNeighborlyRegions(framerate, actualdir, xbefore, ybefore, xafter, yafter, noplot, savedir)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
@@ -32,6 +32,9 @@ if nargin > 5
 end
 if nargin < 7
     noplot = 0;
+end
+if nargin < 8
+    savedir = [];
 end
 
 % Storage for statistics in each region
@@ -167,7 +170,11 @@ end
 
 if ~isempty(RegionStepStats{1}) && ~noplot
     for k=1:length(xb)
-        PlotStepStats(fnum,RegionStepStats{k},RegionOffStepStats{k},RegionDwellStats{k},RegionDwellForStats{k},RegionDwellBackStats{k})
+        if ~isempty(savedir)
+            PlotStepStats(fnum,RegionStepStats{k},RegionOffStepStats{k},RegionDwellStats{k},RegionDwellForStats{k},RegionDwellBackStats{k},fullfile(savedir,strcat('Region',num2str(k))))
+        else
+            PlotStepStats(fnum,RegionStepStats{k},RegionOffStepStats{k},RegionDwellStats{k},RegionDwellForStats{k},RegionDwellBackStats{k})
+        end
     end
 end
 
