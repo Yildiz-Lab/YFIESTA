@@ -81,7 +81,7 @@ children = ax.Children;
 A = length(children.Data);
 
 k = fittedmdl.k;
-tt = linspace(0,max(children.BinEdges),100);
+tt = linspace(0,max(children.BinEdges),500);
 plot(tt, A*k^2.*tt.*exp(-k.*tt));
 
 if ~isempty(savename)

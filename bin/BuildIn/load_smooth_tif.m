@@ -72,7 +72,7 @@ else
 
             fname = dc.name;
             fpath = dc.folder;
-            filenames{i-2} = strcat(fpath, '/', fname)
+            filenames{i-2} = strcat(fpath, '/', fname);
             end
         else
             filenames = cell(1,length(dc));

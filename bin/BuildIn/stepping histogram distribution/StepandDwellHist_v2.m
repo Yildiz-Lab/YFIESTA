@@ -95,8 +95,8 @@ PlotStepStats(fnum, ONsteps, OFFsteps, dwells, dwells_for, dwells_back, fullfile
 %xb = [0,50,100,200]; yb = [0,200,200,200];
 %xa = 0.2*xb; ya = yb;
 %Forward/Backward Scheme
-xb = [0,75,75,150,150]; yb = [0,35,35,70,70];
-xa = [0,0,75,75,150]; ya = yb;
+xb = [0,50,50,100,100]; yb = [0,25,25,50,50];
+xa = [0,0,50,50,100]; ya = yb;
 
 % Generate an automatic foldername that carries Neighbor Info
 totarr = [xb,yb,xa,ya];

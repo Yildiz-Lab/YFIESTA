@@ -44,6 +44,8 @@ RegionDwellStats = cell(1,length(xb));
 RegionDwellForStats = cell(1,length(xb));
 RegionDwellBackStats = cell(1,length(xb));
 
+% A simple count to keep track of how many neighbors we have
+ncount=0;
 %% Now load each MATLAB file and determine neighbor regions
 for i=1:fnum
     fname = f(i).name;
@@ -58,6 +60,7 @@ for i=1:fnum
     RM = zeros(length(data.neighbors),6);
     Regions = cell(1,length(xb));
     % RM [time start, time end, meanx, stdx, meany, stdy]
+    ncount = ncount + length(data.neighbors);
     for n=1:length(data.neighbors)
 %         rsummod = data.neighbors{n}(1:sumidx:end,:);
 %         RM(n,1) = rsummod(1,1); RM(n,2) = rsummod(end,1);
@@ -178,3 +181,4 @@ if ~isempty(RegionStepStats{1}) && ~noplot
     end
 end
 
+fprintf(strcat("Number of Neighbors Used in Stats: ", num2str(ncount), "\n"))
