@@ -182,3 +182,60 @@ if ~isempty(RegionStepStats{1}) && ~noplot
 end
 
 fprintf(strcat("Number of Neighbors Used in Stats: ", num2str(ncount), "\n"))
+
+%% Make a summary of all the regions information
+if ~noplot
+    h =  findobj('type','figure');
+    n = length(h);
+    figure(n+1)
+    % Back Steps
+    subplot(2,2,4)
+    for k=1:length(xb)
+        Nsteps(k) = length(RegionStepStats{k});
+        forsteps(k) = length(RegionStepStats{k}(RegionStepStats{k} > 0));
+        backsteps(k) = length(RegionStepStats{k}(RegionStepStats{k} < 0));
+        sidesteps(k) = length(RegionOffStepStats{k});
+        obj0 = cdfplot(RegionDwellForStats{k});
+        mdl_gamma_cdf = fittype('real(gammainc(k*x,2))','indep','x');
+        X = obj0.XData(2:end-1); % get rid of infs
+        Y = obj0.YData(2:end-1);
+        fittedmdl = fit(X',Y',mdl_gamma_cdf,'start',[3.]);
+        krate(k) = fittedmdl.k;
+    end
+    
+    subplot(2,2,1)
+    b1 = bar(1:length(backsteps),backsteps./Nsteps);
+    xtips1 = b1.XEndPoints;
+    ytips1 = b1.YEndPoints;
+    labels1 = cell(1,length(xb));
+    for i = 1:length(xb)
+        labels1{i} = strcat(num2str(backsteps(i)),'/',num2str(Nsteps(i)));
+    end
+    text(xtips1,ytips1,labels1,'HorizontalAlignment','center',...
+    'VerticalAlignment','bottom')
+    title("Percentage Back Steps")
+    
+    subplot(2,2,2)
+    b2 = bar(1:length(sidesteps),sidesteps./Nsteps);
+    xtips2 = b2.XEndPoints;
+    ytips2 = b2.YEndPoints;
+    labels2 = cell(1,length(xb));
+    for i = 1:length(xb)
+        labels2{i} = strcat(num2str(sidesteps(i)),'/',num2str(Nsteps(i)));
+    end
+    text(xtips2,ytips2,labels2,'HorizontalAlignment','center',...
+    'VerticalAlignment','bottom')
+    title("Percentage Side Steps")
+    
+    subplot(2,2,3)
+    b3 = bar(krate);
+    xtips3 = b3.XEndPoints;
+    ytips3 = b3.YEndPoints;
+    labels3 = string(krate);
+    text(xtips3,ytips3,labels3,'HorizontalAlignment','center',...
+    'VerticalAlignment','bottom')
+    xlabel("Region")
+    title("Stepping rate")
+
+    
+end
