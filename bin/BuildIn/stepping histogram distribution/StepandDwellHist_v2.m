@@ -89,13 +89,13 @@ PlotStepStats(fnum, ONsteps, OFFsteps, dwells, dwells_for, dwells_back, fullfile
 %% If neighbors are a thing we want to examine, run to see neighbor statistics
 
 %Options to put in regions here, maybe if a GUI comes
-%xb = [0,50,100,100]; yb = [0,25,25,50];
+%xb = [0,75,150]; yb = [0,25,25,50];
 %xb = [0,100,200]; yb = [0,200,200];
 %xb = [0,75,150,225]; yb = [0,200,200,200];
 %xb = [0,50,100,200]; yb = [0,200,200,200];
-%xa = 0.2*xb; ya = yb;
+%xa = xb; ya = yb;
 %Forward/Backward Scheme
-xb = [0,50,50,100,100]; yb = [0,25,25,50,50];
+xb = [0,50,50,100,100]; yb = [0,35,35,70,70];
 xa = [0,0,50,50,100]; ya = yb;
 
 % Generate an automatic foldername that carries Neighbor Info
