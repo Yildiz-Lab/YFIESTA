@@ -43,6 +43,7 @@ RegionOffStepStats = cell(1,length(xb));
 RegionDwellStats = cell(1,length(xb));
 RegionDwellForStats = cell(1,length(xb));
 RegionDwellBackStats = cell(1,length(xb));
+RegionPauseStats = cell(1,length(xb));
 
 % A simple count to keep track of how many neighbors we have
 ncount=0;
@@ -167,6 +168,12 @@ for i=1:fnum
             RegionDwellForStats{k} = [RegionDwellForStats{k}; forward];
             RegionDwellBackStats{k} = [RegionDwellBackStats{k}; backward];
         end
+        
+        % Pause Stats based on DeWitt et al (2015)
+        cnt_pause_threshold = 20;
+        pause_events = fPauseAnalysis(trace, NearNeighborRegions{k}, cnt_pause_threshold);
+        RegionPauseStats{k} = [RegionPauseStats{k}; pause_events];
+        RegionPauseStats{k}
     end
     end %of isfield
 end
