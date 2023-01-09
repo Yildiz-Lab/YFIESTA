@@ -169,11 +169,10 @@ for i=1:fnum
             RegionDwellBackStats{k} = [RegionDwellBackStats{k}; backward];
         end
         
-        % Pause Stats based on DeWitt et al (2015)
+        % JS Edit 2023/01/09 Pause Stats based on DeWitt et al (2015)
         cnt_pause_threshold = 20;
         pause_events = fPauseAnalysis(trace, NearNeighborRegions{k}, cnt_pause_threshold);
         RegionPauseStats{k} = [RegionPauseStats{k}; pause_events];
-        RegionPauseStats{k}
     end
     end %of isfield
 end
