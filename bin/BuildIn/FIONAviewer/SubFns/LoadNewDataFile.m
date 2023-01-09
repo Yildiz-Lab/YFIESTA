@@ -29,6 +29,7 @@ handles.currentPath=DataFilePath;
 
 %% Read data
 
+% JS Edit 2022/____
 %Data=ReadDataFile(DataFilePath); % fast data read
 FIONAData=ReadMatDataFile(DataFilePath); % fast data read
 if handles.xydisplayed

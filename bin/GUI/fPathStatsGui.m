@@ -20,6 +20,8 @@ switch func
         Cancel(varargin{1});          
     case 'Ok'
         Ok(varargin{1}); 
+    case 'Crop'
+        Crop(varargin{1});
     case 'FIONA'
         FIONA(varargin{1});
     case 'StepStats'
@@ -135,7 +137,7 @@ hPathsStatsGui.bReset = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','norm
                         
 hPathsStatsGui.bDisregard = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized','Callback','fPathStatsGui(''Update'',getappdata(0,''hPathsStatsGui''));',...
                             'Position',[0.75 0.28 0.225 0.23],'String','Disregard','Tag','bReset','BackgroundColor',cbutton,'ForegroundColor',ctext);                            
-
+                        
 % JS Edit 2022/05/29 to add direct line to FIONA 
 hPathsStatsGui.bFiona = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized',...
                             'Callback','fPathStatsGui(''FIONA'',getappdata(0,''hPathsStatsGui''));',...
@@ -173,7 +175,12 @@ hPathsStatsGui.eAverage = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','no
                           
 hPathsStatsGui.tNM = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized','Position',[0.45 0.02 0.05 0.14],'Enable','off',...
                                'String','nm','Style','text','Tag','tNM','HorizontalAlignment','left','BackgroundColor',c);
-
+                           
+% JS Edit 2023/01/09 Crop option
+hPathsStatsGui.bCrop = uicontrol('Parent',hPathsStatsGui.pOptions,'Units','normalized','Callback','fPathStatsGui(''Crop'',getappdata(0,''hPathsStatsGui''));',...
+                            'Position',[0.5 0.28 0.225 0.23],'String','Crop','Tag','bCrop','BackgroundColor',cbutton,'ForegroundColor',ctext);                            
+% End of JS Edit 2023/01/09
+                        
 hPathsStatsGui.pPlotDistPanel = uipanel('Parent',hPathsStatsGui.fig,'Position',[0.025 0.28 0.95 0.335],'Tag','PlotPanel','BackgroundColor',c,'ForegroundColor',ctext);
 
 hPathsStatsGui.aPlotDist = axes('Parent',hPathsStatsGui.pPlotDistPanel,'Units','normalized','OuterPosition',[0 0 1 1],'Tag','aPlotDist');
@@ -670,6 +677,86 @@ Draw(hPathsStatsGui);
 
 end
 
+% JS Edit 2023/01/09 Crop option
+function Crop(hPathsStatsGui)
+global Config;
+global Molecule;
+
+n = get(hPathsStatsGui.lAll,'Value');
+PathStats=getappdata(hPathsStatsGui.fig,'PathStats');
+% That is stored in PathStats(n).PathData
+xy = PathStats(n).PathData(:,4:5);
+
+% put in NaN for the blank spots. Shouldn't affect the fitting or any post
+% processing
+frames = PathStats(n).Results(:,1);
+frame1 = frames(1); framef = frames(end);
+xynew = nan(framef-frame1+1,2);
+for i = 1:size(xy,1)
+    xynew(frames(i)-frame1+1,:) = xy(i,:);
+end
+
+% JS Edit 2023/01/06
+% crop option 
+
+[startpoint,endpoint] = parse_pass_v3(xynew);
+
+% only if cropping was actually done should we go through all this madness
+if startpoint ~= 1 || endpoint ~= length(xynew)
+    
+    xynew = xynew(startpoint:endpoint,:);
+    % also we will set the new molecule data here so that it is representative
+    % on the figure
+    
+    % Crop your molecule on main fig ... in a very roundabout way to refind it
+    s = get(hPathsStatsGui.lAll,'String');
+    molidx = [];
+    for j = 1:length(Molecule)
+        if strcmp(Molecule(j).Name, s{n})
+            molidx = [molidx, j];
+        end
+    end
+    % if there is more than one molecule labeled the same, then get the one
+    % that is closest
+    if length(molidx) > 1
+        meandist = 1e10; minj = 0;
+        for j = 1:length(molidx)
+            mm = molidx(j);
+            if size(Molecule(mm).Results,1) == size(PathStats(n).PathData,1)
+                dist = mean( sqrt( (Molecule(mm).Results(:,3) - PathStats(n).PathData(:,1)).^2 + (Molecule(mm).Results(:,3) - PathStats(n).PathData(:,2)).^2) );
+                if dist < meandist
+                    meandist = dist; minj = molidx(j);
+                end
+            end
+        end
+    else
+        minj = molidx;
+    end
+
+    framefill = frame1:framef;
+    bidx = find(Molecule(minj).Results(:,1) == framefill(startpoint));
+    eidx = find(Molecule(minj).Results(:,1) == framefill(endpoint));
+
+    Molecule(minj).Results = Molecule(minj).Results(bidx:eidx,:);
+
+    % Then update PathStats and truncate accordingly
+    PathStats(n).PathData = PathStats(n).PathData(bidx:eidx,:);
+    PathStats(n).Results = PathStats(n).Results(bidx:eidx,:);
+    PathStats(n).TrackingResults = PathStats(n).TrackingResults(bidx:eidx);
+    setappdata(hPathsStatsGui.fig,'PathStats',PathStats);
+    Draw(hPathsStatsGui); %then redraw
+    
+    % Also delete any previous save data on this molecule since it has now
+    % changed
+    FFolderName = fullfile(Config.Directory{1}, Config.StackName{1}(1:end-6));
+    fname = fullfile(FFolderName,strcat(PathStats(n).Name(10:end),'_fiona.mat'));
+    if isfile(fname)
+        delete([fname])
+    end
+end
+
+
+
 % JS Edit 2022/05/29 to make FIONA in 
 function FIONA(hPathsStatsGui)
 global Config;
@@ -739,6 +826,13 @@ Molecule(minj).Color = [0 1 1];
 % if (i - laststart) >= minFrames
 %     writematrix(xy(laststart:i,:)-min(xy(laststart:i,:)), strcat(Config.Directory{1},PathStats(n).Name(10:end),thealphabet(ii),'_fiona.txt'), 'Delimiter', 'tab');
 
+% Store in a separate folder for safekeeping
+FFolderName = fullfile(Config.Directory{1}, Config.StackName{1}(1:end-6));
+if ~isfolder(FFolderName)
+    mkdir(FFolderName);
+end
+fname = fullfile(FFolderName,PathStats(n).Name(10:end));
+
 % JS Edit 2022/05/29 to make FIONA
 % put in NaN for the blank spots. Shouldn't affect the fitting or any post
 % processing
@@ -748,12 +842,6 @@ xynew = nan(framef-frame1+1,2);
 for i = 1:size(xy,1)
     xynew(frames(i)-frame1+1,:) = xy(i,:);
 end
-% Store in a separate folder for safekeeping
-FFolderName = fullfile(Config.Directory{1}, Config.StackName{1}(1:end-6));
-if ~isfolder(FFolderName)
-    mkdir(FFolderName);
-end
-fname = fullfile(FFolderName,PathStats(n).Name(10:end));
 
 plotNeighbors = get(hPathsStatsGui.cNeighbor,'Value');
 if plotNeighbors == 1
@@ -810,7 +898,7 @@ else
     ZPlotPath = PathStats(idx).PathData(:,3)-min(PathStats(idx).Results(:,5));
     ZPlot = PathStats(idx).Results(:,5)-min(PathStats(idx).Results(:,5));
 end
-if (max(XPlot)-min(XPlot)) > 5000 || (max(YPlot)-min(YPlot)) > 5000
+if ((max(XPlot)-min(XPlot)) > 5000) || ((max(YPlot)-min(YPlot)) > 5000)
     scale=1000;
     units=['[' char(181) 'm]'];
 else
@@ -853,7 +941,9 @@ else
     yscale=1;
     units='[nm]';
 end 
-plot(hPathsStatsGui.aPlotDist,XPlot,YPlotOld/yscale,'Color','magenta','LineStyle','--','Marker','none');
+% JS Edit 2023/01/09 for crop plotting
+%plot(hPathsStatsGui.aPlotDist,XPlot,YPlotOld/yscale,'Color','magenta','LineStyle','--','Marker','none');
+plot(hPathsStatsGui.aPlotDist,XPlot,(YPlotOld-YPlotOld(1))/yscale,'Color','magenta','LineStyle','--','Marker','none');
 line(hPathsStatsGui.aPlotDist,XPlot,YPlot/yscale,'Color',cline,'LineStyle','-','Marker','none');
 xlabel(hPathsStatsGui.aPlotDist,'Time [sec]','Color','white');
 ylabel(hPathsStatsGui.aPlotDist,['Distance along path ' units],'Color','white');
