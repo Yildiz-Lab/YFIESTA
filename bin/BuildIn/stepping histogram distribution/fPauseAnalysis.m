@@ -1,14 +1,18 @@
-function normalized_pause_frequency = fPauseAnalysis(trace, tchoice, threshold_cnt_pause)
+function [normalized_pause_frequency, V] = fPauseAnalysis(trace, tchoice, threshold_cnt_pause)
+% function [V, normalized_pause_frequency] = fPauseAnalysis(trace, tchoice, threshold_cnt_pause)
 
 % Similar to add_to_list_6col
 ydata = trace(:,1);
+if isempty(tchoice)
+    tchoice = 1:length(ydata);
+end
 [idx,~] = find(~isnan(trace(:,3)));
 nntchoice = intersect(tchoice, idx); %get no NaN tchoice
 ydata = ydata(nntchoice);
 
 %Then histogram (in code form) and look for pause events
-binsize = 5; %nm
-bins = min(ydata):binsize:max(ydata)+binsize; %+binsize to pick up stragglers in case number is >5
+binsize = 6.5; %nm
+bins = min(ydata):binsize:max(ydata)+binsize; %+binsize to pick up stragglers in case number is >binsize
 V = zeros(1,length(bins)-1); %we fill in between values
 
 for i = 1:length(bins)-1

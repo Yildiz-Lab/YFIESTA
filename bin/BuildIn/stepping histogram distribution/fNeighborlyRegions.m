@@ -170,11 +170,15 @@ for i=1:fnum
         end
         
         % JS Edit 2023/01/09 Pause Stats based on DeWitt et al (2015)
-        cnt_pause_threshold = 20;
-        pause_events = fPauseAnalysis(trace, NearNeighborRegions{k}, cnt_pause_threshold);
-        RegionPauseStats{k} = [RegionPauseStats{k}; pause_events];
+        cnt_pause_threshold = 8;
+        [pause_frequency, ~] = fPauseAnalysis(trace, NearNeighborRegions{k}, cnt_pause_threshold);
+        RegionPauseStats{k} = [RegionPauseStats{k}; pause_frequency];
     end
     end %of isfield
+end
+
+for k=1:length(NearNeighborRegions)
+    fprintf(strcat("Region ",num2str(k)," pause frequency: ", num2str(mean(RegionPauseStats{k})), "\n"))
 end
 
 if ~isempty(RegionStepStats{1}) && ~noplot

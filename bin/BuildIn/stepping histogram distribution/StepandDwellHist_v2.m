@@ -34,6 +34,8 @@ OFFsteps = [];
 dwells = [];
 dwells_for = [];
 dwells_back = [];
+HistVals = [];
+pause_frequency = [];
 
 if nargin < 2
     disp("Forgotten threshold or framerate")
@@ -76,6 +78,12 @@ for i=1:fnum
     end
     end %if trace exists
     
+    % for pause events
+    cnt_pause_events = 8;
+    [pf, Values] = fPauseAnalysis(data, [], cnt_pause_events);
+    HistVals = [HistVals, Values];
+    pause_frequency = [pause_frequency, pf];
+    
 end
 
 % JS Edit 2022/11/11
@@ -89,14 +97,16 @@ PlotStepStats(fnum, ONsteps, OFFsteps, dwells, dwells_for, dwells_back, fullfile
 %% If neighbors are a thing we want to examine, run to see neighbor statistics
 
 %Options to put in regions here, maybe if a GUI comes
-%xb = [0,75,150]; yb = [0,25,25,50];
+%xb = [0,150]; yb = [0,25];
 %xb = [0,100,200]; yb = [0,200,200];
 %xb = [0,75,150,225]; yb = [0,200,200,200];
 %xb = [0,50,100,200]; yb = [0,200,200,200];
 %xa = xb; ya = yb;
 %Forward/Backward Scheme
-xb = 1.5*[0,50,50,100,100]; yb = [0,35,35,70,70];
-xa = 1.5*[0,0,50,50,100]; ya = yb;
+% xb = 1.5*[0,50,50,100,100]; yb = [0,35,35,70,70];
+% xa = 1.5*[0,0,50,50,100]; ya = yb;
+xb = 4*[0,50,50]; yb = [0,35,35];
+xa = 4*[0,0,50]; ya = yb;
 
 % Generate an automatic foldername that carries Neighbor Info
 totarr = [xb,yb,xa,ya];
@@ -119,6 +129,21 @@ fNeighborlyRegions(framerate,directory,xb,yb,xa,ya,0,foldername)
 StepInfoUnique(framerate,fullfile(directory,'/'),xb,yb,xa,ya,foldername)
 % This is a bit recursive, but it never enters this part of the function
 % once we set StepInfo in motion
+
+% To Set Pause Threshold
+% figure()
+% hh = histogram(HistVals,'BinWidth',1);
+% CSum = zeros(1,hh.NumBins);
+% CSum(1) = hh.Values(1);
+% for b = 2:hh.NumBins
+%     CSum(b) = CSum(b-1) + hh.Values(b);
+% end
+% Cnorm = CSum/CSum(end);
+% % find tau by finding where population is at 1/e
+% [~,tau] = min(abs(Cnorm - exp(-1)));
+% % find actual 95% confidence interval by finding where population is at 95%
+% [~,conf2] = min(abs(Cnorm - 0.95))
+% fprintf(strcat("All Molecule pause frequency: ", num2str(mean(pause_frequency)), "\n"))
 
 end
 
