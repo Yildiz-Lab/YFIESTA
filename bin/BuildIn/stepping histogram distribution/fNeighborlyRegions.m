@@ -71,11 +71,10 @@ for i=1:fnum
         RM(n,1) = r(1,1); RM(n,2) = r(end,1);
         RM(n,3) = mean(r(:,2),'omitnan'); RM(n,4) = std(r(:,2),'omitnan');
         RM(n,5) = mean(r(:,3),'omitnan'); RM(n,6) = std(r(:,3),'omitnan');
-        
     end
     
     % Now RM has all the information to go through, but most importantly
-    % t,tend,xbegin,xend,ybegin,yend for each region defined (think like box border)     
+    % t,tend,meanx,stdx,meany,stdy for each region defined (think like box border)     
     % it is 3D trace: t, on-axis(x), off-axis(y)
     % and is it contained in box [t,tend; xlimits; ylimits]
     for b=2:length(xb)
@@ -170,9 +169,12 @@ for i=1:fnum
         end
         
         % JS Edit 2023/01/09 Pause Stats based on DeWitt et al (2015)
-        cnt_pause_threshold = 8;
-        [pause_frequency, ~] = fPauseAnalysis(trace, NearNeighborRegions{k}, cnt_pause_threshold);
-        RegionPauseStats{k} = [RegionPauseStats{k}; pause_frequency];
+        if ~isempty(NearNeighborRegions{k})
+            cnt_pause_threshold = 21;
+            % Note we are always truncating off the last point
+            [pause_frequency, ~] = fPauseAnalysis(trace, NearNeighborRegions{k}, cnt_pause_threshold);
+            RegionPauseStats{k} = [RegionPauseStats{k}; pause_frequency];
+        end
     end
     end %of isfield
 end
@@ -194,7 +196,10 @@ end
 fprintf(strcat("Number of Neighbors Used in Stats: ", num2str(ncount), "\n"))
 
 %% Make a summary of all the regions information
-if ~noplot
+
+% only do summary plot if there are neighbors to do so.
+% At the moment, if one Region is empty, we throw it away.
+if ~noplot && ~isempty(RegionStepStats{1})
     h =  findobj('type','figure');
     n = length(h);
     figure(n+1)
@@ -210,6 +215,7 @@ if ~noplot
         X = obj0.XData(2:end-1); % get rid of infs
         Y = obj0.YData(2:end-1);
         fittedmdl = fit(X',Y',mdl_gamma_cdf,'start',[3.]);
+        cint(1:2,k) = confint(fittedmdl);
         krate(k) = fittedmdl.k;
     end
     
@@ -239,8 +245,11 @@ if ~noplot
     
     subplot(2,2,3)
     b3 = bar(krate);
+    hold on
+    cerr = (cint(2,:)-cint(1,:))/2;
+    errorbar(b3.XEndPoints,b3.YEndPoints,cerr,'k.','CapSize',22,'LineWidth',2)
     xtips3 = b3.XEndPoints;
-    ytips3 = b3.YEndPoints;
+    ytips3 = b3.YEndPoints-cerr-0.2; %extra 0.2 for font size
     labels3 = string(krate);
     text(xtips3,ytips3,labels3,'HorizontalAlignment','center',...
     'VerticalAlignment','bottom')

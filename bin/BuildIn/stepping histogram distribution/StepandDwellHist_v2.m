@@ -79,8 +79,12 @@ for i=1:fnum
     end %if trace exists
     
     % for pause events
-    cnt_pause_events = 8;
-    [pf, Values] = fPauseAnalysis(data, [], cnt_pause_events);
+    cnt_pause_events = 21;
+    % Note we are always truncating off the last point in Neighbor Regions
+    % since looking for transitions (which require two data points).
+    % Therefore we will also truncate exactly one data point per molecule
+    % to be consistent
+    [pf, Values] = fPauseAnalysis(data(1:end-1,:), [], cnt_pause_events);
     HistVals = [HistVals, Values];
     pause_frequency = [pause_frequency, pf];
     
@@ -97,16 +101,16 @@ PlotStepStats(fnum, ONsteps, OFFsteps, dwells, dwells_for, dwells_back, fullfile
 %% If neighbors are a thing we want to examine, run to see neighbor statistics
 
 %Options to put in regions here, maybe if a GUI comes
-%xb = [0,150]; yb = [0,25];
+xb = [0,225]; yb = [0,100];
 %xb = [0,100,200]; yb = [0,200,200];
 %xb = [0,75,150,225]; yb = [0,200,200,200];
 %xb = [0,50,100,200]; yb = [0,200,200,200];
-%xa = xb; ya = yb;
+xa = xb; ya = yb;
 %Forward/Backward Scheme
 % xb = 1.5*[0,50,50,100,100]; yb = [0,35,35,70,70];
 % xa = 1.5*[0,0,50,50,100]; ya = yb;
-xb = 4*[0,50,50]; yb = [0,35,35];
-xa = 4*[0,0,50]; ya = yb;
+% xb = 4.5*[0,50,50]; yb = 3*[0,35,35];
+% xa = 4.5*[0,0,50]; ya = yb;
 
 % Generate an automatic foldername that carries Neighbor Info
 totarr = [xb,yb,xa,ya];
@@ -131,19 +135,19 @@ StepInfoUnique(framerate,fullfile(directory,'/'),xb,yb,xa,ya,foldername)
 % once we set StepInfo in motion
 
 % To Set Pause Threshold
-% figure()
-% hh = histogram(HistVals,'BinWidth',1);
-% CSum = zeros(1,hh.NumBins);
-% CSum(1) = hh.Values(1);
-% for b = 2:hh.NumBins
-%     CSum(b) = CSum(b-1) + hh.Values(b);
-% end
-% Cnorm = CSum/CSum(end);
-% % find tau by finding where population is at 1/e
-% [~,tau] = min(abs(Cnorm - exp(-1)));
-% % find actual 95% confidence interval by finding where population is at 95%
-% [~,conf2] = min(abs(Cnorm - 0.95))
-% fprintf(strcat("All Molecule pause frequency: ", num2str(mean(pause_frequency)), "\n"))
-
+figure()
+hh = histogram(HistVals,'BinWidth',1);
+CSum = zeros(1,hh.NumBins);
+CSum(1) = hh.Values(1);
+for b = 2:hh.NumBins
+    CSum(b) = CSum(b-1) + hh.Values(b);
+end
+Cnorm = CSum/CSum(end);
+% find tau by finding where population is at 1/e
+[~,tau] = min(abs(Cnorm - exp(-1)));
+% find actual 95% confidence interval by finding where population is at 95%
+[~,conf2] = min(abs(Cnorm - 0.95))
+hold on
+plot((conf2+1)*ones(1,2),[0,max(hh.Values)],'r--');
 end
 
