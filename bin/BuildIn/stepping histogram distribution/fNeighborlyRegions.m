@@ -57,7 +57,7 @@ for i=1:fnum
     else
     trace = data.trace;
     trace_yx = data.trace_yx;
-    
+
     RM = zeros(length(data.neighbors),6);
     Regions = cell(1,length(xb));
     % RM [time start, time end, meanx, stdx, meany, stdy]
@@ -71,11 +71,11 @@ for i=1:fnum
         RM(n,1) = r(1,1); RM(n,2) = r(end,1);
         RM(n,3) = mean(r(:,2),'omitnan'); RM(n,4) = std(r(:,2),'omitnan');
         RM(n,5) = mean(r(:,3),'omitnan'); RM(n,6) = std(r(:,3),'omitnan');
-        
+
     end
-    
+
     % Now RM has all the information to go through, but most importantly
-    % t,tend,xbegin,xend,ybegin,yend for each region defined (think like box border)     
+    % t,tend,xbegin,xend,ybegin,yend for each region defined (think like box border)
     % it is 3D trace: t, on-axis(x), off-axis(y)
     % and is it contained in box [t,tend; xlimits; ylimits]
     for b=2:length(xb)
@@ -90,7 +90,7 @@ for i=1:fnum
             % In the end, union the sets
             Regions{b-1} = unique([Regions{b-1} t']);
         end
-        
+
         % those that haven't been matched by the end should be considered
         % in the final region
         if b == length(xb)
@@ -99,7 +99,7 @@ for i=1:fnum
         end
 
     end
-    
+
     % Finally, if we have a previous region, and we want to exclude
     % this behavior (like rings rather than a convex circle), then you
     % should make sure these t points don't exist in the previous
@@ -111,7 +111,7 @@ for i=1:fnum
             Regions{m} = RB(~ismember(RB,Regions{n}));
         end
     end
-    
+
     % we now have time points that are in user defined region. Now, there
     % remain two issues possible:
         %  - if something is on the borderline, then it will alternate between
@@ -119,7 +119,7 @@ for i=1:fnum
         %  associated with this region
         %  - how do we pass this data in the future? Let's keep it as time
         %  regions which will allow us to index later
-        
+
     % Postprocessing Check with steps in dominant axis (x)
     % get changepoints for step transitions and include NaNs again
     NearNeighborRegions = cell(1,length(xb));
@@ -140,23 +140,23 @@ for i=1:fnum
         end
         NearNeighborRegions{regionplace} = [NearNeighborRegions{regionplace} tofind];
     end
-    
+
     % Now these regions are prepared to ship off to data processing. Add
     % this to the files for storage. But meanwhile we can begin compiling
     % information for statistics.
     data.NeighborlyRegions = NearNeighborRegions;
     save(fullfile(actualdir,fname),'data');
-    
-    
+
+
     for k=1:length(NearNeighborRegions)
-        
+
         % Steps
         [on_steps, off_steps] = add_to_list_6col_steps_v3(trace,NearNeighborRegions{k},0);
         RegionStepStats{k} = [RegionStepStats{k}; on_steps'];
-        
+
         [on_steps, off_steps] = add_to_list_6col_steps_v3(trace_yx,NearNeighborRegions{k},0);
         RegionOffStepStats{k} = [RegionOffStepStats{k}; on_steps'];
-        
+
         % Dwells
         mat = add_to_list_6col_dwells_v3(trace,NearNeighborRegions{k},framerate,0);
         if ~isempty(mat) %check that dwells were found (JS Edit 220310)
@@ -168,11 +168,14 @@ for i=1:fnum
             RegionDwellForStats{k} = [RegionDwellForStats{k}; forward];
             RegionDwellBackStats{k} = [RegionDwellBackStats{k}; backward];
         end
-        
+
         % JS Edit 2023/01/09 Pause Stats based on DeWitt et al (2015)
-        cnt_pause_threshold = 20;
-        pause_events = fPauseAnalysis(trace, NearNeighborRegions{k}, cnt_pause_threshold);
-        RegionPauseStats{k} = [RegionPauseStats{k}; pause_events];
+        if ~isempty(NearNeighborRegions{k})
+            cnt_pause_threshold = 47;
+            % Note we are always truncating off the last point
+            [pause_frequency, ~] = fPauseAnalysis(trace, NearNeighborRegions{k}, cnt_pause_threshold);
+            RegionPauseStats{k} = [RegionPauseStats{k}; pause_frequency];
+        end
     end
     end %of isfield
 end
@@ -208,7 +211,7 @@ if ~noplot
         fittedmdl = fit(X',Y',mdl_gamma_cdf,'start',[3.]);
         krate(k) = fittedmdl.k;
     end
-    
+
     subplot(2,2,1)
     b1 = bar(1:length(backsteps),backsteps./Nsteps);
     xtips1 = b1.XEndPoints;
@@ -220,7 +223,7 @@ if ~noplot
     text(xtips1,ytips1,labels1,'HorizontalAlignment','center',...
     'VerticalAlignment','bottom')
     title("Percentage Back Steps")
-    
+
     subplot(2,2,2)
     b2 = bar(1:length(sidesteps),sidesteps./Nsteps);
     xtips2 = b2.XEndPoints;
@@ -232,7 +235,7 @@ if ~noplot
     text(xtips2,ytips2,labels2,'HorizontalAlignment','center',...
     'VerticalAlignment','bottom')
     title("Percentage Side Steps")
-    
+
     subplot(2,2,3)
     b3 = bar(krate);
     xtips3 = b3.XEndPoints;
@@ -243,5 +246,5 @@ if ~noplot
     xlabel("Region")
     title("Stepping rate")
 
-    
+
 end

@@ -29,6 +29,18 @@ end
 if length(x) == 2
     startpoint = max(round(x(2)),startpoint);
 end
+
+% JS Edit 2023/01/24 round to nearest non NaN value to make it happy for replotting
+idx = find(~isnan(xytrace(:,1)));
+if ~ismember(endpoint,idx)
+    [~,a] = min(abs(idx - endpoint));
+    endpoint = idx(a);
+end
+if ~ismember(startpoint,idx)
+    [~,a] = min(abs(idx - startpoint));
+    startpoint = idx(a);
+end
+
 % if ( strcmp(review,'m') )       %modify by clicking on end and beginning of the trace
 %     disp(['select endpoint, startpoint [' num2str(endpoint) ',' num2str(startpoint) ']']);
 %     %x = ginput(2);          %we assume more likely to keep existing startpoint, so default to that if one point is picked

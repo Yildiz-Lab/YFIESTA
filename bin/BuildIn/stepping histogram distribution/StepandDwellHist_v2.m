@@ -39,27 +39,27 @@ if nargin < 2
     disp("Forgotten threshold or framerate")
     return
 end
-    
+
 for i=1:fnum
-    
+
     if isfile(directory)
         steptrace = load(fname);
     else
         fname = f(i).name;
         steptrace = load(strcat(cd,'\',fname));
     end
-    
+
     trace = steptrace.data;
     if ~isfield(trace,'trace')
         fnum = fnum - 1;
     else
     data = trace.trace;
     data_yx = trace.trace_yx;
-    
+
     % Steps
     [on_steps, ~] = add_to_list_6col_steps_v2(data,threshold);
     ONsteps = [ONsteps; on_steps'];
-    
+
     [off_steps, ~] = add_to_list_6col_steps_v2(data_yx,threshold);
     OFFsteps = [OFFsteps; off_steps'];
 
@@ -68,14 +68,24 @@ for i=1:fnum
     if ~isempty(mat) %check that dwells were found (JS Edit 220310)
         dwell = mat(:,3);
         dwells = [dwells; dwell];
-    
+
         % Forward and Backward dwells
         [forward,backward] = add_to_list_6col_dwells_for_back(data,framerate);
         dwells_for = [dwells_for; forward];
         dwells_back = [dwells_back; backward];
     end
     end %if trace exists
-    
+
+    % for pause events
+    cnt_pause_events = 47; %make sure to also change in Neighbor Regions
+    % Note we are always truncating off the last point in Neighbor Regions
+    % since looking for transitions (which require two data points).
+    % Therefore we will also truncate exactly one data point per molecule
+    % to be consistent
+    [pf, Values] = fPauseAnalysis(data(1:end-1,:), [], cnt_pause_events);
+    HistVals = [HistVals, Values];
+    pause_frequency = [pause_frequency, pf];
+
 end
 
 % JS Edit 2022/11/11
@@ -89,7 +99,7 @@ PlotStepStats(fnum, ONsteps, OFFsteps, dwells, dwells_for, dwells_back, fullfile
 %% If neighbors are a thing we want to examine, run to see neighbor statistics
 
 %Options to put in regions here, maybe if a GUI comes
-%xb = [0,75,150]; yb = [0,25,25,50];
+xb = [0,200]; yb = [0,125];
 %xb = [0,100,200]; yb = [0,200,200];
 %xb = [0,75,150,225]; yb = [0,200,200,200];
 %xb = [0,50,100,200]; yb = [0,200,200,200];
@@ -120,5 +130,22 @@ StepInfoUnique(framerate,fullfile(directory,'/'),xb,yb,xa,ya,foldername)
 % This is a bit recursive, but it never enters this part of the function
 % once we set StepInfo in motion
 
+<<<<<<< HEAD
+=======
+% To Set Pause Threshold
+figure()
+hh = histogram(HistVals,'BinWidth',1);
+CSum = zeros(1,hh.NumBins);
+CSum(1) = hh.Values(1);
+for b = 2:hh.NumBins
+    CSum(b) = CSum(b-1) + hh.Values(b);
 end
-
+Cnorm = CSum/CSum(end);
+% find tau by finding where population is at 1/e
+[~,tau] = min(abs(Cnorm - exp(-1)));
+% find actual 95% confidence interval by finding where population is at 95%
+[~,conf2] = min(abs(Cnorm - 0.99))
+hold on
+plot((conf2+1)*ones(1,2),[0,max(hh.Values)],'r--');
+>>>>>>> 52c8d0d (parse pass rounds to nearest non-NaN data point)
+end
