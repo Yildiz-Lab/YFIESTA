@@ -170,7 +170,7 @@ for i=1:fnum
         
         % JS Edit 2023/01/09 Pause Stats based on DeWitt et al (2015)
         if ~isempty(NearNeighborRegions{k})
-            cnt_pause_threshold = 21;
+            cnt_pause_threshold = 47;
             % Note we are always truncating off the last point
             [pause_frequency, ~] = fPauseAnalysis(trace, NearNeighborRegions{k}, cnt_pause_threshold);
             RegionPauseStats{k} = [RegionPauseStats{k}; pause_frequency];

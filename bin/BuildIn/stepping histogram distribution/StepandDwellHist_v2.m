@@ -79,7 +79,7 @@ for i=1:fnum
     end %if trace exists
     
     % for pause events
-    cnt_pause_events = 21;
+    cnt_pause_events = 47; %make sure to also change in Neighbor Regions
     % Note we are always truncating off the last point in Neighbor Regions
     % since looking for transitions (which require two data points).
     % Therefore we will also truncate exactly one data point per molecule
@@ -101,7 +101,7 @@ PlotStepStats(fnum, ONsteps, OFFsteps, dwells, dwells_for, dwells_back, fullfile
 %% If neighbors are a thing we want to examine, run to see neighbor statistics
 
 %Options to put in regions here, maybe if a GUI comes
-xb = [0,225]; yb = [0,100];
+xb = [0,200]; yb = [0,125];
 %xb = [0,100,200]; yb = [0,200,200];
 %xb = [0,75,150,225]; yb = [0,200,200,200];
 %xb = [0,50,100,200]; yb = [0,200,200,200];
@@ -146,7 +146,7 @@ Cnorm = CSum/CSum(end);
 % find tau by finding where population is at 1/e
 [~,tau] = min(abs(Cnorm - exp(-1)));
 % find actual 95% confidence interval by finding where population is at 95%
-[~,conf2] = min(abs(Cnorm - 0.95))
+[~,conf2] = min(abs(Cnorm - 0.99))
 hold on
 plot((conf2+1)*ones(1,2),[0,max(hh.Values)],'r--');
 end

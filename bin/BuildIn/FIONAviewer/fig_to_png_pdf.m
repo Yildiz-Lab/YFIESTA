@@ -23,11 +23,34 @@ end
 % directory
     
 for i = 1:length(fnames)
-
-    fname = fnames{i};
+    try
+        fname = fnames{i};
+    catch
+        fprintf("Finished combining xy and yx traces. Aborting... \n")
+        return
+    end
+    % new option to grab the data from yx and put it on the original
+    % figure, but only if it is included in the set selected already
+    fyxname = strcat(fnames{i}(1:end-9), 'yx', fnames{i}(end-9:end));
+    idx = find(contains(fnames,fyxname));
+    if ~isempty(idx)
+        figgyx = openfig(strcat(dir,fyxname));
+        axchild = get(gca,'Children');
+        yx = findobj(axchild, 'DisplayName', 'data1');
+        X = yx.XData; Y = yx.YData;
+        close(figgyx);
+        fnames(idx) = [];
+    end
 
     figgs = openfig(strcat(dir,fname));
-
+    % only if yx is included should you copy it over
+    if ~isempty(idx)
+        axchild = get(gca,'Children');
+        delete(findobj(axchild, 'DisplayName', 'data2'));
+        hold on
+        plot(X,Y,'Color',[0.3,0.3,0.9],'LineStyle','-','LineWidth',2,'MarkerSize',6,'Marker','none','MarkerFaceColor','None','DisplayName','data2')
+    end
+    
     saveas(figgs, strcat(dir,fname(1:end-4),'.png'))
     
     if write_pdf > 0
