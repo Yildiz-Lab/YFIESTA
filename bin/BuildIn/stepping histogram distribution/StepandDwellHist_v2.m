@@ -34,6 +34,8 @@ OFFsteps = [];
 dwells = [];
 dwells_for = [];
 dwells_back = [];
+HistVals = [];
+pause_frequency = [];
 
 if nargin < 2
     disp("Forgotten threshold or framerate")
@@ -103,10 +105,10 @@ xb = [0,200]; yb = [0,125];
 %xb = [0,100,200]; yb = [0,200,200];
 %xb = [0,75,150,225]; yb = [0,200,200,200];
 %xb = [0,50,100,200]; yb = [0,200,200,200];
-%xa = xb; ya = yb;
+xa = xb; ya = yb;
 %Forward/Backward Scheme
-xb = 1.5*[0,50,50,100,100]; yb = [0,35,35,70,70];
-xa = 1.5*[0,0,50,50,100]; ya = yb;
+% xb = 1.5*[0,50,50,100,100]; yb = [0,35,35,70,70];
+% xa = 1.5*[0,0,50,50,100]; ya = yb;
 
 % Generate an automatic foldername that carries Neighbor Info
 totarr = [xb,yb,xa,ya];
@@ -130,8 +132,6 @@ StepInfoUnique(framerate,fullfile(directory,'/'),xb,yb,xa,ya,foldername)
 % This is a bit recursive, but it never enters this part of the function
 % once we set StepInfo in motion
 
-<<<<<<< HEAD
-=======
 % To Set Pause Threshold
 figure()
 hh = histogram(HistVals,'BinWidth',1);
@@ -147,5 +147,5 @@ Cnorm = CSum/CSum(end);
 [~,conf2] = min(abs(Cnorm - 0.99))
 hold on
 plot((conf2+1)*ones(1,2),[0,max(hh.Values)],'r--');
->>>>>>> 52c8d0d (parse pass rounds to nearest non-NaN data point)
+
 end
