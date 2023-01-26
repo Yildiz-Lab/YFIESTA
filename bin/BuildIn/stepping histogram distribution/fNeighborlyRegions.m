@@ -180,6 +180,10 @@ for i=1:fnum
     end %of isfield
 end
 
+for k=1:length(NearNeighborRegions)
+    fprintf(strcat("Region ",num2str(k)," pause frequency: ", num2str(mean(RegionPauseStats{k})), "\n"))
+end
+
 if ~isempty(RegionStepStats{1}) && ~noplot
     for k=1:length(xb)
         if ~isempty(savedir)
