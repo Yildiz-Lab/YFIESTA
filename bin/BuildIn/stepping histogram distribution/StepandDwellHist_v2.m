@@ -15,7 +15,7 @@
 %   will identify all .mat files in the directory, compile them, then
 %   generate the step-size and dwell-time histograms.
 
-function [ONsteps,OFFsteps,dwells,dwells_for,dwells_back] = StepandDwellHist_v2(directory,threshold,framerate)
+function [ONsteps,OFFsteps,dwells,dwells_for,dwells_back] = StepandDwellHist_v2(directory,threshold,framerate,options)
 % Default threshold is 0.
 
 % check if directory is a file or a folder
@@ -34,8 +34,6 @@ OFFsteps = [];
 dwells = [];
 dwells_for = [];
 dwells_back = [];
-HistVals = [];
-pause_frequency = [];
 
 if nargin < 2
     disp("Forgotten threshold or framerate")
@@ -76,17 +74,8 @@ for i=1:fnum
         dwells_for = [dwells_for; forward];
         dwells_back = [dwells_back; backward];
     end
-    end %if trace exists
     
-    % for pause events
-    cnt_pause_events = 47; %make sure to also change in Neighbor Regions
-    % Note we are always truncating off the last point in Neighbor Regions
-    % since looking for transitions (which require two data points).
-    % Therefore we will also truncate exactly one data point per molecule
-    % to be consistent
-    [pf, Values] = fPauseAnalysis(data(1:end-1,:), [], cnt_pause_events);
-    HistVals = [HistVals, Values];
-    pause_frequency = [pause_frequency, pf];
+    end %if trace exists
     
 end
 
@@ -99,25 +88,25 @@ if ~isfile(directory) %only plot for summary
 PlotStepStats(fnum, ONsteps, OFFsteps, dwells, dwells_for, dwells_back, fullfile(directory,"AllStats.fig"))
 
 %% If neighbors are a thing we want to examine, run to see neighbor statistics
-
-%Options to put in regions here, maybe if a GUI comes
-xb = [0,200]; yb = [0,125];
+if options.UseNeighborRegions
+%Options to put in regions here if GUI is not really your thing, but just
+%override
 %xb = [0,100,200]; yb = [0,200,200];
 %xb = [0,75,150,225]; yb = [0,200,200,200];
 %xb = [0,50,100,200]; yb = [0,200,200,200];
-xa = xb; ya = yb;
+% xa = xb; ya = yb;
 %Forward/Backward Scheme
 % xb = 1.5*[0,50,50,100,100]; yb = [0,35,35,70,70];
 % xa = 1.5*[0,0,50,50,100]; ya = yb;
-% xb = 4.5*[0,50,50]; yb = 3*[0,35,35];
-% xa = 4.5*[0,0,50]; ya = yb;
+% 
+% options.XB = xb; options.XA = xa; options.YB = yb; options.YA = ya;
 
 % Generate an automatic foldername that carries Neighbor Info
-totarr = [xb,yb,xa,ya];
+totarr = [options.XB,options.YB,options.XA,options.YA];
 foldername = '[';
 for j = 1:length(totarr)
     foldername = strcat(foldername, num2str(totarr(j)), ',');
-    if mod(j,length(xb)) == 0 && j ~= length(totarr)
+    if mod(j,length(options.XB)) == 0 && j ~= length(totarr)
         foldername = strcat(foldername(1:end-1), '],[');
     end
 end
@@ -127,27 +116,15 @@ if ~isfolder(foldername)
     mkdir(foldername)
 end
 
-fNeighborlyRegions(framerate,directory,xb,yb,xa,ya,0,foldername)
+options.mode = 'steps';
+fNeighborlyRegions(options,framerate,directory,0,foldername)
+
 
 % Finally, compile all the data into some summaries for an excel sheet
-StepInfoUnique(framerate,fullfile(directory,'/'),xb,yb,xa,ya,foldername)
+StepInfoUnique(options,framerate,fullfile(directory,'/'),foldername)
 % This is a bit recursive, but it never enters this part of the function
 % once we set StepInfo in motion
-
-% To Set Pause Threshold
-figure()
-hh = histogram(HistVals,'BinWidth',1);
-CSum = zeros(1,hh.NumBins);
-CSum(1) = hh.Values(1);
-for b = 2:hh.NumBins
-    CSum(b) = CSum(b-1) + hh.Values(b);
 end
-Cnorm = CSum/CSum(end);
-% find tau by finding where population is at 1/e
-[~,tau] = min(abs(Cnorm - exp(-1)));
-% find actual 95% confidence interval by finding where population is at 95%
-[~,conf2] = min(abs(Cnorm - 0.99))
-hold on
-plot((conf2+1)*ones(1,2),[0,max(hh.Values)],'r--');
+
 end
 

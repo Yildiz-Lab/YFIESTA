@@ -276,6 +276,11 @@ hMenu.mPathStats = uimenu('Parent',hMenu.mStats,'Callback','fPathStatsGui(''Crea
 hMenu.mStepStats = uimenu('Parent',hMenu.mStats,'Callback','fStepStats',...
                             'Label','Stepping Statistics','Tag','StepStats');
                         
+                        % JS Edit 2023/01/26 to add pause analysis
+                        % compiling outside of the motility gui
+hMenu.mPauseAnalysis = uimenu('Parent',hMenu.mStats,'Callback','fPauseAnalysis_wrapper',...
+                            'Label','Pause Statistics','Tag','PauseAnalysis');
+                        
 hMenu.mVelocityStats = uimenu('Parent',hMenu.mStats,'Callback','fVelocityStatsGui(''Create'');',...
                              'Label','Velocity Statistics','Tag','mVelocityStats');    
                          

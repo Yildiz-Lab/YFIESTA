@@ -25,6 +25,7 @@ switch(mode)
         NewPos = [Pos(1)+0.5*(Pos(3)-PosFig(3)) Pos(2)+0.5*(Pos(4)-PosFig(4)) PosFig(3) PosFig(4)];
     case 'full'
         NewPos = [Pos(1)+0.01*Pos(3) Pos(2)+0.01*Pos(4) Pos(3)*0.98 Pos(4)*0.98];
+
 end
 set(hMainGui.fig,'Units','normalized');
 if ~isempty(hFig)
