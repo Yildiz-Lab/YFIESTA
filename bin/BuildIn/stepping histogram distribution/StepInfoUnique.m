@@ -1,4 +1,4 @@
-function StepInfoUnique(framerate, rootfolder, xb, yb, xa, ya, neighborsavefolder)
+function StepInfoUnique(options, framerate, rootfolder, neighborsavefolder)
 
 % JS 2022/11/27
 % Compile Individual Collective Data for Traces to help summarize
@@ -6,22 +6,15 @@ function StepInfoUnique(framerate, rootfolder, xb, yb, xa, ya, neighborsavefolde
 % changing values in the table.
 
 % All the options to override if desired
-if nargin < 2
+if nargin < 3
     rootfolder = uigetdir();
     rootfolder = fullfile(rootfolder,'/');
 end
-if nargin < 3
-    %xb = [0,100]; yb = [0,200];
-    xb = [0,100,200]; yb = [0,200,200];
-    xa = 0.5*xb; ya = yb;
-end
-if nargin < 5
-    xa = 0.5*xb; ya = yb;
-end
-if nargin < 6
+
+if nargin < 4
     neighborsavefolder = [];
 end
-
+xa = options.XA; xb = options.XB; ya = options.YA; yb = options.YB;
 
 f = dir(fullfile(rootfolder,'*.mat')); %JS Edit 220207
 fnum = length(f);
@@ -42,7 +35,8 @@ writetable(StatsTable, strcat(rootfolder,'AllStepInfo.xlsx'));
 
 %% NOW TO DO NEIGHBORS IF EXIST
 
-fNeighborlyRegions(framerate, rootfolder, xb, yb, xa, ya, 1)
+options.mode = 'steps';
+fNeighborlyRegions(options, framerate, rootfolder, 1)
 % The Neighbor Data
 
 NStatsArr = NaN(fnum, 10, length(xb));
