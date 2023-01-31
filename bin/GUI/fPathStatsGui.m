@@ -221,11 +221,10 @@ if ~isempty(PathStats)
         Path = [];
         if isempty(PathStats(n).PathData) || options.overwrite == 1
             if size(PathStats(n).Results,1)> 9 && ~strcmp(options.mode,'filament')
-                
                 if strcmp(options.mode,'fit')
                     if strcmp(options.fit,'auto')
                         [param1,resnorm1] = PathFitLinear(PathStats(n).Results(:,3:5));
-                        [param2,resnorm2] = PathFitCurved(PathStats(n).Results(:,3:5),3); 
+                        [param2,resnorm2] = PathFitCurved(PathStats(n).Results(:,3:5),3);
                         [param3,resnorm3] = PathFitCurved(PathStats(n).Results(:,3:5),4);
                         if all(resnorm1*1.1<[resnorm2 resnorm3])
                             Path = EvalLinearPath(param1,PathStats(n).Results(:,3:5));
@@ -478,11 +477,11 @@ global Index;
 n=get(hPathsStatsGui.lAll,'Value');
 PathStats=getappdata(hPathsStatsGui.fig,'PathStats');
 % JS Edit 2022/05/29
-if ~isfield(hPathsStatsGui.pOptions, 'minFrames')
-    minFrames = 6; blinkTolerance = 4;
-else
-    minFrames = getappdata(hPathsStatsGui.pOptions,'minFrames'); blinkTolerance = getappdata(hPathsStatsGui.pOptions,'blinkTolerance');
-end
+% if ~isfield(hPathsStatsGui.pOptions, 'minFrames')
+%     minFrames = 6; blinkTolerance = 4;
+% else
+%     minFrames = getappdata(hPathsStatsGui.pOptions,'minFrames'); blinkTolerance = getappdata(hPathsStatsGui.pOptions,'blinkTolerance');
+% end
 % End of JS Edit 2022/05/29
 
 if gcbo==hPathsStatsGui.rFilament && ~isreal(Index(n))
@@ -845,14 +844,97 @@ end
 
 plotNeighbors = get(hPathsStatsGui.cNeighbor,'Value');
 if plotNeighbors == 1
-    neighbors = findNeighbors(PathStats(n).PathData(:,1:2));
+    % JS Edit 2023/01/31
+    % we should extend the path and more accurately plot the neighbors onto the
+    % x,y coordinates of the channel we have determined
+    
+    % first we need to find the least squares path if it isn't empty, which
+    % usually is cubic which may cause problems
+    if (PathStats(n).AverageDis == 0) || (PathStats(n).AverageDis == -5) 
+        % use path data for the saved version
+        [~,resnorm1] = PathFitLinear(PathStats(n).PathData(:,1:3));
+        [~,resnorm2] = PathFitCurved(PathStats(n).PathData(:,1:3),3);
+        [~,resnorm3] = PathFitCurved(PathStats(n).PathData(:,1:3),4);
+        if all(resnorm1*1.1<[resnorm2 resnorm3])
+            PathStats(n).AverageDis = -1;
+        elseif resnorm2*1.1<resnorm3
+            PathStats(n).AverageDis = -2;
+        else
+            PathStats(n).AverageDis = -3;
+        end
+    end
+    
+    % now we need to do something to extend the path to make it easier for
+    % the neighbors to find
+    % first, make an interpolation on latent variable w so that it approximately goes a nm (we'll stick with 2d for now)
+    path_extend = [-200,200];
+    w = max(PathStats(n).Results(:,6));  %nm
+    [dmin,mnidx] = min(PathStats(n).Results(:,3)); [dmax,mxidx] = max(PathStats(n).Results(:,3));
+    dstep = (dmax-dmin)/w; % get ~number/nm
+    if mnidx > mxidx %we are going in the negative x direction with time
+        xw = dmax+path_extend(2)*dstep:-dstep:dmin+path_extend(1)*dstep; %interpolation grid of approximately a nm
+    else
+        xw = dmin+path_extend(1)*dstep:dstep:dmax+path_extend(2)*dstep; %interpolation grid of approximately a nm
+    end
+    
+    [dmin,mnidx] = min(PathStats(n).Results(:,4)); [dmax,mxidx] = max(PathStats(n).Results(:,4));
+    dstep = (dmax-dmin)/w; % get ~number/nm
+    if mnidx > mxidx %we are going in the negative y direction with time, interpolate likewise
+        yw = dmax+path_extend(2)*dstep:-dstep:dmin+path_extend(1)*dstep; %interpolation grid of approximately a nm
+    else
+        yw = dmin+path_extend(1)*dstep:dstep:dmax+path_extend(2)*dstep; %interpolation grid of approximately a nm
+    end
+    
+    [dmin,mnidx] = min(PathStats(n).Results(:,5)); [dmax,mxidx] = max(PathStats(n).Results(:,5));
+    zstep = (max(PathStats(n).Results(:,5))-min(PathStats(n).Results(:,5)))/w;  % get ~number/nm
+    if isnan(zstep)
+        zw = nan(size(yw));
+    else
+        dstep = zstep;
+        if mnidx > mxidx %we are going in the negative y direction with time, interpolate likewise
+            zw = dmax+path_extend(2)*dstep:-dstep:dmin+path_extend(1)*dstep; %interpolation grid of approximately a nm
+        else
+            zw = dmin+path_extend(1)*dstep:dstep:dmax+path_extend(2)*dstep; %interpolation grid of approximately a nm
+        end
+    end
+    InterpResults = [xw',yw',zw'];
+    
+    % then, make a path with interpolation to place the neighbors
+    if PathStats(n).AverageDis == -1
+        [param1,~] = PathFitLinear(PathStats(n).Results(:,3:5));
+        InterpPath = EvalLinearPath(param1,InterpResults);
+    elseif PathStats(n).AverageDis == -2
+        [param2,~] = PathFitCurved(PathStats(n).Results(:,3:5),3);
+        InterpPath = EvalCurvedPath(param2,InterpResults);
+    elseif PathStats(n).AverageDis == -3
+        [param3,~] = PathFitCurved(PathStats(n).Results(:,3:5),4);
+        InterpPath = EvalCurvedPath(param3,InterpResults);
+    else % can't extend path, fit is individual
+        InterpPath = PathStats(n).PathData;
+    end
+    
+    neighbors = findNeighbors(InterpPath(:,1:2));
     neighbor_txy = cell(length(neighbors),1);
+    
     for m = 1:length(neighbors)
         Res = Molecule(neighbors(m)).Results;
         txy_reorient = nan( Res(end,1)-Res(1,1) ,3);
+        B = [PathStats(n).Results(end,3) - PathStats(n).Results(1,3), PathStats(n).Results(end,4) - PathStats(n).Results(1,4),0]; %for cross product
         for p = 1:size(Res,1)
-            [npos, nidx] = min( sqrt( (PathStats(n).PathData(:,1) - Res(p,3)).^2 + (PathStats(n).PathData(:,2) - Res(p,4)).^2) );
-            mpos = norm (PathStats(n).PathData(nidx,1:2) - PathStats(n).PathData(1,1:2));
+%             % Plot on direct path of molecule
+%             [npos, nidx] = min( sqrt( (PathStats(n).PathData(:,1) - Res(p,3)).^2 + (PathStats(n).PathData(:,2) - Res(p,4)).^2) );
+%             mpos = norm (PathStats(n).PathData(nidx,1:2) - PathStats(n).PathData(1,1:2));
+            % Plot on interpolated path
+            [npos, nidx] = min( sqrt( (InterpPath(:,1) - Res(p,3)).^2 + (InterpPath(:,2) - Res(p,4)).^2) );
+            mpos = norm (InterpPath(nidx,1:2) - PathStats(n).PathData(1,1:2));
+            
+            % to get correct sign off axis, use a cross product on vectors
+            % for overall direction
+            C = [Res(p,3) - InterpPath(nidx,1), Res(p,4) - InterpPath(nidx,2),0]; % to nearest point
+            D = [Res(p,3) - PathStats(n).Results(1,3), Res(p,4) - PathStats(n).Results(1,4),0]; % to beginning
+            BXC = cross(B,C); npos = npos * sign(BXC(3));
+            theta = acos(dot(B,D)/norm(B)/norm(D)); mpos = mpos * sign(cos(theta));
+            
             txy_reorient(Res(p,1)-Res(1,1)+1,:) = [Res(p,1) - frame1 + 1, mpos, npos];
         end
         neighbor_txy{m,1} = txy_reorient;
