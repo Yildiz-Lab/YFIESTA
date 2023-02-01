@@ -897,6 +897,16 @@ if plotNeighbors == 1
             zw = dmin+path_extend(1)*dstep:dstep:dmax+path_extend(2)*dstep; %interpolation grid of approximately a nm
         end
     end
+    
+    % fringe case where the interpolations manage to fill in just a
+    % slightly larger number
+    if length(xw) > length(yw)
+        xw = xw(1:length(yw));
+    elseif length(xw) < length(yw)
+        yw = yw(1:length(xw));
+        zw = zw(1:length(xw));
+    end
+    
     InterpResults = [xw',yw',zw'];
     
     % then, make a path with interpolation to place the neighbors

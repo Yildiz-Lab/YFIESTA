@@ -92,7 +92,7 @@ else
             fnum = fnum - 1;
         else
         data = trace.trace;
-        data_yx = trace.trace_yx;
+        % data_yx = trace.trace_yx;
 
         % for pause events
         % cnt_pause_events = 47; %make sure to also change in Neighbor Regions
@@ -124,7 +124,7 @@ if opts.PauseThresh == 0
     % find tau by finding where population is at 1/e
     [~,tau] = min(abs(Cnorm - exp(-1)));
     % find actual 95% confidence interval by finding where population is at 95%
-    [~,conf2] = min(abs(Cnorm - 0.95))
+    [~,conf2] = min(abs(Cnorm - 0.975))
     plot((conf2+1)*ones(1,2),[0,max(hh.Values)],'r--');
     Config.PauseThreshold = conf2;
 elseif ~opts.UseNeighborRegions
