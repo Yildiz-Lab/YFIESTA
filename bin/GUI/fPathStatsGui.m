@@ -866,48 +866,46 @@ if plotNeighbors == 1
     
     % now we need to do something to extend the path to make it easier for
     % the neighbors to find
-    % first, make an interpolation on latent variable w so that it approximately goes a nm (we'll stick with 2d for now)
-    path_extend = [-200,200];
-    w = max(PathStats(n).Results(:,6));  %nm
-    [dmin,mnidx] = min(PathStats(n).Results(:,3)); [dmax,mxidx] = max(PathStats(n).Results(:,3));
-    dstep = (dmax-dmin)/w; % get ~number/nm
-    if mnidx > mxidx %we are going in the negative x direction with time
-        xw = dmax+path_extend(2)*dstep:-dstep:dmin+path_extend(1)*dstep; %interpolation grid of approximately a nm
+    % first, make an interpolation on latent variable so that it approximately goes a nm (we'll stick with 2d for now)
+    path_extend = 200; %nm
+
+    % interpolate between each data point by 1 nm
+    Delta = PathStats(n).PathData(2:end,1:4)-PathStats(n).PathData(1:end-1,1:4);
+    InterpResults = PathStats(n).PathData(1,1:3); % initialize with first point
+    for i = 1:size(Delta,1)
+        dstep = round(Delta(i,4)); % approximately 1 nm per step
+        step = Delta(i,1:3)/dstep;
+        xi = PathStats(n).PathData(i,1)*ones(1,dstep) + step(1)*(1:dstep);
+        yi = PathStats(n).PathData(i,2)*ones(1,dstep) + step(2)*(1:dstep);
+        zi = PathStats(n).PathData(i,3)*ones(1,dstep) + step(3)*(1:dstep);
+        InterpResults = [InterpResults; xi' yi' zi'];
+    end
+    % Now we want to do the ends, a linear extrapolation at the end
+    % this isn't as good for high curves but deals with edge cases
+    w = 1:min(size(InterpResults,1),path_extend);
+    % beginning fits
+    xbeginmdl = fit(w',InterpResults(1:length(w),1),'linear');
+    ybeginmdl = fit(w',InterpResults(1:length(w),2),'linear');
+    % ending fits
+    
+    xendmdl = fit(w',InterpResults(end-length(w)+1:end,1),'linear');
+    yendmdl = fit(w',InterpResults(end-length(w)+1:end,2),'linear');
+    if all(~isnan(InterpResults(:,3)))
+        zbeginmdl = fit(w',InterpResults(1:length(w),3),'linear');
+        zendmdl = fit(w',InterpResults(end-length(w):end,3),'linear');
+        zb = zbeginmdl(-path_extend+1:0)';
+        ze = zendmdl(length(w)+1:length(w)+path_extend)';
     else
-        xw = dmin+path_extend(1)*dstep:dstep:dmax+path_extend(2)*dstep; %interpolation grid of approximately a nm
+        zb = nan(length(w),1);
+        ze = nan(length(w),1);
     end
+    tb = -path_extend+1:0;
+    te = length(w)+1:length(w)+path_extend;
     
-    [dmin,mnidx] = min(PathStats(n).Results(:,4)); [dmax,mxidx] = max(PathStats(n).Results(:,4));
-    dstep = (dmax-dmin)/w; % get ~number/nm
-    if mnidx > mxidx %we are going in the negative y direction with time, interpolate likewise
-        yw = dmax+path_extend(2)*dstep:-dstep:dmin+path_extend(1)*dstep; %interpolation grid of approximately a nm
-    else
-        yw = dmin+path_extend(1)*dstep:dstep:dmax+path_extend(2)*dstep; %interpolation grid of approximately a nm
-    end
+    % Now fill into InterpResults in proper places
+    InterpResults = [xbeginmdl(tb), ybeginmdl(tb), zb; InterpResults];
+    InterpResults = [InterpResults; xendmdl(te), yendmdl(te), ze];
     
-    [dmin,mnidx] = min(PathStats(n).Results(:,5)); [dmax,mxidx] = max(PathStats(n).Results(:,5));
-    zstep = (max(PathStats(n).Results(:,5))-min(PathStats(n).Results(:,5)))/w;  % get ~number/nm
-    if isnan(zstep)
-        zw = nan(size(yw));
-    else
-        dstep = zstep;
-        if mnidx > mxidx %we are going in the negative y direction with time, interpolate likewise
-            zw = dmax+path_extend(2)*dstep:-dstep:dmin+path_extend(1)*dstep; %interpolation grid of approximately a nm
-        else
-            zw = dmin+path_extend(1)*dstep:dstep:dmax+path_extend(2)*dstep; %interpolation grid of approximately a nm
-        end
-    end
-    
-    % fringe case where the interpolations manage to fill in just a
-    % slightly larger number
-    if length(xw) > length(yw)
-        xw = xw(1:length(yw));
-    elseif length(xw) < length(yw)
-        yw = yw(1:length(xw));
-        zw = zw(1:length(xw));
-    end
-    
-    InterpResults = [xw',yw',zw'];
     
     % then, make a path with interpolation to place the neighbors
     if PathStats(n).AverageDis == -1
@@ -925,9 +923,13 @@ if plotNeighbors == 1
     
     neighbors = findNeighbors(InterpPath(:,1:2));
     neighbor_txy = cell(length(neighbors),1);
+    neighbor_exist_thresh = 15;
     
-    for m = 1:length(neighbors)
+    for m = length(neighbors):-1:1
         Res = Molecule(neighbors(m)).Results;
+        if size(Res,1) < neighbor_exist_thresh
+            neighbor_txy(m,1) = [];
+        else
         txy_reorient = nan( Res(end,1)-Res(1,1) ,3);
         B = [PathStats(n).Results(end,3) - PathStats(n).Results(1,3), PathStats(n).Results(end,4) - PathStats(n).Results(1,4),0]; %for cross product
         for p = 1:size(Res,1)
@@ -948,6 +950,7 @@ if plotNeighbors == 1
             txy_reorient(Res(p,1)-Res(1,1)+1,:) = [Res(p,1) - frame1 + 1, mpos, npos];
         end
         neighbor_txy{m,1} = txy_reorient;
+        end
     end
 else
     neighbor_txy = {};
