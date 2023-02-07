@@ -7,7 +7,7 @@ nntchoice = intersect(tchoice, idx); %get no NaN tchoice
 ydata = ydata(nntchoice);
 
 %Then histogram (in code form) and look for pause events
-binsize = 40; %nm
+binsize = 80; %nm
 bins = min(ydata):binsize:max(ydata)+binsize; %+binsize to pick up stragglers in case number is >binsize
 V = zeros(1,length(bins)-1); %we fill in between values
 
