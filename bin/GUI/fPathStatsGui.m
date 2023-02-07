@@ -699,6 +699,9 @@ end
 % crop option 
 
 [startpoint,endpoint] = parse_pass_v3(xynew);
+if endpoint <= startpoint
+    error("Select endpoint then startpoint")
+end
 
 % only if cropping was actually done should we go through all this madness
 if startpoint ~= 1 || endpoint ~= length(xynew)
@@ -923,12 +926,12 @@ if plotNeighbors == 1
     
     neighbors = findNeighbors(InterpPath(:,1:2));
     neighbor_txy = cell(length(neighbors),1);
-    neighbor_exist_thresh = 15;
+    neighbor_exist_thresh = 10;
     
     for m = length(neighbors):-1:1
         Res = Molecule(neighbors(m)).Results;
         if size(Res,1) < neighbor_exist_thresh
-            neighbor_txy(m,1) = [];
+            neighbor_txy(m) = [];
         else
         txy_reorient = nan( Res(end,1)-Res(1,1) ,3);
         B = [PathStats(n).Results(end,3) - PathStats(n).Results(1,3), PathStats(n).Results(end,4) - PathStats(n).Results(1,4),0]; %for cross product

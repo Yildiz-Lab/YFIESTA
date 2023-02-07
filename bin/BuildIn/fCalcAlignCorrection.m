@@ -10,7 +10,7 @@ function F = fCalcAlignCorrection(ch1file, ch2file)
 %    output will be x, y dependent translation correction for Ch2 to move
 %    to Ch1 coordinates in nm
 
-too_large_nm = 3000;
+too_large_nm = 1000;
 
 % user choose option
 if nargin < 1
