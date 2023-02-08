@@ -37,6 +37,11 @@ end
 
 HistVals = [];
 pause_frequency = [];
+NP = [];
+NB = [];
+NS = [];
+velocity = [];
+run_length = [];
 
 % I should always have an option whether you need data or not
 
@@ -88,11 +93,11 @@ else
         end
 
         trace = steptrace.data;
-        if ~isfield(trace,'trace') % I should still find a way to look at this even if there is no trace
+        if ~isfield(trace,'trace') || ~isfield(trace,'trace_yx') % I should still find a way to look at this even if there is no trace
             fnum = fnum - 1;
         else
         data = trace.trace;
-        % data_yx = trace.trace_yx;
+        data_yx = trace.trace_yx;
 
         % for pause events
         % cnt_pause_events = 47; %make sure to also change in Neighbor Regions
@@ -100,14 +105,21 @@ else
         % since looking for transitions (which require two data points).
         % Therefore we will also truncate exactly one data point per molecule
         % to be consistent
-        [pf, Values] = fPauseAnalysis(data(1:end-1,:), [], opts.PauseThresh);
+        [pf, Values, numpause, side, back] = fPauseAnalysis(data(1:end-1,:), data_yx(1:end-1,:), [], opts.PauseThresh);
         HistVals = [HistVals, Values];
         pause_frequency = [pause_frequency, pf];
+        NP = [NP, numpause]; NS = [NS, side]; NB = [NB, back];
+        
+        d = max(data(:,3))-min(data(:,3));
+        run_length = [run_length, d];
+        velocity = [velocity, d/size(data,1)/framerate];
         end
     end 
     
 end
 
+fprintf(" ----------- \n")
+fprintf(strcat("Total traces used for analysis: ", num2str(fnum), "\n"))
 
 % To Set Pause Threshold
 
@@ -124,16 +136,27 @@ if opts.PauseThresh == 0
     % find tau by finding where population is at 1/e
     [~,tau] = min(abs(Cnorm - exp(-1)));
     % find actual 95% confidence interval by finding where population is at 95%
-    [~,conf2] = min(abs(Cnorm - 0.975))
+    [~,conf2] = min(abs(Cnorm - 0.9));
     plot((conf2+1)*ones(1,2),[0,max(hh.Values)],'r--');
     Config.PauseThreshold = conf2;
+    fprintf(strcat("Setting Pause Threshold: ", num2str(conf2), "\n"))
+    % need to loop back through to do this
+%     fprintf(strcat("Calculated Pause Frequency: ", num2str(mean(pause_frequency)), "\n"))
 elseif ~opts.UseNeighborRegions
     figure()
     hh = histogram(HistVals,'BinWidth',1);
     hold on
     plot((opts.PauseThresh+1)*ones(1,2),[0,max(hh.Values)],'r--');
     fprintf(strcat("Pause frequency: ", num2str(mean(pause_frequency)), "\n"))
+    NP'
+    NS'
+    NB'
+    fprintf(strcat("Side Step Percentage in Pause: ", num2str(round(sum(NS)/sum(NP),5)), "\n")) 
+    fprintf(strcat("Back Step Percentage in Pause: ", num2str(round(sum(NB)/sum(NP),5)), "\n")) 
 end
+
+fprintf(strcat("Mean Run Length: ", num2str(mean(run_length)), " +/- ", num2str(std(run_length)), " nm \n"))
+fprintf(strcat("Mean Velocity: ", num2str(mean(velocity)), " +/- ", num2str(std(velocity)), " nm/s \n"))
 
 end
 

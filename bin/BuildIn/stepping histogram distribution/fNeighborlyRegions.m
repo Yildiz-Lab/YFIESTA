@@ -39,7 +39,10 @@ switch(opts.mode)
         RegionDwellBackStats = cell(1,length(xb));
     case 'pause'
         do.pause = 1;
+        RegionPauseFreqStats = cell(1,length(xb));
         RegionPauseStats = cell(1,length(xb));
+        RegionPauseSideStats = cell(1,length(xb));
+        RegionPauseBackStats = cell(1,length(xb));
     case 'regions'
         fprintf("Just finding regions")
 end
@@ -52,7 +55,7 @@ for i=1:fnum
     fname = f(i).name;
     steptrace = load(strcat(actualdir,'\',fname));
     data = steptrace.data;
-    if ~isfield(data,'trace')
+    if ~isfield(data,'trace') || ~isfield(data,'trace_yx')
         fnum = fnum - 1;
     else
     trace = data.trace;
@@ -176,8 +179,11 @@ for i=1:fnum
             % JS Edit 2023/01/09 Pause Stats based on DeWitt et al (2015)
             if ~isempty(NearNeighborRegions{k})
                 % Note we are always truncating off the last point
-                [pause_frequency, ~] = fPauseAnalysis(trace, NearNeighborRegions{k}, opts.PauseThresh);
-                RegionPauseStats{k} = [RegionPauseStats{k}; pause_frequency];
+                [pause_frequency, ~, numpause, numside, numback] = fPauseAnalysis(trace, trace_yx, NearNeighborRegions{k}, opts.PauseThresh);
+                RegionPauseFreqStats{k} = [RegionPauseFreqStats{k}; pause_frequency];
+                RegionPauseStats{k} = [RegionPauseStats{k}; numpause];
+                RegionPauseSideStats{k} = [RegionPauseSideStats{k}; numside];
+                RegionPauseBackStats{k} = [RegionPauseBackStats{k}; numback];
             end
         end
     end
@@ -267,7 +273,10 @@ end
 
 if isfield(do,'pause')
     for k=1:length(NearNeighborRegions)
-        fprintf(strcat("Region ",num2str(k)," pause frequency: ", num2str(mean(RegionPauseStats{k})), "\n"))
+        fprintf(strcat("Region ",num2str(k)," pause number: ", num2str(sum(RegionPauseStats{k})), "\n"))
+        fprintf(strcat("Region ",num2str(k)," pause frequency: ", num2str(mean(RegionPauseFreqStats{k})), "\n"))
+        fprintf(strcat("Region ",num2str(k)," pause-side fraction: ", num2str(sum(RegionPauseSideStats{k})/sum(RegionPauseStats{k})), "\n"))
+        fprintf(strcat("Region ",num2str(k)," pause-back fraction: ", num2str(sum(RegionPauseBackStats{k})/sum(RegionPauseStats{k})), "\n"))
     end
 end
 

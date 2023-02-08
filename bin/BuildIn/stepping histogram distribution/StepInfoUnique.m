@@ -14,7 +14,6 @@ end
 if nargin < 4
     neighborsavefolder = [];
 end
-xa = options.XA; xb = options.XB; ya = options.YA; yb = options.YB;
 
 f = dir(fullfile(rootfolder,'*.mat')); %JS Edit 220207
 fnum = length(f);
@@ -34,8 +33,10 @@ StatsTable = ConvertToTable(StatsArr, fnames);
 writetable(StatsTable, strcat(rootfolder,'AllStepInfo.xlsx'));
 
 %% NOW TO DO NEIGHBORS IF EXIST
-
+if options.UseNeighborRegions
 options.mode = 'steps';
+xa = options.XA; xb = options.XB; ya = options.YA; yb = options.YB;
+
 fNeighborlyRegions(options, framerate, rootfolder, 1)
 % The Neighbor Data
 
@@ -62,12 +63,13 @@ for k = 1:length(xb)
         skipped = skipped + 1;
     end
 end
+end
 
 
 %% AND EXTENDED FUNCTIONS
 function StatsArr = FillStatsArray(StatsArr, fullname, row, framerate)
 i = row;
-[ONsteps,OFFsteps,dwells,dwells_for,dwells_back] = StepandDwellHist_v2(fullname, 0, framerate);
+[~,ONsteps,OFFsteps,dwells,dwells_for,dwells_back] = StepandDwellHist_subfn(fullname, 0, framerate);
 
 % Put whatever individual stats you want, but make sure to change it in
 % FillNeighborStatsArray as well
@@ -78,7 +80,7 @@ StatsArr(i,10) = length(dwells); StatsArr(i,11) = length(dwells_for); StatsArr(i
 
 steptrace = load(fullname);
 trace = steptrace.data;
-if isfield(trace,'trace')
+if isfield(trace,'trace') && isfield(trace,'trace_yx')
     data = trace.trace;
 else
     data = [];
