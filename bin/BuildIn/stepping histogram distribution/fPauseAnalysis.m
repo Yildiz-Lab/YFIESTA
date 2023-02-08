@@ -1,9 +1,5 @@
-<<<<<<< HEAD
-function [normalized_pause_frequency, V] = fPauseAnalysis(trace, tchoice, threshold_cnt_pause)
-=======
 function [normalized_pause_frequency, V, pause_events, numside, numback] = fPauseAnalysis(trace, trace_yx, tchoice, threshold_cnt_pause)
 % function [V, normalized_pause_frequency] = fPauseAnalysis(trace, tchoice, threshold_cnt_pause)
->>>>>>> 12c6092 (packaged StepDwell_subfn, more neighbor analysis options)
 
 % Similar to add_to_list_6col
 ydata = trace(:,1);
