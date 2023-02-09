@@ -10,7 +10,7 @@ fnum = length(f);
 
 % 1 x number output args
 % CollNeighbors = zeros(1,2);
-CollNeighbors = nan(0,4);
+CollNeighbors = nan(0,5);
 
 for i=1:fnum
     fname = f(i).name;
@@ -22,6 +22,8 @@ for i=1:fnum
     trace = data.trace;
     trace_yx = data.trace_yx;
     neighbors = data.neighbors;
+    
+    lastidx = size(CollNeighbors,1);
     
     for n = 1:length(neighbors)
         ndata = neighbors{n}; %[rel frame, rel parallel dir, rel transverse dir]
@@ -55,9 +57,9 @@ for i=1:fnum
         % trace position x (the y axis) must be positive in at least one
         % spot
         if any( (tx(:,1) <= 0) .* (tx(:,2) > -200) )
-            if relative_parallel_position < min(trace(:,3)) + 100
+            if relative_parallel_position < min(trace(:,3)) + 50
                 tracepos = -1;
-            elseif relative_parallel_position > max(trace(:,3)) - 100
+            elseif relative_parallel_position > max(trace(:,3)) - 50
                 tracepos = 1;
             else
                 tracepos = 0;
@@ -65,12 +67,29 @@ for i=1:fnum
         else
             tracepos = NaN;
         end
-        CollNeighbors = [CollNeighbors; tracepos, MSD, max_delta_parallel, max(ndata(:,1)) - min(ndata(:,1))];
-        
+        CollNeighbors = [CollNeighbors; tracepos, MSD, relative_parallel_position, max_delta_parallel, length(ndata(:,1))];
+        if any(abs(CollNeighbors(lastidx+1:end-1,3) - relative_parallel_position) < 150) %likely similar neighbors, so remove the later ones
+            CollNeighbors(end,:) = [];
+        end
     end
     
     end
 end
+
+% Print out some stats
+
+% Where are the MAPs
+fprintf(strcat("Beginning/Attachment Events: ", num2str(length(find(CollNeighbors(:,1) == -1))), "\n"))
+fprintf(strcat("Ending/Detachment Events: ", num2str(length(find(CollNeighbors(:,1) == 1))), "\n"))
+fprintf(strcat("Middle/Remaining Events: ", num2str(length(find(CollNeighbors(:,1) == 0))), "\n"))
+
+% What are the MSDs of the neighbors
+fprintf(strcat("Mean Square Displacement (nm^2) / frame: ", num2str(mean(CollNeighbors(:,2)./CollNeighbors(:,5))), "\n"))
+
+% How much do they move?
+fprintf(strcat("Maximum Overall Displacement (nm) / frame: ", num2str(mean(CollNeighbors(:,4)./CollNeighbors(:,5))), "\n"))
+
+% What are their lifetimes?
 
 end
 
