@@ -1,4 +1,4 @@
-function [normalized_pause_frequency, V, pause_events, numside, numback] = fPauseAnalysis(trace, trace_yx, tchoice, threshold_cnt_pause)
+function [normalized_pause_frequency, pause_fraction, V, pause_events, numside, numback] = fPauseAnalysis(trace, trace_yx, tchoice, threshold_cnt_pause)
 % function [V, normalized_pause_frequency] = fPauseAnalysis(trace, tchoice, threshold_cnt_pause)
 
 % Similar to add_to_list_6col
@@ -15,6 +15,7 @@ bins = min(ydata):binsize:max(ydata)+binsize; %+binsize to pick up stragglers in
 V = zeros(1,length(bins)-1); %we fill in between values
 
 pause_events = 0;
+pause_time = 0;
 numback = 0;
 numside = 0;
 for i = 1:length(bins)-1
@@ -26,6 +27,7 @@ for i = 1:length(bins)-1
         V(i) = length(idx);
         if V(i) > threshold_cnt_pause
             pause_events = pause_events + 1;
+            pause_time = pause_time + V(i);
             if sum(trace_yx(idx,5)) > 0
                 numside = numside + 1;
             end
@@ -44,5 +46,6 @@ end
 % number of pause events / __ number of time points
 norm_time_pts = 100;
 normalized_pause_frequency = pause_events / length(nntchoice) * norm_time_pts;
+pause_fraction = pause_time / length(nntchoice);
 
 end

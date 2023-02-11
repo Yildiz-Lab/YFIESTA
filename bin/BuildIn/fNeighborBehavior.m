@@ -57,9 +57,9 @@ for i=1:fnum
         % trace position x (the y axis) must be positive in at least one
         % spot
         if any( (tx(:,1) <= 0) .* (tx(:,2) > -200) )
-            if relative_parallel_position < min(trace(:,3)) + 50
+            if relative_parallel_position < min(trace(:,3)) + 100
                 tracepos = -1;
-            elseif relative_parallel_position > max(trace(:,3)) - 50
+            elseif relative_parallel_position > max(trace(:,3)) - 100
                 tracepos = 1;
             else
                 tracepos = 0;
