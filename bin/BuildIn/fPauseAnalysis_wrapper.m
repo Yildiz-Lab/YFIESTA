@@ -37,6 +37,7 @@ end
 
 HistVals = [];
 pause_frequency = [];
+pause_fraction = [];
 NP = [];
 NB = [];
 NS = [];
@@ -105,9 +106,10 @@ else
         % since looking for transitions (which require two data points).
         % Therefore we will also truncate exactly one data point per molecule
         % to be consistent
-        [pf, Values, numpause, side, back] = fPauseAnalysis(data(1:end-1,:), data_yx(1:end-1,:), [], opts.PauseThresh);
+        [pf, pt, Values, numpause, side, back] = fPauseAnalysis(data(1:end-1,:), data_yx(1:end-1,:), [], opts.PauseThresh);
         HistVals = [HistVals, Values];
         pause_frequency = [pause_frequency, pf];
+        pause_fraction = [pause_fraction, pt];
         NP = [NP, numpause]; NS = [NS, side]; NB = [NB, back];
         
         d = max(data(:,3))-min(data(:,3));
@@ -148,11 +150,12 @@ elseif ~opts.UseNeighborRegions
     hold on
     plot((opts.PauseThresh+1)*ones(1,2),[0,max(hh.Values)],'r--');
     fprintf(strcat("Pause frequency: ", num2str(mean(pause_frequency)), "\n"))
-    NP'
-    NS'
-    NB'
-    fprintf(strcat("Side Step Percentage in Pause: ", num2str(round(sum(NS)/sum(NP),5)), "\n")) 
-    fprintf(strcat("Back Step Percentage in Pause: ", num2str(round(sum(NB)/sum(NP),5)), "\n")) 
+    fprintf(strcat("Pause fraction: ", num2str(mean(pause_fraction)), "\n"))
+%     NP'
+%     NS'
+%     NB'
+    fprintf(strcat("Side Step Percentage in Pause: ", num2str(round(sum(NS)/sum(NP),5)), " (", num2str(sum(NS)), "/", num2str(sum(NP)), ")", "\n")) 
+    fprintf(strcat("Back Step Percentage in Pause: ", num2str(round(sum(NB)/sum(NP),5)), " (", num2str(sum(NB)), "/", num2str(sum(NP)), ")", "\n")) 
 end
 
 fprintf(strcat("Mean Run Length: ", num2str(mean(run_length)), " +/- ", num2str(std(run_length)), " nm \n"))

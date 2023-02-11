@@ -80,7 +80,7 @@ handles.currentPlotPSD_Long = 0; % Currently plotted PSD signal, long axis
 handles.currentPlotPSD_Short = 0; % Currently plotted PSD signal, short
 handles.currentPlotTrap_Long = 0; % Currently plotted trap position, long
 handles.currentPlotTrap_Short = 0; % Currently plotted trap position, short
-handles.currentXlabel='time (s)';
+handles.currentXlabel='frame';
 handles.currentYlabel='position (nm)'; 
 
 handles.KX=0.05;    % Spring constant, x
@@ -128,6 +128,13 @@ if ~isempty(varargin)
     
     set(handles.StepsFilename, 'String', fullfile(pathname, strcat(filename,'.mat')));
 end
+
+% JS Edit for user preferences related to gridlines, user can change
+% if desired
+handles.GridDiv.String = '32 nm';
+handles.display.gridLines = 1;
+set(handles.GridLines,'string','Remove GridLines');
+% End of JS Edit
 
 % Choose default command line output for FIONAviewer
 handles.output = hObject;
@@ -484,8 +491,12 @@ function FilterData_Callback(hObject, eventdata, handles) %#ok
 %DisplayType=get(handles.FilterData,'string');
 
 %if strcmp(DisplayType,'Filter/Decimate Data') % Filter data
-
-    handles = FilterData(hObject, handles);
+    
+% JS Edit 2023/02/10 just to try and play around with a set filter spec
+    %handles = FilterData(hObject, handles); %uncomment if want original
+    %FilterData code
+    handles = StepThresholdRemoval(hObject, handles);
+    % End of JS Edit 2023/02/10
 
     %set(handles.FilterData,'string','Raw Data?')
     handles.display.filtered = 1;
