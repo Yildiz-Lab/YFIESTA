@@ -106,7 +106,7 @@ else
         % since looking for transitions (which require two data points).
         % Therefore we will also truncate exactly one data point per molecule
         % to be consistent
-        [pf, pt, Values, numpause, side, back] = fPauseAnalysis(data(1:end-1,:), data_yx(1:end-1,:), [], opts.PauseThresh);
+        [pf, pt, Values, numpause, side, back] = fPauseAnalysis(data(1:end-1,:), data_yx(1:end-1,:), 1:size(data,1)-1, opts.PauseThresh);
         HistVals = [HistVals, Values];
         pause_frequency = [pause_frequency, pf];
         pause_fraction = [pause_fraction, pt];
@@ -149,7 +149,7 @@ elseif ~opts.UseNeighborRegions
     hh = histogram(HistVals,'BinWidth',1);
     hold on
     plot((opts.PauseThresh+1)*ones(1,2),[0,max(hh.Values)],'r--');
-    fprintf(strcat("Pause frequency: ", num2str(mean(pause_frequency)), "\n"))
+    fprintf(strcat("Pause density: ", num2str(mean(pause_frequency*1000)), " um^{-1} \n"))
     fprintf(strcat("Pause fraction: ", num2str(mean(pause_fraction)), "\n"))
 %     NP'
 %     NS'

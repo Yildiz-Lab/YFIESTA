@@ -253,7 +253,10 @@ hMenu.mFreehandScan = uimenu('Parent',hMenu.mTools,'Callback','fMenuTools(''Scan
                      
 hMenu.mFilamentScan = uimenu('Parent',hMenu.mTools,'Callback','fMenuTools(''ScanFilament'',getappdata(0,''hMainGui''));','Enable','off',...
                              'Label','Use Filament for Scan','Tag','mFilamentScan');     
-                     
+
+hMenu.mMTIMBS = uimenu('Parent',hMenu.mTools,'Callback','fMenuTools(''MTIMBS'',getappdata(0,''hMainGui''));','Enable','off',...
+                             'Label','MTIMBS (Intensity with Background Subtracted)','Tag','mFilamentScan','Separator','On');                              
+
 %create Statistics menu
 
 fMenuStatistics(''); %create dependency for compiling;

@@ -10,7 +10,7 @@ function handles = StepThresholdRemoval(hObject, handles)
 
 % User set parameters that should be incorporated into GUI eventually so
 % that people can set their own "manual step" corrections
-step_thresh = 8; %12 %nm
+step_thresh = 10; %12 %nm
 avg_window = 4; %7
 
 % we have to set this to delete to use the prebuilt AddRmvStepManually func
