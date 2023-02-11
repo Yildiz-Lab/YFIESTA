@@ -28,6 +28,7 @@ function [ONsteps,OFFsteps,dwells,dwells_for,dwells_back] = StepandDwellHist_v2(
 if ~isfile(directory) %only plot for summary
 PlotStepStats(fnum, ONsteps, OFFsteps, dwells, dwells_for, dwells_back, fullfile(directory,"AllStats.fig"))
 StepInfoUnique(options,framerate,fullfile(directory,'/'))
+end
 
 %% If neighbors are a thing we want to examine, run to see neighbor statistics
 if options.UseNeighborRegions

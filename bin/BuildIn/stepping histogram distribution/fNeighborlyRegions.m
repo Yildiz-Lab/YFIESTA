@@ -269,14 +269,13 @@ if isfield(do,'steps')
         xlabel("Region")
         title("Stepping rate")
 
-
     end
 end
 
 if isfield(do,'pause')
     for k=1:length(NearNeighborRegions)
         fprintf(strcat("Region ",num2str(k)," pause number: ", num2str(sum(RegionPauseStats{k})), "\n"))
-        fprintf(strcat("Region ",num2str(k)," pause frequency: ", num2str(mean(RegionPauseFreqStats{k})), "\n"))
+        fprintf(strcat("Region ",num2str(k)," pause density: ", num2str(mean(RegionPauseFreqStats{k})*1000), "\n"))
         fprintf(strcat("Region ",num2str(k)," pause fraction: ", num2str(mean(RegionPauseFracStats{k})), "\n"))
         fprintf(strcat("Region ",num2str(k)," pause-side fraction: ", num2str(sum(RegionPauseSideStats{k})/sum(RegionPauseStats{k})), " (", num2str(sum(RegionPauseSideStats{k})), "/", num2str(sum(RegionPauseStats{k})), ")", "\n"))
         fprintf(strcat("Region ",num2str(k)," pause-back fraction: ", num2str(sum(RegionPauseBackStats{k})/sum(RegionPauseStats{k})), " (", num2str(sum(RegionPauseBackStats{k})), "/", num2str(sum(RegionPauseStats{k})), ")", "\n"))

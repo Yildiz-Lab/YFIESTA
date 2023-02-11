@@ -1,4 +1,4 @@
-function [normalized_pause_frequency, pause_fraction, V, pause_events, numside, numback] = fPauseAnalysis(trace, trace_yx, tchoice, threshold_cnt_pause)
+function [normalized_pause_density, pause_fraction, V, pause_events, numside, numback] = fPauseAnalysis(trace, trace_yx, tchoice, threshold_cnt_pause)
 % function [V, normalized_pause_frequency] = fPauseAnalysis(trace, tchoice, threshold_cnt_pause)
 
 % Similar to add_to_list_6col
@@ -47,9 +47,25 @@ end
 % normalized pause frequency is number of pause events per some number of
 % time points. To make the numbers more manageable, we will normalize it to
 % number of pause events / __ number of time points
+
 norm_time_pts = 100;
 normalized_pause_frequency = pause_events / length(nntchoice) * norm_time_pts;
 pause_fraction = pause_time / length(nntchoice);
+
+% actually thinking pause frequency should be per run length rather than
+% time. Let's see if that speaks to us.
+% find where nntchoice jumps
+timejump = find(nntchoice(2:end) - nntchoice(1:end-1) > 1)';
+timejump = [1, timejump, length(nntchoice)];
+distance = 0;
+for j=1:length(timejump)-1
+    adddist = max(ydata(timejump(j):timejump(j+1))) - min(ydata(timejump(j):timejump(j+1)));
+    if isnan(adddist)
+        adddist = 0;
+    end
+    distance = distance + adddist;
+end
+normalized_pause_density = pause_events / distance;
 
 end
 

@@ -20,6 +20,8 @@ switch func
         ScanFreehand(varargin{1});      
     case 'ShowKymoGraph'
         ShowKymoGraph(varargin{1});   
+    case 'MTIMBS'
+        MTIMBS(varargin{1});
 end
 
 function MeasureLine(hMainGui)
@@ -112,3 +114,43 @@ set(hMainGui.RightPanel.pTools.cShowKymoGraph,'Value',1);
 fRightPanel('ShowKymoGraph',hMainGui);
 hMainGui.Values.CursorDownPos(:)=0;
 setappdata(0,'hMainGui',hMainGui);
+
+% JS Edit 2023/02/10 get MTIMBS in FIESTA
+function MTIMBS(hMainGui)
+global Config;
+global Stack;
+global Filament;
+
+fprintf("We are running MTIMBS \n")
+
+FilSelect = [Filament.Selected];
+if all(FilSelect==0)
+    fMsgDlg('No filaments selected!','error');
+    return;
+end
+MTIMBSFil = Filament(FilSelect==1);
+
+% the Data store has:
+%   x,y coordinates are essential
+%   even has intensity measurements at those spots
+% MTIMBSFil Data [x, y, z, distance, ?, intensity, ?]
+for i=1:length(MTIMBSFil)
+    size(MTIMBSFil(i).Data,2)
+    FilData = MTIMBSFil(i).Data{1};
+    X = FilData(:,1);
+    Y = FilData(:,2);
+    % interpolate for every pixel
+    t = 1:length(X);
+    lint = linspace(1,length(X),round(4*max(FilData(:,4))/Config.PixSize,0));
+    xchk = interp1(t, X, lint)/Config.PixSize;     ychk = interp1(t, Y, lint)/Config.PixSize;
+    TXY = unique(horzcat(transpose(round(xchk,0)), transpose(round(ychk,0))),'rows','stable');
+    
+    sumI = 0;
+    for j=1:size(TXY,1)
+    sumI = sumI + double(Stack{2}(TXY(j,1),TXY(j,2)))
+    end
+    sumI/size(TXY,1)
+    mean(FilData(:,6),'omitnan')
+end
+
+
