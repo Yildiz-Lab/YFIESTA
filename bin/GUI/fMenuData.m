@@ -377,6 +377,7 @@ if ~isempty(fOpenStruct)
         options.Block = block;
         options.Region = region;
         options.SumFrames = fOpenStruct.PostSumFrames;
+        options.DuplicateFrames = fOpenStruct.PostDuplicateFrames; % JS Edit 2023/02/23 for MTIMBS
         try
             if strcmp(filetype,'ND')||strcmp(filetype,'ND2')||strcmp(filetype,'ZVI')||strcmp(filetype,'DV')
                 [Stack,TimeInfo,PixSize]=fReadND2([PathName FileName],options);

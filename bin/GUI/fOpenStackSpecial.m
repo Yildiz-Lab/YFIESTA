@@ -312,6 +312,7 @@ ch3 = get(findobj('Parent',hOpenSpecial.pPostProcessing,'Tag','rAntiblockCh3'),'
 ch4 = get(findobj('Parent',hOpenSpecial.pPostProcessing,'Tag','rAntiblockCh4'),'String');
 output.PostSumFrames = {str2num(ch1), str2num(ch2), str2num(ch3), str2num(ch4)};
 %End of JS Edit 2022/09/09 for antiblock
+output.PostDuplicateFrames = 2; % JS Edit 2023/02/23 for MTIMBS
 
 setappdata(hOpenSpecial.fig,'output',output);
 uiresume(gcbf);
