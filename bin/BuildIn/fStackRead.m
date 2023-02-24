@@ -275,7 +275,6 @@ else
         % This is just to stop strange parsing errors which should work if
         % centered. This is also where custom options should exist by using
         % region rather than blocks
-        
         for n = 1:nChannels
             if max(r) > 1 % JS Edit 2022/07/27 for custom horizontal/vertical cut
                 if r(4)-r(2) > 0 % we cut horizontally
@@ -309,7 +308,15 @@ for n = 1:nChannels
         y = Region{n}(4)-Region{n}(2)+1;
         x = Region{n}(3)-Region{n}(1)+1;
     end
-    Stack{n} = zeros(y,x,NperChannel(n),datatype);
+    % JS Edit 2023/02/23 for duplicating frames with MTIMBS for later
+    % tracking
+    if ~isfield(options, 'DuplicateFrames')
+        duplicate_frames = 1;
+    else
+        duplicate_frames = options.DuplicateFrames;
+    end
+    % End of JS Edit 2023/02/23
+    Stack{n} = zeros(y,x,duplicate_frames*NperChannel(n),datatype);
 end
 
 % JS Edit 2022/09/09 for uneven summing of channels (antiblocks)
@@ -330,7 +337,7 @@ for n = 1:N
         error('Only 8bit or 16bit Stacks supported');
     end            
     fseek(file, planeOffset(1,n), 'bof');
-    try
+%     try
         Img = reshape(fread(file,x*y,type),x,y)';
         if numel(idxStack)>1
             r = n - fix((n-1)/sBlock)*sBlock;
@@ -344,25 +351,27 @@ for n = 1:N
             idx = 1:nChannels;
             frame = n;
         end
+        %JS Edit 2023/02/23 for MTIMBS tracking, need to multiply frames
+        for d = 1:duplicate_frames 
+            for m = 1:numel(Region)
+                Image = Img(Region{m}(2):Region{m}(4),Region{m}(1):Region{m}(3));
+                Stack{idx(m)}(:,:,duplicate_frames*(frame-1)+d) = Image;
+                % JS Edit 2022/09/09 for uneven summing of channels (antiblocks)
+                if mod(frame,antiblock{idx(m)}) == 0
+                    framesum = sum(Stack{idx(m)}(:,:,duplicate_frames*(frame-1)+d-antiblock{idx(m)}+1:duplicate_frames*(frame-1)+d),3);
+                    %add sum and reshape into appropriate array
+                    Stack{idx(m)}(:,:,duplicate_frames*(frame-1)+d-antiblock{idx(m)}+1:duplicate_frames*(frame-1)+d) = framesum.*ones(size(framesum,1),size(framesum,2),antiblock{idx(m)});
+                end
+                % End of JS Edit 2022/09/09
+                TimeInfo{idx(m)}(duplicate_frames*(frame-1)+d) = MetaInfo.CreationTime(n);
+            end 
+        end
         
-        for m = 1:numel(Region)
-            Image = Img(Region{m}(2):Region{m}(4),Region{m}(1):Region{m}(3));
-            Stack{idx(m)}(:,:,frame) = Image;
-            % JS Edit 2022/09/09 for uneven summing of channels (antiblocks)
-            if mod(frame,antiblock{idx(m)}) == 0
-                framesum = sum(Stack{idx(m)}(:,:,frame-antiblock{idx(m)}+1:frame),3);
-                %add sum and reshape into appropriate array
-                Stack{idx(m)}(:,:,frame-antiblock{idx(m)}+1:frame) = framesum.*ones(size(framesum,1),size(framesum,2),antiblock{idx(m)});
-            end
-            % End of JS Edit 2022/09/09
-            TimeInfo{idx(m)}(frame) = MetaInfo.CreationTime(n);
-        end 
-        
-    catch   
-        progressdlg(1);      
-        warning('MATLAB:outOfMemory','Out of memory - read %4.0f of %4.0f frames',n-1,N);
-        break
-    end
+%     catch   
+%         progressdlg(1);      
+%         warning('MATLAB:outOfMemory','Out of memory - read %4.0f of %4.0f frames',n-1,N);
+%         break
+%     end
     progressdlg(n/N*100);
 end
 fclose(file);
