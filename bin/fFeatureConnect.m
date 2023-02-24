@@ -62,6 +62,8 @@ for k=StartFrame:EndFrame+1
                 Mol(k,lObjects==0)=Inf;
                 Fil(k,lObjects~=0)=Inf;
             end
+            % store all my objects in one big cell
+            % number, time, x, y, intensity/length
             Data{k}=zeros(nObj,5);
             Data{k}(:,1)=k;
             Data{k}(:,2)=Objects{k}.time*ones(nObj,1);
@@ -78,6 +80,12 @@ for k=StartFrame:EndFrame+1
         end
     end
     if k>StartFrame+2
+        % connect tracks after first two frames
+        % Data is all positions of my molecule
+        % MolTrack is storage for all my tracks
+        % Mol is molecule storage
+        % k is frame
+        % Config is fittinf params
         Config.Connect=Config.ConnectMol;
         [MolTrack,Mol]=ConnectTrack(Data,MolTrack,Mol,k-2,Config);
 
@@ -151,12 +159,12 @@ end
 function [Track,Obj]=ConnectTrack(Data,Track,Obj,k,Config)
 Obj(k:k+1,:)=abs(Obj(k:k+1,:));
 for i=1:size(Obj,2)
-    current=find(Obj(k,:)>0,1);
+    current=find(Obj(k,:)>0,1); %all current frame objects
     if isempty(current)
         break
     end
-    %find all possible quintuples for current object
-    quadruples=FindQuadruples(Data,Obj,k,Config,current);
+    %find all possible quintuples for current objects
+    quadruples=FindQuadruples (Data,Obj,k,Config,current);
     
     if ~isempty(quadruples)
         

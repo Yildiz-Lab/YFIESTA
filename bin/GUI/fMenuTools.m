@@ -247,7 +247,10 @@ end
 % then do intensity - background subtractions (idk how to do standard
 % deviation subtraction but that is probably sketch)
 MTIMBSData(:,3) = MTIMBSData(:,6)-MTIMBSData(:,8)
+
+fprintf(strcat("Number of MTs: ", num2str(sum(~isnan(MTIMBSData(:,1)))), "\n"))
 fprintf(strcat("Microtubule Mean: ", num2str(round(mean(MTIMBSData(:,3),'omitnan'),1)), "\n"))
 fprintf(strcat("Length Weight Averaged Mean: ", num2str(round(sum(MTIMBSData(:,3).*MTIMBSData(:,2),'omitnan')/sum(MTIMBSData(:,2),'omitnan'),1)), "\n"))
+fprintf(strcat("Microtubule Std: ", num2str(round(std(MTIMBSData(:,3),'omitnan'),1)), "\n"))
 
 % should export a CSV or show a GUI or something

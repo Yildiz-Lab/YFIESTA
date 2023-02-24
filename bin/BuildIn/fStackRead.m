@@ -311,7 +311,7 @@ for n = 1:nChannels
     % JS Edit 2023/02/23 for duplicating frames with MTIMBS for later
     % tracking
     if ~isfield(options, 'DuplicateFrames')
-        duplicate_frames = 1;
+        duplicate_frames = 2;
     else
         duplicate_frames = options.DuplicateFrames;
     end
