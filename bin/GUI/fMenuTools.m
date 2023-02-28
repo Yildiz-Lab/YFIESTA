@@ -130,7 +130,7 @@ end
 MTIMBSFil = Filament(FilSelect==1);
 
 % make an array to store data
-% thinking number, length, intensity-background mean value,
+% number, length, intensity-background mean value,
 % intensity-background std, integral intensity, mean intensity, standard deviation,
 % mean background, background standard deviation, ?use this for analysis?
 MTIMBSData = nan(length(MTIMBSFil),10);
@@ -246,11 +246,26 @@ end
 
 % then do intensity - background subtractions (idk how to do standard
 % deviation subtraction but that is probably sketch)
-MTIMBSData(:,3) = MTIMBSData(:,6)-MTIMBSData(:,8)
+
+% option to filter out too small MTs
+minlength = 3.5; %um %set to 0 if want no minlength
+[idx,~] = find( MTIMBSData(:,2) > minlength );
+RawMTIMBSData = MTIMBSData;
+MTIMBSData = MTIMBSData(idx,:);
+
+MTIMBSData(:,3) = MTIMBSData(:,6)-MTIMBSData(:,8);
+figure()
+histogram(MTIMBSData(:,3))
 
 fprintf(strcat("Number of MTs: ", num2str(sum(~isnan(MTIMBSData(:,1)))), "\n"))
 fprintf(strcat("Microtubule Mean: ", num2str(round(mean(MTIMBSData(:,3),'omitnan'),1)), "\n"))
-fprintf(strcat("Length Weight Averaged Mean: ", num2str(round(sum(MTIMBSData(:,3).*MTIMBSData(:,2),'omitnan')/sum(MTIMBSData(:,2),'omitnan'),1)), "\n"))
 fprintf(strcat("Microtubule Std: ", num2str(round(std(MTIMBSData(:,3),'omitnan'),1)), "\n"))
+
+fprintf(strcat("Total Length of MTs: ", num2str(round(sum(MTIMBSData(:,2),'omitnan'),1)), "\n"))
+length_weighted_mean = sum(MTIMBSData(:,3).*MTIMBSData(:,2),'omitnan')/sum(MTIMBSData(:,2),'omitnan');
+fprintf(strcat("Length Weight Averaged Mean: ", num2str(round(sum(length_weighted_mean,1))), "\n"))
+% Resource on weighted average std: https://www.statology.org/weighted-standard-deviation-excel/
+length_weighted_std = sqrt( sum( ( (MTIMBSData(:,3)-length_weighted_mean ).^2 ) .* MTIMBSData(:,2), 'omitnan' ) / (sum(MTIMBSData(:,2))-1) );
+fprintf(strcat("Length Weight Averaged Std: ", num2str(round(length_weighted_std,1)), "\n"))
 
 % should export a CSV or show a GUI or something
