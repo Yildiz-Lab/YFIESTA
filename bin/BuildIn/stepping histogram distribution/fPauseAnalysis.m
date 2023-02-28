@@ -31,12 +31,15 @@ for i = 1:length(bins)-1
         if V(i) > threshold_cnt_pause
             pause_events = pause_events + 1;
             pause_time = pause_time + V(i);
-            if sum(trace_yx(idx,5)) > 0
-                numside = numside + 1;
-            end
-            if any(trace(idx+1,3)-trace(idx,3) < 0 )
-                numback = numback + 1;
-            end
+%             if sum(trace_yx(idx,5)) > 0 % only one count per any pause
+%                 numside = numside + 1;
+%             end
+%             if any(trace(idx+1,3)-trace(idx,3) < 0 ) % only one count per any pause
+%                 numback = numback + 1;
+%             end 
+            % count each individually
+            numside = numside + sum(trace_yx(idx,5)); 
+            numback = numback + sum(trace(idx+1,3)-trace(idx,3) < 0);
         end
     end
 end

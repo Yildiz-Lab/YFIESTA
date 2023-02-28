@@ -154,8 +154,10 @@ elseif ~opts.UseNeighborRegions
 %     NP'
 %     NS'
 %     NB'
-    fprintf(strcat("Side Step Percentage in Pause: ", num2str(round(sum(NS)/sum(NP),5)), " (", num2str(sum(NS)), "/", num2str(sum(NP)), ")", "\n")) 
-    fprintf(strcat("Back Step Percentage in Pause: ", num2str(round(sum(NB)/sum(NP),5)), " (", num2str(sum(NB)), "/", num2str(sum(NP)), ")", "\n")) 
+%     fprintf(strcat("Side Step Percentage in Pause: ", num2str(round(sum(NS)/sum(NP),5)), " (", num2str(sum(NS)), "/", num2str(sum(NP)), ")", "\n")) 
+%     fprintf(strcat("Back Step Percentage in Pause: ", num2str(round(sum(NB)/sum(NP),5)), " (", num2str(sum(NB)), "/", num2str(sum(NP)), ")", "\n")) 
+    fprintf(strcat("Side Steps / Pause: ", num2str(round(sum(NS)/sum(NP),5)), " (", num2str(sum(NS)), "/", num2str(sum(NP)), ")", "\n")) 
+    fprintf(strcat("Back Step / Pause: ", num2str(round(sum(NB)/sum(NP),5)), " (", num2str(sum(NB)), "/", num2str(sum(NP)), ")", "\n")) 
 end
 
 fprintf(strcat("Mean Run Length: ", num2str(mean(run_length)), " +/- ", num2str(std(run_length)), " nm \n"))
