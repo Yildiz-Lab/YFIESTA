@@ -295,7 +295,12 @@ hMenu.mYildizMotility = uimenu('Parent',hMenu.mStats,'Callback','fMotilityGui(''
                                  'Label','Yildiz Motility Parameters','Tag','mYildizMotility');  
                         
 hMenu.mDiffusionAnalysis = uimenu('Parent',hMenu.mStats,'Callback','fMenuStatistics(''DiffusionAnalysis'');',...
-                    'Label','Diffusion Analysis (CVE/MSD)','Tag','mDiffusionAnalysis');            
+                    'Label','Diffusion Analysis (CVE/MSD)','Tag','mDiffusionAnalysis');
+                
+                % JS Edit 2023/03/03 to add scan to trace
+                             % option for more accurate 1D diffusion
+hMenu.mScanDiffusion = uimenu('Parent',hMenu.mStats,'Callback','fScantoTrace(getappdata(0,''hMainGui''))',...
+                            'Label','Diffusion from Region Scan','Tag','mScantoTrace');
                 
 hMenu.mAverageFilament = uimenu('Parent',hMenu.mStats,'Callback','fMenuStatistics(''AverageFilament'');',...
                     'Label','Average Filaments','Tag','mAverageFilament ','Separator','on');    

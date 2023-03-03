@@ -1,7 +1,10 @@
-function CollNeighbors = fNeighborBehavior(actualdir)
+function CollNeighbors = fNeighborBehavior(remove_similar, actualdir)
 % Gather information about the position of neighbors relative to the trace
 % and some of its dynamics
 
+if nargin < 1
+    remove_similar = 1;
+end
 if nargin < 2
     actualdir = uigetdir();
 end
@@ -36,7 +39,7 @@ for i=1:fnum
         
         % to shadow whether this neighbor should be counted or not, we will
         % just translate down 200 nm (limit of "interaction") and make sure
-        % the MAP exists to the upper left of that curve
+        % the neighbor exists to the upper left of that curve
         
         % make an array that will compare the vector to connect every neighbor point
         % to the trace in the parallel direction
@@ -68,7 +71,7 @@ for i=1:fnum
             tracepos = NaN;
         end
         CollNeighbors = [CollNeighbors; tracepos, MSD, relative_parallel_position, max_delta_parallel, length(ndata(:,1))];
-        if any(abs(CollNeighbors(lastidx+1:end-1,3) - relative_parallel_position) < 150) %likely similar neighbors, so remove the later ones
+        if any(abs(CollNeighbors(lastidx+1:end-1,3) - relative_parallel_position) < 150) && remove_similar %likely similar neighbors, so remove the later ones
             CollNeighbors(end,:) = [];
         end
     end
@@ -78,18 +81,18 @@ end
 
 % Print out some stats
 
-% Where are the MAPs
+% Where are the neighbors?
 fprintf(strcat("Beginning/Attachment Events: ", num2str(length(find(CollNeighbors(:,1) == -1))), "\n"))
 fprintf(strcat("Ending/Detachment Events: ", num2str(length(find(CollNeighbors(:,1) == 1))), "\n"))
 fprintf(strcat("Middle/Remaining Events: ", num2str(length(find(CollNeighbors(:,1) == 0))), "\n"))
 
-% What are the MSDs of the neighbors
+% What are the MSDs of the neighbors?
 fprintf(strcat("Mean Square Displacement (nm^2) / frame: ", num2str(mean(CollNeighbors(:,2)./CollNeighbors(:,5))), "\n"))
 
 % How much do they move?
 fprintf(strcat("Maximum Overall Displacement (nm) / frame: ", num2str(mean(CollNeighbors(:,4)./CollNeighbors(:,5))), "\n"))
+fprintf(strcat("Maximum Overall Displacement (nm) / frame Weighted Average: ", num2str(sum(CollNeighbors(:,4)/sum(CollNeighbors(:,5)))), "\n"))
 
 % What are their lifetimes?
 
-end
 
