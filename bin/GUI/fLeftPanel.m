@@ -370,4 +370,3 @@ if ~isempty(RegionLines.bx)
     end
 
 end
-
