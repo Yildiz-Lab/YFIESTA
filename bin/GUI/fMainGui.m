@@ -1634,7 +1634,8 @@ if ~strcmp(get(hMainGui.fig,'Pointer'),'watch')
                 elseif strcmp(get(hMainGui.ToolBar.ToolThreshImage,'State'),'on')
                     fToolBar('NormImage',getappdata(0,'hMainGui'));
                 end
-            % JS Edit 2022/09/28 keyboard shortcut r to add stack to queue
+            % JS Edit 2022/09/28 keyboard shortcut y to add stack to queue
+            % and a to analyze
             case 121 %y
                 fShared('AddStack',getappdata(0,'hMainGui'));
             case 97  %a
@@ -1659,6 +1660,26 @@ if ~strcmp(get(hMainGui.fig,'Pointer'),'watch')
                 fToolBar('SwitchChannel',4);
                 hMainGui.Values.FrameIdx(1) = 4;
                 end
+            % JS Edit 2023/03/12 to toggle between z-projection and not
+            case 122 %z
+                % find our current view
+                if length(hMainGui.Values.FrameIdx)>2
+                    idx=hMainGui.Values.FrameIdx(stidx+1);
+                else
+                    idx=hMainGui.Values.FrameIdx(2);
+                end
+                idx = imag(idx);
+                if idx == -3
+                    idx = 0;
+                else
+                    % if want to use maximum or average or z-projection,
+                    % change this to -1, -2, or -3 respectively
+                    idx = -3;
+                end
+                fMenuView('View',getappdata(0,'hMainGui'),idx);
+                hMainGui.Values.FrameIdx(2:end)=real(hMainGui.Values.FrameIdx(2:end))+idx*1i;
+                %fMenuView('View',getappdata(0,'hMainGui'),-3);
+                setappdata(0,'hMainGui',hMainGui);
         end
         Zoom=hMainGui.ZoomView;
         if xy{1}(1)<Zoom.globalXY{1}(1)
