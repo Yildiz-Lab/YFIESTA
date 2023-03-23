@@ -50,12 +50,16 @@ hVelocityStatsGui.fig = figure('Units','normalized','WindowStyle','normal','Dock
 fPlaceFig(hVelocityStatsGui.fig,'big');
 
 if ispc
-    set(hVelocityStatsGui.fig,'Color',[236 233 216]/255);
+    set(hVelocityStatsGui.fig,'Color',[50 50 50]/255);
 end
 
 c = get(hVelocityStatsGui.fig,'Color');
+% Colors
+ctext = 0.9*ones(1,3);
+cbutton = [0.16,0.16,0.16];
+ctextbox = [0.12,0.12,0.12];
 
-hVelocityStatsGui.pPlotPanel = uipanel('Parent',hVelocityStatsGui.fig,'Position',[0.4 0.55 0.575 0.42],'Tag','PlotPanel','BackgroundColor','white');
+hVelocityStatsGui.pPlotPanel = uipanel('Parent',hVelocityStatsGui.fig,'Position',[0.4 0.55 0.575 0.42],'Tag','PlotPanel','BackgroundColor',c);
 
 hVelocityStatsGui.aPlot = axes('Parent',hVelocityStatsGui.pPlotPanel,'Units','normalized','OuterPosition',[0 0 1 1],'Tag','Plot','TickDir','in');
 
@@ -65,30 +69,30 @@ for i=1:length(Objects)
 end
 
 hVelocityStatsGui.lSelection = uicontrol('Parent',hVelocityStatsGui.fig,'Units','normalized','BackgroundColor',[1 1 1],'Callback','fVelocityStatsGui(''Draw'',getappdata(0,''hVelocityStatsGui''));',...
-                                   'Position',[0.025 0.78 0.35 0.19],'String',str,'Style','listbox','Value',1,'Tag','lSelection');
+                                   'Position',[0.025 0.78 0.35 0.19],'String',str,'Style','listbox','Value',1,'Tag','lSelection','BackgroundColor',c,'ForegroundColor',ctext);
                     
 hVelocityStatsGui.pOptions = uipanel('Parent',hVelocityStatsGui.fig,'Units','normalized','Title','Options',...
-                             'Position',[0.025 0.55 0.35 0.2],'Tag','pOptions','BackgroundColor',c);
+                             'Position',[0.025 0.55 0.35 0.2],'Tag','pOptions','BackgroundColor',c,'ForegroundColor',ctext);
                          
-hVelocityStatsGui.tMethod = uicontrol('Parent',hVelocityStatsGui.pOptions,'Units','normalized','BackgroundColor',c,...
+hVelocityStatsGui.tMethod = uicontrol('Parent',hVelocityStatsGui.pOptions,'Units','normalized','BackgroundColor',c,'ForegroundColor',ctext,...
                              'Position',[0.05 0.8 0.225 0.125],'String','Method:','Style','text','Tag','tMethod','HorizontalAlignment','left');                        
                          
 hVelocityStatsGui.mMethod = uicontrol('Parent',hVelocityStatsGui.pOptions,'Units','normalized','Callback','fVelocityStatsGui(''Update'');',...
-                             'Position',[0.3 0.8 0.65 0.125],'BackgroundColor','white','String',{'2D point-point velocity','1D point-point velocity','1D linear fit to complete trace','1D linear fit to partial trace'},'Style','popupmenu','Tag','mMethod');
+                             'Position',[0.3 0.8 0.65 0.125],'BackgroundColor',ctextbox,'ForegroundColor',ctext,'String',{'2D point-point velocity','1D point-point velocity','1D linear fit to complete trace','1D linear fit to partial trace'},'Style','popupmenu','Tag','mMethod');
 
-hVelocityStatsGui.tData = uicontrol('Parent',hVelocityStatsGui.pOptions,'Units','normalized','BackgroundColor',c,...
+hVelocityStatsGui.tData = uicontrol('Parent',hVelocityStatsGui.pOptions,'Units','normalized','BackgroundColor',c,'ForegroundColor',ctext,...
                              'Position',[0.05 0.65 0.225 0.125],'String','Data:','Style','text','Tag','tData','HorizontalAlignment','left');     
 
 hVelocityStatsGui.mData = uicontrol('Parent',hVelocityStatsGui.pOptions,'Units','normalized','Callback','fVelocityStatsGui(''Update'');',...
-                            'Position',[0.3 0.65 0.65 0.125],'BackgroundColor','white','String','','Style','popupmenu','Tag','mData','Enable','on');             
+                            'Position',[0.3 0.65 0.65 0.125],'BackgroundColor',ctextbox,'ForegroundColor',ctext,'String','','Style','popupmenu','Tag','mData','Enable','on');             
  
-hVelocityStatsGui.tSmooth = uicontrol('Parent',hVelocityStatsGui.pOptions,'Units','normalized','BackgroundColor',c,...
+hVelocityStatsGui.tSmooth = uicontrol('Parent',hVelocityStatsGui.pOptions,'Units','normalized','BackgroundColor',c,'ForegroundColor',ctext,...
                              'Position',[0.05 0.5 0.225 0.125],'String','Smooth:','Style','text','Tag','tSmooth','HorizontalAlignment','left'); 
                         
 hVelocityStatsGui.mSmooth = uicontrol('Parent',hVelocityStatsGui.pOptions,'Units','normalized','Callback','fVelocityStatsGui(''Update'');',...
-                             'Position',[0.3 0.5 0.65 0.125],'BackgroundColor','white','String',{'none'},'Style','popupmenu','Tag','mSmooth','Enable','on');
+                             'Position',[0.3 0.5 0.65 0.125],'BackgroundColor',ctextbox,'ForegroundColor',ctext,'String',{'none'},'Style','popupmenu','Tag','mSmooth','Enable','on');
                          
-hVelocityStatsGui.aEquation = axes('Parent',hVelocityStatsGui.pOptions,'Units','normalized',....
+hVelocityStatsGui.aEquation = axes('Parent',hVelocityStatsGui.pOptions,'Units','normalized','Color',ctext,....
                                   'Position',[0.05 .025 .9 .45],'Tag','aEquation','Visible','off');  
 
 ShowEquation(hVelocityStatsGui)
@@ -98,27 +102,27 @@ if strcmp(hVelocityStatsGui.Mode,'Filament')
     set(hVelocityStatsGui.mData,'Value',2);
 end
 
-hVelocityStatsGui.pResultsPanel = uipanel('Parent',hVelocityStatsGui.fig,'Position',[0.025 0.08 0.95 0.445],'Tag','PlotPanel','BackgroundColor','white');
+hVelocityStatsGui.pResultsPanel = uipanel('Parent',hVelocityStatsGui.fig,'Position',[0.025 0.08 0.95 0.445],'Tag','PlotPanel','BackgroundColor',c,'ForegroundColor',ctext);
 
 hVelocityStatsGui.aResults = axes('Parent',hVelocityStatsGui.pResultsPanel,'Units','normalized','OuterPosition',[0 0 1 1],'Tag','Plot','TickDir','in');
                         
 hConfigGui.pButtons = uipanel('Parent',hVelocityStatsGui.fig,'Units','normalized','Fontsize',12,'Bordertype','none',...
-                                     'Position',[0 0 1 0.07],'Tag','pNorm','Visible','on','BackgroundColor',c);
+                                     'Position',[0 0 1 0.07],'Tag','pNorm','Visible','on','BackgroundColor',c,'ForegroundColor',ctext);
        
 hConfigGui.bFitGauss = uicontrol('Parent',hConfigGui.pButtons,'Style','pushbutton','Units','normalized',...
-                              'Position',[.025 .2 .2 .7],'Tag','bFitGauss','Fontsize',12,...
+                              'Position',[.025 .2 .2 .7],'Tag','bFitGauss','Fontsize',12,'BackgroundColor',cbutton,'ForegroundColor',ctext,...
                               'String','Fit Gaussian','Callback','fVelocityStatsGui(''FitGauss'');');     
                           
 hConfigGui.bSave = uicontrol('Parent',hConfigGui.pButtons,'Style','pushbutton','Units','normalized',...
-                              'Position',[.325 .2 .2 .7],'Tag','bSave','Fontsize',12,...
+                              'Position',[.325 .2 .2 .7],'Tag','bSave','Fontsize',12,'BackgroundColor',cbutton,'ForegroundColor',ctext,...
                               'String','Save Data','Callback','fVelocityStatsGui(''Save'');');         
                           
 hConfigGui.bExport = uicontrol('Parent',hConfigGui.pButtons,'Style','pushbutton','Units','normalized',...
-                              'Position',[.55 .2 .2 .7],'Tag','bSave','Fontsize',12,...
+                              'Position',[.55 .2 .2 .7],'Tag','bSave','Fontsize',12,'BackgroundColor',cbutton,'ForegroundColor',ctext,...
                               'String','Export Histogram','Callback','fVelocityStatsGui(''Export'');');   
                           
 hConfigGui.bClose = uicontrol('Parent',hConfigGui.pButtons,'Style','pushbutton','Units','normalized',...
-                              'Position',[.775 .2 .2 .7],'Tag','bClose','Fontsize',12,...
+                              'Position',[.775 .2 .2 .7],'Tag','bClose','Fontsize',12,'BackgroundColor',cbutton,'ForegroundColor',ctext,...
                               'String','Close','Callback','close(findobj(0,''Tag'',''hVelocityStatsGui''));');                        
                                    
 setappdata(0,'hVelocityStatsGui',hVelocityStatsGui);
@@ -128,6 +132,7 @@ set(hVelocityStatsGui.fig,'Visible','on');
 
 
 function ShowEquation(hVelocityStatsGui)
+ctext = 0.9*ones(1,3);
 cla(hVelocityStatsGui.aEquation);
 switch get(hVelocityStatsGui.mMethod,'Value')
     case 1
@@ -141,7 +146,7 @@ switch get(hVelocityStatsGui.mMethod,'Value')
         
 end
 text('Parent',hVelocityStatsGui.aEquation,'Interpreter','latex','Position',[0.01 0.5],...
-     'FontSize',14,'BackgroundColor',get(hVelocityStatsGui.fig,'Color'),'String',str);
+     'FontSize',14,'BackgroundColor',get(hVelocityStatsGui.fig,'Color'),'Color',ctext,'String',str);
  
 function SetData(hVelocityStatsGui)
 switch get(hVelocityStatsGui.mMethod,'Value')
@@ -460,15 +465,19 @@ Data = getappdata(hVelocityStatsGui.fig,'Data');
 Units = getappdata(hVelocityStatsGui.fig,'Units');
 nObject = get(hVelocityStatsGui.lSelection,'Value');
 cla(hVelocityStatsGui.aPlot);
+cbc = get(hVelocityStatsGui.fig,'Color');
+ctextbox = get(hVelocityStatsGui.mData,'BackgroundColor');
+lc = [0.4,0.9,0.9];
 if isempty(Data.vel{nObject})
-    text(0.2,0.5,'No data available for current object','Parent',hVelocityStatsGui.aPlot,'FontWeight','bold','FontSize',16);
+    text(0.2,0.5,'No data available for current object','Parent',hVelocityStatsGui.aPlot,'FontWeight','bold','FontSize',16,'Color','white');
     set(hVelocityStatsGui.aPlot,'Visible','off');
     legend(hVelocityStatsGui.aPlot,'off');
 else
     switch get(hVelocityStatsGui.mMethod,'Value')
         case 1
-            plot(hVelocityStatsGui.aPlot,Data.time{nObject},Data.vel{nObject},'b-');
-            legend(hVelocityStatsGui.aPlot,['Velocity: ' num2str(mean(Data.vel{nObject}),Units.fmt) ' ' char(177) ' ' num2str(std(Data.vel{nObject}),Units.fmt) ' ' Units.str '/s (SD)'],'Location','best');
+            plot(hVelocityStatsGui.aPlot,Data.time{nObject},Data.vel{nObject},'Color',lc);
+            legendh = legend(hVelocityStatsGui.aPlot,['Velocity: ' num2str(mean(Data.vel{nObject}),Units.fmt) ' ' char(177) ' ' num2str(std(Data.vel{nObject}),Units.fmt) ' ' Units.str '/s (SD)'],'Location','best');
+            set(legendh,'Color',ctextbox); set(legendh,'TextColor','white');
             xlabel(hVelocityStatsGui.aPlot,'time [s]');
             ylabel(hVelocityStatsGui.aPlot,['velocity [' Units.str '/s]']);
             set(hVelocityStatsGui.aPlot,'Visible','on');
@@ -478,7 +487,7 @@ else
                 set(hVelocityStatsGui.aPlot,'Visible','off');
                 legend(hVelocityStatsGui.aPlot,'off');
             else
-                plot(hVelocityStatsGui.aPlot,Data.time{nObject},Data.vel{nObject},'b-');
+                plot(hVelocityStatsGui.aPlot,Data.time{nObject},Data.vel{nObject},'Color',lc);
                 legend(hVelocityStatsGui.aPlot,['Velocity: ' num2str(mean(Data.vel{nObject}),Units.fmt) ' ' char(177) ' ' num2str(std(Data.vel{nObject}),Units.fmt) ' ' Units.str '/s (SD)'],'Location','best');
                 xlabel(hVelocityStatsGui.aPlot,'time [s]');
                 ylabel(hVelocityStatsGui.aPlot,['velocity [' Units.str '/s]']);   
@@ -492,15 +501,15 @@ else
             else            
                 if get(hVelocityStatsGui.mData,'Value')==1
                     if get(hVelocityStatsGui.mSmooth,'Value')==1 || isempty(hVelocityStatsGui.SmoothBox)
-                        plot(hVelocityStatsGui.aPlot,Objects(nObject).Results(:,2),Objects(nObject).Results(:,6)/Units.val,'b-');
+                        plot(hVelocityStatsGui.aPlot,Objects(nObject).Results(:,2),Objects(nObject).Results(:,6)/Units.val,'Color',lc);
                     else
-                        plot(hVelocityStatsGui.aPlot,Objects(nObject).Results(:,2),smooth(Objects(nObject).Results(:,6),hVelocityStatsGui.SmoothBox)/Units.val,'b-');
+                        plot(hVelocityStatsGui.aPlot,Objects(nObject).Results(:,2),smooth(Objects(nObject).Results(:,6),hVelocityStatsGui.SmoothBox)/Units.val,'Color',lc);
                     end
                 else
                     if get(hVelocityStatsGui.mSmooth,'Value')==1 || isempty(hVelocityStatsGui.SmoothBox)
-                        plot(hVelocityStatsGui.aPlot,Objects(nObject).Results(:,2),real(Objects(nObject).PathData(:,4))/Units.val,'b-');
+                        plot(hVelocityStatsGui.aPlot,Objects(nObject).Results(:,2),real(Objects(nObject).PathData(:,4))/Units.val,'Color',lc);
                     else
-                        plot(hVelocityStatsGui.aPlot,Objects(nObject).Results(:,2),smooth(real(Objects(nObject).PathData(:,4)),hVelocityStatsGui.SmoothBox)/Units.val,'b-');
+                        plot(hVelocityStatsGui.aPlot,Objects(nObject).Results(:,2),smooth(real(Objects(nObject).PathData(:,4)),hVelocityStatsGui.SmoothBox)/Units.val,'Color',lc);
                     end
                 end
                 hold(hVelocityStatsGui.aPlot,'on');
@@ -516,18 +525,20 @@ else
                 set(hVelocityStatsGui.aPlot,'Visible','off');
                 legend(hVelocityStatsGui.aPlot,'off');
             else
-                plot(hVelocityStatsGui.aPlot,Data.time{nObject},Data.vel{nObject},'b-');
+                plot(hVelocityStatsGui.aPlot,Data.time{nObject},Data.vel{nObject},'Color',lc);
                 legend(hVelocityStatsGui.aPlot,['Velocity: ' num2str(mean(Data.vel{nObject}),Units.fmt) ' ' char(177) ' ' num2str(std(Data.vel{nObject}),Units.fmt) ' ' Units.str '/s (SD)'],'Location','best');
                 xlabel(hVelocityStatsGui.aPlot,'time [s]');
                 ylabel(hVelocityStatsGui.aPlot,['velocity [' Units.str '/s]']);   
                 set(hVelocityStatsGui.aPlot,'Visible','on');
             end
     end
+    set(hVelocityStatsGui.aPlot,'Color',cbc);
+    set(hVelocityStatsGui.aPlot,'XColor','white'); set(hVelocityStatsGui.aPlot,'YColor','white');
 end
 vel = cell2mat(Data.vel);
 cla(hVelocityStatsGui.aResults,'reset');
 if isempty(vel)
-    text(0.3,0.5,'No data or path available for any objects','Parent',hVelocityStatsGui.aResults,'FontWeight','bold','FontSize',16);
+    text(0.3,0.5,'No data or path available for any objects','Parent',hVelocityStatsGui.aResults,'FontWeight','bold','FontSize',16,'Color','white');
     set(hVelocityStatsGui.aResults,'Visible','off');
     legend(hVelocityStatsGui.aResults,'off');
 else
@@ -545,11 +556,13 @@ else
     n = hist(vel,xout);
     Data.hist = [xout' n'];
     Data.xy = {[min(xout)-barwidth/2 max(xout)+barwidth/2],[0 max(n)*1.2]};
-    bar(hVelocityStatsGui.aResults,xout,n,'BarWidth',1,'FaceColor',[0 0 0.5]); 
+%     bar(hVelocityStatsGui.aResults,xout,n,'BarWidth',1,'FaceColor',[0 0 0.5]); 
+    bar(hVelocityStatsGui.aResults,xout,n,'BarWidth',1,'FaceColor',lc); 
     set(hVelocityStatsGui.aResults,{'xlim','ylim'},Data.xy);
     n = hist(Data.vel{nObject},xout);
     hold on
-    bar(hVelocityStatsGui.aResults,xout,n,'BarWidth',1,'FaceColor',[179/255 199/255 1]); 
+%     bar(hVelocityStatsGui.aResults,xout,n,'BarWidth',1,'FaceColor',[179/255 199/255 1]);
+    bar(hVelocityStatsGui.aResults,xout,n,'BarWidth',1,'FaceColor',[50/255 70/255 1]);
     if Data.hist(1,1)<0 && Data.hist(end,1)>0
         ticks = [fliplr(0:-2*barwidth:Data.hist(1,1)-barwidth/2) 2*barwidth:2*barwidth:Data.hist(end,1)+barwidth/2];
     else
@@ -560,6 +573,8 @@ else
     ylabel(hVelocityStatsGui.aResults,'frequency [counts]');
     legend(hVelocityStatsGui.aResults,{'all objects','current object'},'Location','best');
 end
+set(hVelocityStatsGui.aResults,'Color',cbc);
+set(hVelocityStatsGui.aResults,'XColor','white'); set(hVelocityStatsGui.aResults,'YColor','white');
 setappdata(hVelocityStatsGui.fig,'Data',Data);
 
 function FitGauss

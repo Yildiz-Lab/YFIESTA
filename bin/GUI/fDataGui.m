@@ -106,17 +106,19 @@ if isempty(h)
     fPlaceFig(hDataGui.fig,'big');
     
     if ispc
-        set(hDataGui.fig,'Color',[236 233 216]/255);
+        set(hDataGui.fig,'Color',[50,50,50]/255);
     end
     
     c = get(hDataGui.fig,'Color');
-
-    hDataGui.pPlotPanel = uipanel('Parent',hDataGui.fig,'Position',[0.35 0.55 0.63 0.4],'Tag','PlotPanel','BackgroundColor','white');
+    % Colors
+    ctext = 0.9*ones(1,3);
+    cbutton = [0.16,0.16,0.16];
+    ctextbox = [0.12,0.12,0.12];
     
+    hDataGui.pPlotPanel = uipanel('Parent',hDataGui.fig,'Position',[0.35 0.55 0.63 0.4],'Tag','PlotPanel','BackgroundColor',c,'ForegroundColor',ctext);
     hDataGui.aBoxPlot = axes('Parent',hDataGui.pPlotPanel,'OuterPosition',[0 0.02 1 0.98],'Tag','BoxPlot','Box','on','xtick',[],'ytick',[]);
     hDataGui.aPlot = axes('Parent',hDataGui.pPlotPanel,'OuterPosition',[0 0.02 1 0.98],'Tag','Plot','NextPlot','add','TickDir','out','Layer','top',...
                           'XLimMode','manual','YLimMode','manual');
-   
         
     columnname = {'','','','','','','','','','',''};
     if mean(Object.Results(2:end,2)-Object.Results(1:end-1,2))<0.1
@@ -127,142 +129,142 @@ if isempty(h)
     columneditable = logical([ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
     
     hDataGui.tTable = uitable('Parent',hDataGui.fig,'Units','normalized','Position',[0.02 0.02 0.96 0.48],'Tag','tTable','Enable','on',...            
-                              'ColumnName', columnname,'ColumnFormat', columnformat,'ColumnEditable', columneditable,'RowName',[]);
+                              'ColumnName', columnname,'ColumnFormat', columnformat,'ColumnEditable', columneditable,'RowName',[],'BackgroundColor',c,'ForegroundColor',ctext);
 
     hDataGui.tName = uicontrol('Parent',hDataGui.fig,'Units','normalized','FontSize',10,'FontWeight','bold',...
                               'HorizontalAlignment','left','Position',[0.02 0.96 0.15 0.02],...
-                              'String',Object.Name,'Style','text','Tag','tName','BackgroundColor',c);
+                              'String',Object.Name,'Style','text','Tag','tName','BackgroundColor',c,'ForegroundColor',ctext);
 
     hDataGui.tFile = uicontrol('Parent',hDataGui.fig,'Units','normalized','FontSize',10,'FontAngle','italic',...
                               'HorizontalAlignment','left','Position',[0.19 0.96 0.3 0.02],...
-                              'String',Object.File,'Style','text','Tag','tFile','BackgroundColor',c);
+                              'String',Object.File,'Style','text','Tag','tFile','BackgroundColor',c,'ForegroundColor',ctext);
                           
     hDataGui.eComments = uicontrol('Parent',hDataGui.fig,'Units','normalized','FontSize',10,'Callback','fDataGui(''SetComments'');',...
                               'HorizontalAlignment','left','Position',[0.51 0.955 0.3 0.03],...
-                              'String',Object.Comments,'Style','edit','Tag','eComments','BackgroundColor','white');
+                              'String',Object.Comments,'Style','edit','Tag','eComments','BackgroundColor',c,'ForegroundColor',ctext);
                           
     hDataGui.tIndex = uicontrol('Parent',hDataGui.fig,'Units','normalized','FontSize',10,'HorizontalAlignment','left',...
-                                'Position',[0.02 0.93 0.1 0.02],'String',['Index: ' num2str(idx)],'Style','text','Tag','tIndex','BackgroundColor',c);                       
+                                'Position',[0.02 0.93 0.1 0.02],'String',['Index: ' num2str(idx)],'Style','text','Tag','tIndex','BackgroundColor',c,'ForegroundColor',ctext);                       
     
     hDataGui.tChannel = uicontrol('Parent',hDataGui.fig,'Units','normalized','FontSize',10,'HorizontalAlignment','left',...
-                                'Position',[0.24 0.93 0.06 0.02],'String','Channel:','Style','text','Tag','tChannel','BackgroundColor',c);  
+                                'Position',[0.24 0.93 0.06 0.02],'String','Channel:','Style','text','Tag','tChannel','BackgroundColor',c,'ForegroundColor',ctext);  
                            
     hDataGui.eChannel = uicontrol('Parent',hDataGui.fig,'Style','edit','Units','normalized',...
                                          'Position',[0.31 0.93 0.03 0.02],'Tag','eChannel','Fontsize',10,...
-                                         'String',num2str(Object.Channel),'BackgroundColor','white','HorizontalAlignment','center',...
+                                         'String',num2str(Object.Channel),'BackgroundColor',c,'ForegroundColor',ctext,'HorizontalAlignment','center',...
                                          'Callback', 'fDataGui(''SetChannel'');');  
 
                   
     hDataGui.bPrevious = uicontrol('Parent',hDataGui.fig,'Style','pushbutton','Units','normalized','Callback','fDataGui(''Navigation'',-1);',...
-                             'Position',[0.02 0.89 0.1 0.03],'String','Previous','Tag','bPrevious','Enable',ePrevious);
+                             'Position',[0.02 0.89 0.1 0.03],'String','Previous','Tag','bPrevious','Enable',ePrevious,'BackgroundColor',cbutton,'ForegroundColor',ctext);
                          
     hDataGui.bDelete = uicontrol('Parent',hDataGui.fig,'Units','normalized','Callback','fDataGui(''DeleteObject'',getappdata(0,''hDataGui''));',...
-                             'Position',[0.13 0.89 0.1 0.03],'String','Delete','Tag','bDelete');
+                             'Position',[0.13 0.89 0.1 0.03],'String','Delete','Tag','bDelete','BackgroundColor',cbutton,'ForegroundColor',ctext);
    
     hDataGui.bNext = uicontrol('Parent',hDataGui.fig,'Units','normalized','Callback','fDataGui(''Navigation'',1);',...
-                             'Position',[0.24 0.89 0.1 0.03],'String','Next','Tag','bNext','Enable',eNext);
+                             'Position',[0.24 0.89 0.1 0.03],'String','Next','Tag','bNext','Enable',eNext,'BackgroundColor',cbutton,'ForegroundColor',ctext);
 
     hDataGui.cCorrection = uicontrol('Parent',hDataGui.fig,'Units','normalized','Callback','fDataGui(''Correction'',getappdata(0,''hDataGui''));',...
                                 'Position',[0.02 0.855 0.12 0.02],'String','Apply corrections','Style','checkbox','BackgroundColor',c,'Tag','cCorrection','Value',Object.Drift);
 
     hDataGui.tReference = uicontrol('Parent',hDataGui.fig,'Units','normalized','FontSize',10,'HorizontalAlignment','left',...
-                                  'Position',[0.16 0.855 0.1 0.02],'String','Reference Point:','Style','text','Tag','tReference','BackgroundColor',c);
+                                  'Position',[0.16 0.855 0.1 0.02],'String','Reference Point:','Style','text','Tag','tReference','BackgroundColor',c,'ForegroundColor',ctext);
      
     hDataGui.lReference = uicontrol('Parent',hDataGui.fig,'TooltipString','Change reference point for this filament only', 'Units','normalized','Callback','fDataGui(''ChangeReference'',getappdata(0,''hDataGui''),0);','Enable',refEnable,...
-                                 'Style','popupmenu','FontSize',8,'Position',[0.26 0.855 0.085 0.02],'String',{'start', 'center', 'end'},'Tag','lReference','BackgroundColor','white', 'Value', fGetRefPoint(Object));                        
+                                 'Style','popupmenu','FontSize',8,'Position',[0.26 0.855 0.085 0.02],'String',{'start', 'center', 'end'},'Tag','lReference','BackgroundColor',c,'ForegroundColor',ctext, 'Value', fGetRefPoint(Object));                        
             
-    hDataGui.gColor = uibuttongroup('Parent',hDataGui.fig,'Title','Color','Tag','bColor','Units','normalized','Position',[0.02 0.75 0.15 0.1],'BackgroundColor',c);
+    hDataGui.gColor = uibuttongroup('Parent',hDataGui.fig,'Title','Color','Tag','bColor','Units','normalized','Position',[0.02 0.75 0.15 0.1],'BackgroundColor',c,'ForegroundColor',ctext);
 
     hDataGui.rBlue = uicontrol('Parent',hDataGui.gColor,'Units','normalized','Position',[0.025 0.725 0.4 0.25],...
-                               'String','Blue','Style','radiobutton','BackgroundColor',c,'Tag','rBlue','UserData',[0 0 1]);
+                               'String','Blue','Style','radiobutton','BackgroundColor',c,'ForegroundColor',ctext,'Tag','rBlue','UserData',[0 0 1]);
 
     hDataGui.rGreen = uicontrol('Parent',hDataGui.gColor,'Units','normalized','Position',[0.025 0.4 0.4 0.25],...
-                                'String','Green','Style','radiobutton','BackgroundColor',c,'Tag','rGreen','UserData',[0 1 0]);
+                                'String','Green','Style','radiobutton','BackgroundColor',c,'ForegroundColor',ctext,'Tag','rGreen','UserData',[0 1 0]);
 
     hDataGui.rRed = uicontrol('Parent',hDataGui.gColor,'Units','normalized','Position',[0.025 0.025 0.4 0.25],...
-                              'String','Red','Style','radiobutton','BackgroundColor',c,'Tag','rRed','UserData',[1 0 0]);
+                              'String','Red','Style','radiobutton','BackgroundColor',c,'ForegroundColor',ctext,'Tag','rRed','UserData',[1 0 0]);
 
     hDataGui.rMagenta = uicontrol('Parent',hDataGui.gColor,'Units','normalized','Position',[0.475 0.725 0.5 0.25],...
-                               'String','Magenta','Style','radiobutton','BackgroundColor',c,'Tag','rMagenta','UserData',[1 0 1]);
+                               'String','Magenta','Style','radiobutton','BackgroundColor',c,'ForegroundColor',ctext,'Tag','rMagenta','UserData',[1 0 1]);
 
     hDataGui.rCyan = uicontrol('Parent',hDataGui.gColor,'Units','normalized','Position',[0.475 0.4 0.5 0.25],...
-                                  'String','Cyan','Style','radiobutton','BackgroundColor',c,'Tag','rCyan','UserData',[0 1 1]);
+                                  'String','Cyan','Style','radiobutton','BackgroundColor',c,'ForegroundColor',ctext,'Tag','rCyan','UserData',[0 1 1]);
 
     hDataGui.rPink = uicontrol('Parent',hDataGui.gColor,'Units','normalized','Position',[0.475 0.025 0.5 0.25],...
-                                 'String','Pink','Style','radiobutton','BackgroundColor',c,'Tag','rPink ','UserData',[1 0.5 0.5]);
+                                 'String','Pink','Style','radiobutton','BackgroundColor',c,'ForegroundColor',ctext,'Tag','rPink ','UserData',[1 0.5 0.5]);
 
     set(hDataGui.gColor,'SelectionChangeFcn',@selcbk);
 
     set(hDataGui.gColor,'SelectedObject',findobj('UserData',Object.Color,'Parent',hDataGui.gColor));
 
-    hDataGui.pTags = uipanel('Parent',hDataGui.fig,'Title','Tags','Tag','bTags','Units','normalized','Position',[0.18 0.75 0.16 0.1],'BackgroundColor',c);
+    hDataGui.pTags = uipanel('Parent',hDataGui.fig,'Title','Tags','Tag','bTags','Units','normalized','Position',[0.18 0.75 0.16 0.1],'BackgroundColor',c,'ForegroundColor',ctext);
 
     hDataGui.tTags = uicontrol('Parent',hDataGui.pTags,'Style','text','Units','normalized',...
                                'Position',[0.05 0.75 0.5 0.25],'Tag','tTags','Fontsize',10,...
-                                'String','Choose tag:','BackgroundColor',c,'HorizontalAlignment','left');  
+                                'String','Choose tag:','BackgroundColor',c,'ForegroundColor',ctext,'HorizontalAlignment','left');  
                                      
     hDataGui.lTags = uicontrol('Parent',hDataGui.pTags,'Style','popupmenu','Units','normalized',...
                                          'Position',[0.525 0.75 0.45 0.25],'Tag','eTags','Fontsize',10,...
-                                         'String',num2cell(1:63)','BackgroundColor','white','HorizontalAlignment','center');  
+                                         'String',num2cell(1:63)','BackgroundColor',c,'ForegroundColor',ctext,'HorizontalAlignment','center');  
                                                       
     hDataGui.bApplyTag = uicontrol('Parent',hDataGui.pTags,'Units','normalized','TooltipString','Tag points with selected tag','Callback','fDataGui(''Tags'',getappdata(0,''hDataGui''));',...
-                                'Position',[0.1 0.35 0.8 0.25],'String','Apply Tag','Tag','bApplyTag');
+                                'Position',[0.1 0.35 0.8 0.25],'String','Apply Tag','Tag','bApplyTag','BackgroundColor',cbutton,'ForegroundColor',ctext);
                             
     hDataGui.bClearTag = uicontrol('Parent',hDataGui.pTags,'Units','normalized','TooltipString','Clear selected tag','Callback','fDataGui(''Tags'',getappdata(0,''hDataGui''));',...
-                                'Position',[0.1 0.05 0.8 0.25],'String','Clear Tag','Tag','bClearTag');
+                                'Position',[0.1 0.05 0.8 0.25],'String','Clear Tag','Tag','bClearTag','BackgroundColor',cbutton,'ForegroundColor',ctext);
                             
-    hDataGui.pPlot = uipanel('Parent',hDataGui.fig,'Title','Plot','Tag','gPlot','Position',[0.02 0.55 0.32 0.2],'BackgroundColor',c);
+    hDataGui.pPlot = uipanel('Parent',hDataGui.fig,'Title','Plot','Tag','gPlot','Position',[0.02 0.55 0.32 0.2],'BackgroundColor',c,'ForegroundColor',ctext);
 
     hDataGui.tXaxis = uicontrol('Parent',hDataGui.pPlot,'Units','normalized','Style','text','FontSize',10,'Position',[0.05 0.8 0.33 0.18],...
-                                'HorizontalAlignment','left','String','X Axis:','Tag','lXaxis','BackgroundColor',c);
+                                'HorizontalAlignment','left','String','X Axis:','Tag','lXaxis','BackgroundColor',c,'ForegroundColor',ctext);
 
     hDataGui.lXaxis = uicontrol('Parent',hDataGui.pPlot,'Units','normalized','Callback','fDataGui(''XAxisList'',getappdata(0,''hDataGui''));',...
-                                'Style','popupmenu','FontSize',8,'Position',[0.4 0.8 0.55 0.18],'String',lXaxis.list,'Tag','lXaxis','UserData',lXaxis,'BackgroundColor','white');
+                                'Style','popupmenu','FontSize',8,'Position',[0.4 0.8 0.55 0.18],'String',lXaxis.list,'Tag','lXaxis','UserData',lXaxis,'BackgroundColor',c,'ForegroundColor',ctext);
 
     hDataGui.tYaxis = uicontrol('Parent',hDataGui.pPlot,'Units','normalized','Style','text','FontSize',10,'Position',[0.05 0.6 0.33 0.18],...
-                                'HorizontalAlignment','left','String','Y Axis (left):','Tag','lYaxis','BackgroundColor',c);
+                                'HorizontalAlignment','left','String','Y Axis (left):','Tag','lYaxis','BackgroundColor',c,'ForegroundColor',ctext);
 
     hDataGui.lYaxis = uicontrol('Parent',hDataGui.pPlot,'Units','normalized','Callback','fDataGui(''Draw'',getappdata(0,''hDataGui''),0);',...
-                                'Style','popupmenu','FontSize',8,'Position',[0.4 0.6 0.55 0.18],'String',lYaxis(1).list,'Tag','lYaxis','UserData',lYaxis,'BackgroundColor','white');                        
+                                'Style','popupmenu','FontSize',8,'Position',[0.4 0.6 0.55 0.18],'String',lYaxis(1).list,'Tag','lYaxis','UserData',lYaxis,'BackgroundColor',c,'ForegroundColor',ctext);                        
 
     hDataGui.cYaxis2 = uicontrol('Parent',hDataGui.pPlot,'Units','normalized','Callback','fDataGui(''CheckYAxis2'',getappdata(0,''hDataGui''));',...
-                                'Position',[0.05 0.46 0.9 0.12],'String','Add second plot','Style','checkbox','BackgroundColor',c,'Tag','cYaxis2','Value',0,'Enable','off');
+                                'Position',[0.05 0.46 0.9 0.12],'String','Add second plot','Style','checkbox','BackgroundColor',c,'ForegroundColor',ctext,'Tag','cYaxis2','Value',0,'Enable','off');
 
     hDataGui.tYaxis2 = uicontrol('Parent',hDataGui.pPlot,'Units','normalized','Style','text','FontSize',10,'Position',[0.05 0.26 0.33 0.18],...
-                                'HorizontalAlignment','left','String','Y Axis (right):','Tag','lYaxis','Enable','off','BackgroundColor',c);
+                                'HorizontalAlignment','left','String','Y Axis (right):','Tag','lYaxis','Enable','off','BackgroundColor',c,'ForegroundColor',ctext);
 
     hDataGui.lYaxis2 = uicontrol('Parent',hDataGui.pPlot,'Units','normalized','Callback','fDataGui(''Draw'',getappdata(0,''hDataGui''),0);',...
-                                'Style','popupmenu','FontSize',8,'Position',[0.4 0.26 0.55 0.18],'String',lYaxis(1).list,'Tag','lYaxis2','UserData',lYaxis,'Enable','off','BackgroundColor','white');                        
+                                'Style','popupmenu','FontSize',8,'Position',[0.4 0.26 0.55 0.18],'String',lYaxis(1).list,'Tag','lYaxis2','UserData',lYaxis,'Enable','off','BackgroundColor',c,'ForegroundColor',ctext);                        
 
     hDataGui.bExport = uicontrol('Parent',hDataGui.pPlot,'Units','normalized','Callback','fDataGui(''Export'',getappdata(0,''hDataGui''));',...
-                                 'FontSize',10,'Position',[0.05 0.1 0.9 0.14],'String','Export','Tag','bExport','UserData','Export');
+                                 'FontSize',10,'Position',[0.05 0.1 0.9 0.14],'String','Export','Tag','bExport','UserData','Export','BackgroundColor',cbutton,'ForegroundColor',ctext);
 
-    hDataGui.tPrint = uicontrol('Parent',hDataGui.pPlot,'Units','normalized','Style','text','BackgroundColor',c,...
+    hDataGui.tPrint = uicontrol('Parent',hDataGui.pPlot,'Units','normalized','Style','text','BackgroundColor',c,'ForegroundColor',ctext,...
                                 'FontSize',8,'Position',[0.05 0.01 0.9 0.08],'String','(for printing use export to PDF)','Tag','tPrint');
     
     hDataGui.bSelectAll = uicontrol('Parent',hDataGui.fig,'Units','normalized','Callback','fDataGui(''SelectAll'',getappdata(0,''hDataGui''));',...
-                             'Position',[0.025 0.51 0.1 0.025],'String','Select all','Tag','bSelectAll','UserData',1);                    
+                             'Position',[0.025 0.51 0.1 0.025],'String','Select all','Tag','bSelectAll','UserData',1,'BackgroundColor',cbutton,'ForegroundColor',ctext);                    
                          
     hDataGui.bClear = uicontrol('Parent',hDataGui.fig,'Units','normalized','Callback','fDataGui(''SelectAll'',getappdata(0,''hDataGui''));',...
-                             'Position',[0.13 0.51 0.1 0.025],'String','Clear selection','Tag','bClear','UserData',0);                         
+                             'Position',[0.13 0.51 0.1 0.025],'String','Clear selection','Tag','bClear','UserData',0,'BackgroundColor',cbutton,'ForegroundColor',ctext);                         
     
     hDataGui.bDeletePoints = uicontrol('Parent',hDataGui.fig,'Units','normalized','Callback','fDataGui(''DeletePoints'',getappdata(0,''hDataGui''));',...
-                             'Position',[0.235 0.51 0.1 0.025],'String','Delete points','Tag','bDelete');
+                             'Position',[0.235 0.51 0.1 0.025],'String','Delete points','Tag','bDelete','BackgroundColor',cbutton,'ForegroundColor',ctext);
                          
     hDataGui.bSplit = uicontrol('Parent',hDataGui.fig,'Units','normalized','Callback','fDataGui(''Split'',getappdata(0,''hDataGui''));',...
-                             'Position',[0.35 0.51 0.2 0.025],'String','Create new track','Tag','bSplit');
+                             'Position',[0.35 0.51 0.2 0.025],'String','Create new track','Tag','bSplit','BackgroundColor',cbutton,'ForegroundColor',ctext);
    
     hDataGui.bInsertPoints = uicontrol('Parent',hDataGui.fig,'Units','normalized','Callback','fDataGui(''FitMissingPoints'',getappdata(0,''hDataGui''));',...
-                             'Position',[0.565 0.51 0.2 0.025],'String','Track missing frames','Tag','bInsertPoints');
+                             'Position',[0.565 0.51 0.2 0.025],'String','Track missing frames','Tag','bInsertPoints','BackgroundColor',cbutton,'ForegroundColor',ctext);
                          
     hDataGui.bSwitch = uicontrol('Parent',hDataGui.fig,'Units','normalized','Callback','fDataGui(''Switch'',getappdata(0,''hDataGui''));',...
-                                'Position',[0.78 0.51 0.2 0.025],'String','Switch MT orientation','Tag','bDelete');
+                                'Position',[0.78 0.51 0.2 0.025],'String','Switch MT orientation','Tag','bDelete','BackgroundColor',cbutton,'ForegroundColor',ctext);
                             
     hDataGui.tFrame = uicontrol('Parent',hDataGui.fig,'Units','normalized','FontSize',10,'HorizontalAlignment','left',...
-                             'Position',[0.85 0.96 0.05 0.02],'String','Frame:','Style','text','Tag','tFrame','BackgroundColor',c);
+                             'Position',[0.85 0.96 0.05 0.02],'String','Frame:','Style','text','Tag','tFrame','BackgroundColor',c,'ForegroundColor',ctext);
 
     hDataGui.tFrameValue = uicontrol('Parent',hDataGui.fig,'Units','normalized','FontSize',10,'HorizontalAlignment','right',...
-                                  'Position',[0.9 0.96 0.05 0.02],'String','','Style','text','Tag','tFrameValue','BackgroundColor',c);
+                                  'Position',[0.9 0.96 0.05 0.02],'String','','Style','text','Tag','tFrameValue','BackgroundColor',c,'ForegroundColor',ctext);
 
     j = findjobj(hDataGui.fig,'class','label');
     set(j,'VerticalAlignment',1);
@@ -496,6 +498,8 @@ end
 function Draw(hDataGui,ax)
 %get object data
 Object=getappdata(hDataGui.fig,'Object');
+% get color
+cbc = get(hDataGui.fig,'Color');
 %save current view
 xy=get(hDataGui.aPlot,{'xlim','ylim'});
 
@@ -512,11 +516,12 @@ cla(hDataGui.aPlot,'reset');
 %hDataGui.aPlot = axes('Parent',hDataGui.pPlotPanel,'OuterPosition',[0 0 1 1],'TickDir','out',...
    %                   'XLimMode','manual','YLimMode','manual'); 
 hDataGui.DataPlot = [];                  
-set(0,'CurrentFigure',hDataGui.fig);                  
+set(0,'CurrentFigure',hDataGui.fig);  %JS note, this probably requires this to be interacted with first                
 setappdata(0,'hDataGui',hDataGui);                 
 hold on     
 xscale=1;
 yscale=1;
+
 if strcmp(YList(x).units{y},'[nm]') 
     if x==1 
         if (max(YPlot{1})-max(YPlot{1}))>5000
@@ -531,10 +536,14 @@ if strcmp(YList(x).units{y},'[nm]')
             YList(x).units{y}=['[' char(956) 'm]'];   
         end
     end
+    set(hDataGui.aPlot,'XColor','white'); set(hDataGui.aPlot,'YColor','white');
+    set(hDataGui.aPlot,'Color',cbc);
 end
 if strcmp(YList(x).units{y},'[nm/s]') && max(YPlot{1})>5000
     yscale=1000;
     YList(x).units{y}=['[' char(956) 'm/s]'];
+    set(hDataGui.aPlot,'XColor','white'); set(hDataGui.aPlot,'YColor','white');
+    set(hDataGui.aPlot,'Color',cbc);
 end
 if ~isempty(XPlot)
     FilXY = [];
@@ -552,6 +561,8 @@ if ~isempty(XPlot)
                 XList.units{x}=['[' char(956) 'm]'];    
             end
         end
+        set(hDataGui.aPlot,'XColor','white'); set(hDataGui.aPlot,'YColor','white');
+        set(hDataGui.aPlot,'Color',cbc);
     end
     if x==1
         Dis=norm([Object.Results(1,3)-Object.Results(end,3) Object.Results(1,4)-Object.Results(end,4)]);     
@@ -612,7 +623,9 @@ if ~isempty(XPlot)
         end
         
         XPlot=XPlot-min(XPlot);
-        YPlot{1}=YPlot{1}-min(YPlot{1});        
+        YPlot{1}=YPlot{1}-min(YPlot{1}); 
+        set(hDataGui.aPlot,'XColor','white'); set(hDataGui.aPlot,'YColor','white');
+        set(hDataGui.aPlot,'Color',cbc);
     end
 
     %get checked table entries
@@ -629,9 +642,13 @@ if ~isempty(XPlot)
             yscale(2)=1000;
             YList2(x).units{y2}=['[' char(956) 'm]'];
         end
+        set(hDataGui.aPlot,'XColor','white'); set(hDataGui.aPlot,'YColor','white');
+        set(hDataGui.aPlot,'Color',cbc);
     else 
         YList2 = [];
         y2=[];
+        set(hDataGui.aPlot,'XColor','white'); set(hDataGui.aPlot,'YColor','white');
+        set(hDataGui.aPlot,'Color',cbc);
     end
     for n = 1:numel(YPlot)
         if numel(YPlot)>1
@@ -643,9 +660,13 @@ if ~isempty(XPlot)
                 c = [0.8500 0.3250 0.0980];
             end
             yyaxis(hDataGui.aPlot,astr);
+            set(hDataGui.aPlot,'XColor','white'); set(hDataGui.aPlot,'YColor','white');
+            set(hDataGui.aPlot,'Color',cbc);
         else
             astr = [];
             c = [0 0.4470 0.7410];
+            set(hDataGui.aPlot,'Color',cbc);
+            set(hDataGui.aPlot,'XColor','white'); set(hDataGui.aPlot,'YColor','white');
         end
         hDataGui.DataPlot(n) = line(hDataGui.aPlot,XPlot/xscale,YPlot{n}/yscale(n),'Color',c);
         tags = fliplr(dec2bin(Object.Results(:,end))=='1');
@@ -684,6 +705,8 @@ else
     xlabel(hDataGui.aPlot,[YList(x).list{y} '  ' YList(x).units{y}]);
     ylabel(hDataGui.aPlot,'number of data points');
     set(hDataGui.aPlot,'TickDir','out');
+    set(hDataGui.aPlot,'XColor','white'); set(hDataGui.aPlot,'YColor','white');
+    set(hDataGui.aPlot,'Color',cbc)
 end
 hold off;
 if xy{1}(2)~=1&&xy{2}(2)~=1 && ax==-1
@@ -694,6 +717,7 @@ else
     hDataGui.Zoom.level = 0;
 end
 set(hDataGui.aBoxPlot,'Position',get(hDataGui.aPlot,'Position'));
+set(hDataGui.aBoxPlot,'Color',cbc);
 setappdata(0,'hDataGui',hDataGui);
 ReturnFocus([],[]);
 
