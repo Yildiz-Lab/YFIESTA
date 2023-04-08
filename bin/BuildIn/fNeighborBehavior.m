@@ -1,6 +1,7 @@
 function CollNeighbors = fNeighborBehavior(remove_similar, actualdir)
 % Gather information about the position of neighbors relative to the trace
 % and some of its dynamics
+global Config
 
 if nargin < 1
     remove_similar = 1;
@@ -28,11 +29,38 @@ for i=1:fnum
     
     lastidx = size(CollNeighbors,1);
     
+    running_MSD = cell(1,75);
+    tau = 1:length(running_MSD);
+    
     for n = 1:length(neighbors)
         ndata = neighbors{n}; %[rel frame, rel parallel dir, rel transverse dir]
+        
+        if length(ndata) > 20
         max_delta_parallel = max(ndata(:,2)) - min(ndata(:,2));
         max_delta_transverse = max(ndata(:,3)) - min(ndata(:,3));
         MSD = mean( (ndata(1:end-1,2) - ndata(2:end,2)).^2 + (ndata(1:end-1,3) - ndata(2:end,3)).^2, 'omitnan');
+        
+        % THIS WHOLE SECTION ONLY NECESSARY FOR MSD
+            % find what preaveraging was done by looking for unique positions and
+            % then take the effective number. We don't want to misdirectingly use
+            % this again for MSD.
+            
+        % get positions of unique elements
+        [~,posel] = unique(neighbors{n}(:,2:3),'rows');
+        posel = sort(posel);
+        preaveraged_intervals = posel(2:end) - posel(1:end-1);
+        preaveraged_intervals = [preaveraged_intervals; length(neighbors{n})+1 - posel(end)];
+        % chop off things that aren't at the max interval, just to make the time counting easier.
+        framediff = max(preaveraged_intervals);
+        posel = posel(preaveraged_intervals == framediff);
+        % now do sliding window average scaling by tau
+        for k = 1:length(running_MSD)
+            t = tau(k);
+            if length(ndata) > t*framediff
+                running_MSD{t} = [running_MSD{t}; (ndata(posel(1):t*framediff:posel(end)-framediff,2) - ndata(posel(1)+framediff:t*framediff:posel(end),2)).^2 + (ndata(posel(1):t*framediff:posel(end)-framediff,3) - ndata(posel(1)+framediff:t*framediff:posel(end),3)).^2];
+            end
+        end
+        % END OF MSD MADNESS
         
         % where is the molecule (begin, middle, end) +/- 150 nm
         relative_parallel_position = mean(ndata(:,2), 'omitnan');
@@ -74,12 +102,15 @@ for i=1:fnum
         if any(abs(CollNeighbors(lastidx+1:end-1,3) - relative_parallel_position) < 150) && remove_similar %likely similar neighbors, so remove the later ones
             CollNeighbors(end,:) = [];
         end
+        end % of using this neighbor for statistics
+
     end
     
     end
 end
 
 % Print out some stats
+length(CollNeighbors)
 
 % Where are the neighbors?
 fprintf(strcat("Beginning/Attachment Events: ", num2str(length(find(CollNeighbors(:,1) == -1))), "\n"))
@@ -94,5 +125,21 @@ fprintf(strcat("Maximum Overall Displacement (nm) / frame: ", num2str(mean(CollN
 fprintf(strcat("Maximum Overall Displacement (nm) / frame Weighted Average: ", num2str(sum(CollNeighbors(:,4)/sum(CollNeighbors(:,5)))), "\n"))
 
 % What are their lifetimes?
+framediff = framediff * Config.Time(1) / 1000;
+figure()
+for t = 1:length(tau)
+    MSD(t) = mean(running_MSD{t},'omitnan');
+    MSD_std(t) = std(running_MSD{t},'omitnan');
+end
+errorbar(tau*framediff, MSD, MSD_std,'o')
+ylabel('nm^2')
+xlabel('s')
 
-
+mdl_MSD = fittype('4*D*x^a','indep','x');
+mdlt1_MSD = fittype('4*D*x','indep','x');
+mdl = fit(framediff*tau', MSD', mdl_MSD, 'start',[50.,1.],'weight',1./MSD_std');
+mdlt1 = fit(framediff*tau', MSD', mdlt1_MSD, 'start',[50.],'weight',1./MSD_std');
+hold on
+plot(tau*framediff, mdl(tau*framediff), 'DisplayName',strcat("D = ", num2str(round(mdl.D,1)), ", alpha = ", num2str(round(mdl.a,2))))
+plot(tau*framediff, mdlt1(tau*framediff), 'DisplayName',strcat("D = ", num2str(round(mdlt1.D,1)), ", alpha = 1"))
+legend()
