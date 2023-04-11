@@ -138,7 +138,7 @@ if opts.PauseThresh == 0
     % find tau by finding where population is at 1/e
     [~,tau] = min(abs(Cnorm - exp(-1)));
     % find actual 95% confidence interval by finding where population is at 95%
-    [~,conf2] = min(abs(Cnorm - 0.9));
+    [~,conf2] = min(abs(Cnorm - 0.95));
     plot((conf2+1)*ones(1,2),[0,max(hh.Values)],'r--');
     Config.PauseThreshold = conf2;
     fprintf(strcat("Setting Pause Threshold: ", num2str(conf2), "\n"))

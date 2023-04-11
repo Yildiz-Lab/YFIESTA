@@ -88,9 +88,9 @@ for i=1:fnum
         % trace position x (the y axis) must be positive in at least one
         % spot
         if any( (tx(:,1) <= 0) .* (tx(:,2) > -200) )
-            if relative_parallel_position < min(trace(:,3)) + 100
+            if relative_parallel_position < min(trace(:,3)) + 100  %if it is within or less than _ nm of the min
                 tracepos = -1;
-            elseif relative_parallel_position > max(trace(:,3)) - 100
+            elseif relative_parallel_position > max(trace(:,3)) - 100 %if it is within or more than _ nm of the max 
                 tracepos = 1;
             else
                 tracepos = 0;
@@ -110,7 +110,7 @@ for i=1:fnum
 end
 
 % Print out some stats
-length(CollNeighbors)
+size(CollNeighbors,1)
 
 % Where are the neighbors?
 fprintf(strcat("Beginning/Attachment Events: ", num2str(length(find(CollNeighbors(:,1) == -1))), "\n"))

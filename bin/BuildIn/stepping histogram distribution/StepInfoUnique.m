@@ -96,7 +96,7 @@ data = steptrace.data;
 
 % Basically do everything fNeighborlyRegions does but keep everything
 % separate
-if isfield(data,'trace')
+if isfield(data,'trace') && isfield(data,'trace_yx')
     trace = data.trace;
     trace_yx = data.trace_yx;
     NearNeighborRegions = data.NeighborlyRegions;
