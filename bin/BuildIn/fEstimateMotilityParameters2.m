@@ -68,7 +68,7 @@ end
 % prepare displaying data and results of the fitting
 x_vel = 0:2*median(vel)/1000:2*median(vel);
 velmat = zeros(n,length(x_vel));
-tlsmat = zeros(n,length(x_vel));
+tlsmat = zeros(n,length(x_vel)); %preparing an interpolation
 x_bleach = 0:4*median(bleach)/1000:4*median(max(bleach,[],2));
 bleach_cdf = zeros(n,length(x_bleach));
 bleach_fitcdf = zeros(n,length(x_bleach));
@@ -118,21 +118,36 @@ parallelprogressdlg('String','Estimating Motility Parameters','Max',n,'Parent',h
 parfor (m=1:n,Config.NumCores)
 %for m = 1:10
     % get random set of molecules for analysis (with replacement)
-    pk = randi(length(vel),1,length(vel));
+    pk = randi(length(vel),1,length(vel))
     
     % estimate velocity using TLS distribution
     resample = vel(pk);
     warning('off','stats:mlecov:NonPosDefHessian');
     warning('off','stats:tlsfit:IterLimit');
     
-    w = mle(resample,'distribution','tlocationscale');
-    v(m) = w(1);
+    % JS Edit 2023/10/03 to make velocity fit a mixture model and grab the
+    % faster, removes arbitrary pauses
+%     w = mle(resample,'distribution','tlocationscale'); %https://www.mathworks.com/help/stats/t-location-scale-distribution.html
+%     v(m) = w(1);
+    try
+        GMModel = fitgmdist(resample,2);
+        mus = sort(GMModel.mu); %remove the lower GMM
+        v(m) = mus(2);
+    catch
+        GMModel = fitgmdist(resample,1);
+        v(m) = GMModel.mu;
+    end
+    
     
     % prepare displaying of results
     [N,edges] = histcounts(resample,'BinMethod','scott','Normalization','pdf','BinLimits',[0 2*median(vel)]);
     xb = (edges(2:end)+edges(1:end-1))/2;
-    velmat(m,:) = interp1(xb,N,x_vel);
-    tlsmat(m,:) = pdf('tlocationscale',x_vel,w(1),w(2),w(3));
+    velmat(m,:) = interp1(xb,N,x_vel)
+    % JS Edit 2023/10/03
+%     tlsmat(m,:) = pdf('tlocationscale',x_vel,w(1),w(2),w(3));
+    gm = gmdistribution(GMModel.mu,GMModel.Sigma,GMModel.ComponentProportion);
+    tlsmat(m,:) = pdf(gm, x_vel')';
+    % End of JS Edit 2023/10/03
     
     pik = pk;
     pik(itime(pik)<itime_x0) = [];
@@ -268,7 +283,7 @@ end
 parallelprogressdlg('close');
 % evaluate the bootstrapping distribution to get the motility parameters
 % and their errors
-velocity = [mean(v) 2*std(v) length(vel)];
+velocity = [mean(v) 2*std(v) length(vel)]; %should probably calculate standard deviation better here
 bleach_time = [mean(t_bleach) 2*std(t_bleach) round(mean(num_bleach))];
 bleach_rho = [mean(rho_bleach) 2*std(rho_bleach) round(mean(num_bleach))];
 itime_global = [median(tau1_global) 2/1.35*iqr(tau1_global) round(mean(num_itime)); median(tau2_global) 2/1.35*iqr(tau2_global) 0];
@@ -288,7 +303,8 @@ ylabel('probabilty density');
 title(['velocity = ' val2str(velocity(1),velocity(2))]);
 text('Units','normalized','HorizontalAlignment','right','Position',[0.9 0.9],'String',['N = ' num2str(length(vel))]);
 xlim([0 2*median(vel)]);
-ylim([0 Inf]);
+% ylim([0 Inf]);
+ylim([0 max(mean(velmat,1)+3*std(velmat,[],1))])
     
 % display data and results for belaching analysis
 axes(hFig.aBleachPlot);
