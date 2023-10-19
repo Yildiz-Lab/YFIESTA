@@ -95,7 +95,10 @@ else
 end
 
 % initialize vectors for bootstrapping
-v = zeros(1,n); % velocity
+v1 = zeros(1,n); % velocity
+v2 = zeros(1,n);
+P1 = zeros(1,n); % relative populations
+P2 = zeros(1,n);
 R1 = zeros(1,n); % runlength
 R2 = zeros(1,n); % runlength
 wR = zeros(1,n);
@@ -131,13 +134,21 @@ parfor (m=1:n,Config.NumCores)
 %     v(m) = w(1);
     try
         GMModel = fitgmdist(resample,2);
-        mus = sort(GMModel.mu); %remove the lower GMM
-        v(m) = mus(2);
+        [mus, musidx] = sort(GMModel.mu); %sort the GMM
+        v1(m) = mus(2); P1(m) = GMModel.ComponentProportion(musidx(2));
+        v2(m) = mus(1); P2(m) = GMModel.ComponentProportion(musidx(1));
     catch
         GMModel = fitgmdist(resample,1);
-        v(m) = GMModel.mu;
+        v1(m) = GMModel.mu; v2(m) = NaN;
+        P1(m) = 1; P2(m) = NaN;
     end
     
+%     fprintf('mu')
+%     musidx
+%     median(resample)
+%     GMModel.mu
+%     GMModel.Sigma
+%     GMModel.ComponentProportion
     
     % prepare displaying of results
     [N,edges] = histcounts(resample,'BinMethod','scott','Normalization','pdf','BinLimits',[0 2*median(vel)]);
@@ -283,7 +294,8 @@ end
 parallelprogressdlg('close');
 % evaluate the bootstrapping distribution to get the motility parameters
 % and their errors
-velocity = [mean(v) 2*std(v) length(vel)]; %should probably calculate standard deviation better here
+velocity = [mean(v1) 2*std(v1) length(vel)]; %should probably calculate standard deviation better here
+velocity2 = [mean(v2) 2*std(v2) length(vel)]; %JS Edit to see second velocity
 bleach_time = [mean(t_bleach) 2*std(t_bleach) round(mean(num_bleach))];
 bleach_rho = [mean(rho_bleach) 2*std(rho_bleach) round(mean(num_bleach))];
 itime_global = [median(tau1_global) 2/1.35*iqr(tau1_global) round(mean(num_itime)); median(tau2_global) 2/1.35*iqr(tau2_global) 0];
@@ -300,8 +312,12 @@ plot(x_vel,mean(velmat,1)-3*std(velmat,[],1),'b--')
 plot(x_vel,mean(tlsmat,1),'k-')
 xlabel('velocity');
 ylabel('probabilty density');
-title(['velocity = ' val2str(velocity(1),velocity(2))]);
-text('Units','normalized','HorizontalAlignment','right','Position',[0.9 0.9],'String',['N = ' num2str(length(vel))]);
+% JS Edit to see mixing proportion from GMM
+title(['velocity = ' val2str(velocity(1),velocity(2)) ' & ' val2str(velocity2(1),velocity2(2))]);
+% title(['velocity = ' val2str(velocity(1),velocity(2))]);
+% text('Units','normalized','HorizontalAlignment','right','Position',[0.9 0.9],'String',['N = ' num2str(length(vel))]);
+% JS Edit to see mixing proportion from GMM
+text('Units','normalized','HorizontalAlignment','right','Position',[0.9 0.9],'String',['N = ' num2str(length(vel)) ' * ' num2str(round(mean(P1),2))]);
 xlim([0 2*median(vel)]);
 % ylim([0 Inf]);
 ylim([0 max(mean(velmat,1)+3*std(velmat,[],1))])
@@ -363,7 +379,7 @@ xlim([0 min([4*median(runlen) x_runlen(find(~isnan(cp),1,'last'))])]);
 ylim([0 1]);
 
 results{1,1} = velocity;
-results{1,2} = v';
+results{1,2} = v1';
 results{2,1} = itime_global;
 results{2,2} = [tau1_global' tau2_global'];
 results{3,1} = itime_censored;
