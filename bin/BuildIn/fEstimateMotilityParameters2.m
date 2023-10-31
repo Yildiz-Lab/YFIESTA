@@ -541,6 +541,9 @@ if rd>=0
     err = ceil(err);
     val = round(val);
     p = '%.0f';
+elseif isnan(rd) %JS Edit to deal with edge case of NaN
+    err = rd;
+    p = '%.0f';
 else
     err = ceil(err*10^-rd)/10^-rd;
     val = round(val,-rd);

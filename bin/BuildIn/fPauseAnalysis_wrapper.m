@@ -138,10 +138,17 @@ if opts.PauseThresh == 0
     % find tau by finding where population is at 1/e
     [~,tau] = min(abs(Cnorm - exp(-1)));
     % find actual 95% confidence interval by finding where population is at 95%
+    
     [~,conf2] = min(abs(Cnorm - 0.9));
-    plot((conf2+1)*ones(1,2),[0,max(hh.Values)],'r--');
-    Config.PauseThreshold = conf2;
-    fprintf(strcat("Setting Pause Threshold: ", num2str(conf2), "\n"))
+    [~,conf2s] = min(abs(Cnorm - 0.95));
+    [~,conf3s] = min(abs(Cnorm - 0.99));
+    
+    fprintf(['0.9: ', num2str(conf2),'\n'])
+    fprintf(['2sigma: ', num2str(conf2s),'\n'])
+    fprintf(['3sigma: ', num2str(conf3s),'\n'])
+    plot((conf2s+1)*ones(1,2),[0,max(hh.Values)],'r--');
+    Config.PauseThreshold = conf2s;
+    fprintf(strcat("Setting Pause Threshold: ", num2str(conf2s), "\n"))
     % need to loop back through to do this
 %     fprintf(strcat("Calculated Pause Frequency: ", num2str(mean(pause_frequency)), "\n"))
 elseif ~opts.UseNeighborRegions
