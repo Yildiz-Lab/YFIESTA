@@ -120,6 +120,13 @@ hold off
 handles.xydisplayed = 0; %use to keep track whether we are an xy or yx display
 if ~isempty(varargin)
     [pathname, filename, ext] = fileparts(varargin(1));
+    % check if these are cells. If they are, remove the cell part to make
+    % strings. Problem as of r2023b or Mac handling idk.
+    if length(pathname) < 2
+        pathname = pathname{1};
+        filename = filename{1};
+        ext = ext{1};
+    end
     % run what LoadFile_Callback usually does
     handles = LoadNewDataFile(hObject, handles, fullfile(pathname,'/'), strcat(filename,ext));
     
