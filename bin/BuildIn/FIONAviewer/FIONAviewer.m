@@ -7,6 +7,10 @@ function varargout = FIONAviewer(varargin)
 %
 % See also: GUIDE, GUIDATA, GUIHANDLES
 
+% JS 2023/12/31
+% IF HAVING TROUBLE VIEWING WHOLE GUI IN WINDOW, TRY UNCOMMENTING 
+% JS EDIT LAPTOP OPTIONS (ln 47, ln 119) AND ADJUSTING FOR YOUR MACHINE
+
 
 % Last Modified by GUIDE v2.5 14-Jan-2013 14:47:04
 % Begin initialization code - DO NOT EDIT
@@ -40,6 +44,15 @@ function FIONAviewer_OpeningFcn(hObject, eventdata, handles, varargin) %#ok
 setappdata(0,'UseNativeSystemDialogs',false)
 
 handles.figureHandle = hObject;
+
+%  JS EDIT LAPTOP OPTIONS 23/12/31
+%fs = get(0,'ScreenSize'); % gets screen size and position [xpos, ypos, xwidth, yheight]
+%set(handles.figureHandle,'Units','Pixels','Position',fs) %positions so that it fits the whole screen
+% if MAC toolbar gets in the way, then move it up a bit
+%fs(2) = 0.1*fs(4); fs(4) = 0.9*fs(4); %can edit full screen so that later axis edit is already normalized (ln 120)
+%set(handles.figureHandle,'Units','Pixels','Position',fs)
+% End of JS Edit
+
 % MainPath=pwd;
 % SubFunctions=strcat(MainPath,'\SubFns');
 % addpath(SubFunctions)
@@ -103,6 +116,11 @@ handles.currentPath='C:\';
 
 % Initialize primary axes
 set(handles.axes1,'Ygrid','on')
+
+% JS EDIT LAPTOP OPTIONS 23/12/31 to make the axes
+%set(handles.axes1,'Units','Pixels','Position',[0.38*fs(3),0.25*fs(4),0.6*fs(3),0.7*fs(4)])
+% End of JS Edit
+
 axes(handles.axes1); %#ok<MAXES>
 plot(0,0)
 hold on 
