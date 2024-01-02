@@ -99,7 +99,7 @@ hPathsStatsGui.fig = figure('Units','normalized','DockControls','off','IntegerHa
                       'NumberTitle','off','HandleVisibility','callback','Tag','hPathsStatsGui',...
                       'Visible','off','Resize','off','WindowStyle','modal');
                   
-if ispc
+if ispc || ismac
     set(hPathsStatsGui.fig,'Color',[50 50 50]/255);
 end
 
