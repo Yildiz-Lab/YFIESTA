@@ -27,10 +27,17 @@ end
 for i=1:fnum
     
     if isfile(directory)
-        steptrace = load(fname);
+        [d,f,e] = fileparts(directory);
+        if contains(f,'._') %JS Edit to delete extra ._ from mac sometimes
+        f = f(3:end);
+        end
+        steptrace = load(fullfile(d,strcat(f,e)));
     else
         fname = f(i).name;
-        steptrace = load(strcat(cd,'\',fname));
+        if contains(fname,'._') %JS Edit to delete extra ._ from mac sometimes
+        fname = fname(3:end);
+        end
+        steptrace = load(fullfile(cd,'/',fname));
     end
     
     trace = steptrace.data;
@@ -44,7 +51,8 @@ for i=1:fnum
     [on_steps, ~] = add_to_list_6col_steps_v2(data,threshold);
     ONsteps = [ONsteps; on_steps'];
     
-    [off_steps, ~] = add_to_list_6col_steps_v2(data_yx,threshold);
+    %[off_steps, ~] = add_to_list_6col_steps_v2(data_yx,threshold); %using complete mean of step
+    [off_steps, ~] = add_to_list_6col_steps_v2_instant(data_yx,threshold); %using a mean of a smaller window (a derivative). Change window size in function.
     OFFsteps = [OFFsteps; off_steps'];
 
     % Dwells

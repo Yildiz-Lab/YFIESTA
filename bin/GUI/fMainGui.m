@@ -37,12 +37,15 @@ hMainGui.fig= figure('Units','normalized','DockControls','off','IntegerHandle','
                      'NumberTitle','off','OuterPosition',[0.05 0.05 0.9 0.9],'HandleVisibility','callback','Tag','hMainGui',...
                      'Visible','off','NextPlot','add','InvertHardcopy','off','Interruptible','off','BusyAction','cancel');
 
+% JS Edit for Dark Theme
 if ispc
+    set(hMainGui.fig,'Color',[50 50 50]/255);
+elseif ismac
     set(hMainGui.fig,'Color',[50 50 50]/255);
 end
 
 %set(hMainGui.fig,'Units','pixel','Position',[50 50 1280 1024]);
-%et(hMainGui.fig,'Units','normalized');
+%set(hMainGui.fig,'Units','normalized');
 
 %create Menu
 hMainGui.Menu=fMenuCreate(hMainGui);
