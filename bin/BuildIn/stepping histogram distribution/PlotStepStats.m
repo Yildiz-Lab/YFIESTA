@@ -34,7 +34,16 @@ set(gca, 'XTick', [-80 -32 -24 -16 -8 0 8 16 24 32 40 100]);
 ylim([0 70])
 xlabel('step size (nm)');
 title ('off-axis steps')
-legend(sprintf(' N = %.0f \n mean = %.3f \n std = %.3f', [length(offsteps), mean(abs(offsteps)), std(abs(offsteps))]))
+
+mdl_gauss = fittype('normcdf(x,mu,sigma)','indep','x');
+mdl_gauss2 = fittype('A*normcdf(x,mu1,7.)+(1-A)*normcdf(x,mu2,7.)','indep','x');
+X = sort(abs(offsteps));
+Y = linspace(0,1,length(X));
+fittedmdl = fit(X,Y',mdl_gauss,'start',[8.,8.])
+fittedmdl2 = fit(X,Y',mdl_gauss2,'start',[0.7,8.,20.])
+
+legend(sprintf(' N = %.0f \n mean = %.3f \n std = %.3f', [length(offsteps), fittedmdl.mu, fittedmdl.sigma]))
+
 
 % Dwell histogram
 % JS 220207 IDK who thought setting the xlimits to 0.25 seconds was a good

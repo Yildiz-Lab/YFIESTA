@@ -87,7 +87,11 @@ else
     for i=1:fnum
     
         if isfile(directory)
-            steptrace = load(fname);
+            [d,f,e] = fileparts(directory);
+            if contains(f,'._') %JS Edit to delete extra ._ from an error
+            f = f(3:end);
+            end
+            steptrace = load(fullfile(d,strcat(f,e)));
         else
             fname = f(i).name;
             steptrace = load(fullfile(cd,fname));
