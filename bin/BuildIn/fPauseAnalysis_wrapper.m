@@ -90,7 +90,7 @@ else
             steptrace = load(fname);
         else
             fname = f(i).name;
-            steptrace = load(strcat(cd,'\',fname));
+            steptrace = load(fullfile(cd,fname));
         end
 
         trace = steptrace.data;
