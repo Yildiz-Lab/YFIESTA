@@ -133,6 +133,7 @@ elseif isfield(scavenge.data, 'trace_yx')
 end
 
 data.neighbors = handles.neighbors;
+data.time = handles.time;
 %re-worked to get rid of all that stepResults struct business
 %this will now re-write traces so be careful!
 disp([ 'writing current trace to ' fileName ])

@@ -39,6 +39,7 @@ else
 end
 handles.xydisplayed = ~handles.xydisplayed;
 handles.neighbors = FIONAData.neighbors;
+handles.time = FIONAData.time;
 
 %tElapsed = toc; % debug purposes only - optimizing time
 
