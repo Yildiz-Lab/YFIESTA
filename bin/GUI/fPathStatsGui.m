@@ -829,6 +829,8 @@ Molecule(minj).Color = [0 1 1];
 %     writematrix(xy(laststart:i,:)-min(xy(laststart:i,:)), strcat(Config.Directory{1},PathStats(n).Name(10:end),thealphabet(ii),'_fiona.txt'), 'Delimiter', 'tab');
 
 % Store in a separate folder for safekeeping
+Config.Directory
+Config.StackName
 FFolderName = fullfile(Config.Directory{1}, Config.StackName{1}(1:end-6));
 if ~isfolder(FFolderName)
     mkdir(FFolderName);
@@ -964,6 +966,7 @@ if ~isfile(strcat(fname,'_fiona.mat')) % Don't overwrite existing file
 data.xy = xynew;
 data.yx = xynew(:,[2,1]);
 data.neighbors = neighbor_txy;
+data.time = PathStats(n).Results(:,2);
 save(strcat(fname,'_fiona.mat'),'data');
 end
 
