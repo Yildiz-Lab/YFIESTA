@@ -46,6 +46,10 @@ for i=1:fnum
     else
     data = trace.trace;
     data_yx = trace.trace_yx;
+        %JS Edit 2024/03/07 for loading MINFLUX times rather than framerate
+        if isfield(trace,'time')
+            framerate = trace.time; %framerate is now actually an array of times
+        end
     
     % Steps
     [on_steps, ~] = add_to_list_6col_steps_v2(data,threshold);
