@@ -29,7 +29,9 @@ cnt=0; t=0;
         if(forsteps(i)==0)
             cnt=cnt+1;
             %JS Edit 2024/03/07 % rather than count add dt
+            if i ~= length(forsteps)
             t = t + time(i+1)-time(i);
+            end
         elseif(forsteps(i)==1)
                 dwell_for=[ dwell_for cnt]; cnt=0;
                 dwell_for_t = [dwell_for_t; t]; t=0;

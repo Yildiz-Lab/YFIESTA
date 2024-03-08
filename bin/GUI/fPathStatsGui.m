@@ -744,7 +744,9 @@ if startpoint ~= 1 || endpoint ~= length(xynew)
     % Then update PathStats and truncate accordingly
     PathStats(n).PathData = PathStats(n).PathData(bidx:eidx,:);
     PathStats(n).Results = PathStats(n).Results(bidx:eidx,:);
-    PathStats(n).TrackingResults = PathStats(n).TrackingResults(bidx:eidx);
+    if length(PathStats(n).TrackingResults) > length(bidx:eidx)
+        PathStats(n).TrackingResults = PathStats(n).TrackingResults(bidx:eidx);
+    end
     setappdata(hPathsStatsGui.fig,'PathStats',PathStats);
     Draw(hPathsStatsGui); %then redraw
     
