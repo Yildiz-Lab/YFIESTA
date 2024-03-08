@@ -46,11 +46,15 @@ for i=1:fnum
     else
     data = trace.trace;
     data_yx = trace.trace_yx;
-        %JS Edit 2024/03/07 for loading MINFLUX times rather than framerate
-        if isfield(trace,'time')
-            framerate = trace.time; %framerate is now actually an array of times
-        end
+    %JS Edit 2024/03/07 for loading MINFLUX times rather than framerate
+    if isfield(trace,'time')
+        framerate = trace.time; %framerate is now actually an array of times
+    end
+
     
+    % going to add in option to ignore steps that have too little data
+    % points (i.e. <7 to increase accuracy);
+        
     % Steps
     [on_steps, ~] = add_to_list_6col_steps_v2(data,threshold);
     ONsteps = [ONsteps; on_steps'];
@@ -58,7 +62,7 @@ for i=1:fnum
     %[off_steps, ~] = add_to_list_6col_steps_v2(data_yx,threshold); %using complete mean of step
     [off_steps, ~] = add_to_list_6col_steps_v2_instant(data_yx,threshold); %using a mean of a smaller window (a derivative). Change window size in function.
     OFFsteps = [OFFsteps; off_steps'];
-
+    
     % Dwells
     mat = add_to_list_6col_dwells_v2(data,threshold,[],framerate);
     if ~isempty(mat) %check that dwells were found (JS Edit 220310)
@@ -70,6 +74,26 @@ for i=1:fnum
         dwells_for = [dwells_for; forward];
         dwells_back = [dwells_back; backward];
     end
+    
+%     % JS Edit 2024/03/07
+%     %post processing too small dwell steps (incrase accuracy)
+%     % find steps below the time threshold. For MINFLUX resolving
+%     % ~2ms/point, I will say 0.015s.
+%     time_threshold = 0.015;
+%     short_steps = find(dwells < time_threshold);
+%     
+%     % Now that this lot (dwells) should not be used for steps (we can still use it for dwells), we have to remove the fences on either
+%     % side which is the i'th and i-1'th steps. Further we should set them
+%     % to Nan, and remove after we've gone through
+%     
+%     for k=length(short_steps):-1:1
+%         ONsteps(short_steps(k)) = NaN;
+%         if short_steps(k)-1 > 0
+%         ONsteps(short_steps(k)-1) = NaN;
+%         end
+%     end
+%     % NaN's will be removed in the final figure
+%     % End of JS Edit 2024/03/07
     
     end %if trace exists
     

@@ -8,7 +8,7 @@ end
 %JS Edit 220213
 % Some general statistics that I would like to show in the plot legend
 % because I know Ahmet will ask about it
-N = length(onsteps);
+N = sum(~isnan(onsteps)); %Ignore nans
 Nfor = length(onsteps(onsteps > 0));
 Nback = length(onsteps(onsteps < 0));
 
@@ -26,6 +26,13 @@ xlabel('step size (nm)');
 title ('on-axis steps')
 legend(sprintf(' traces = %.0f \n N = %.0f \n forward = %.0f \n backward = %.0f', [tracenum, N, Nfor(1), Nback(1)]))
 
+% use betacdf to get the 95% confidence intervals
+totalsteps = length(onsteps)+length(offsteps);
+[m,c1,c2] = beta_confidence(Nback,totalsteps-Nback);
+fprintf(strcat("Backwards / total stepping ", num2str(round(m,4)), " (", num2str(round(c1,4)), ",", num2str(round(c2,4)), ") \n"))
+[m,c1,c2] = beta_confidence(Nback,Nfor);
+fprintf(strcat("Backwards / forward stepping ", num2str(round(m,4)), " (", num2str(round(c1,4)), ",", num2str(round(c2,4)), ") \n"))
+
 % Off-axis step histogram
 subplot(2,3,2)
 histogram(offsteps,'BinWidth',2);
@@ -36,14 +43,19 @@ xlabel('step size (nm)');
 title ('off-axis steps')
 
 mdl_gauss = fittype('normcdf(x,mu,sigma)','indep','x');
-mdl_gauss2 = fittype('A*normcdf(x,mu1,7.)+(1-A)*normcdf(x,mu2,7.)','indep','x');
+% mdl_gauss2 = fittype('A*normcdf(x,mu1,7.)+(1-A)*normcdf(x,mu2,7.)','indep','x');
 X = sort(abs(offsteps));
 Y = linspace(0,1,length(X));
 fittedmdl = fit(X,Y',mdl_gauss,'start',[8.,8.])
-fittedmdl2 = fit(X,Y',mdl_gauss2,'start',[0.7,8.,20.])
+% fittedmdl2 = fit(X,Y',mdl_gauss2,'start',[0.7,8.,20.])
 
 legend(sprintf(' N = %.0f \n mean = %.3f \n std = %.3f', [length(offsteps), fittedmdl.mu, fittedmdl.sigma]))
 
+% use betacdf to get the 95% confidence intervals
+[m,c1,c2] = beta_confidence(length(offsteps),totalsteps-length(offsteps));
+fprintf(strcat("Side / total stepping ", num2str(round(m,4)), " (", num2str(round(c1,4)), ",", num2str(round(c2,4)), ") \n"))
+[m,c1,c2] = beta_confidence(length(offsteps),Nfor);
+fprintf(strcat("Side / forward stepping ", num2str(round(m,4)), " (", num2str(round(c1,4)), ",", num2str(round(c2,4)), ") \n"))
 
 % Dwell histogram
 % JS 220207 IDK who thought setting the xlimits to 0.25 seconds was a good
