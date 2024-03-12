@@ -61,6 +61,7 @@ for j = 1:length(uid)
     % [Frame, Time, XPos (pix), YPos (pix), ZPos (pix), Distance, FWHM,
     % Amplitude (counts), Position Error (nm), Tags]
     % Results packaging
+
     MFMolecule(j).Results = nan(length(idx),10);
     MFMolecule(j).Results(:,1) = idx';
     MFMolecule(j).Results(:,2) = MFData.tim(idx)'; %s
@@ -73,7 +74,26 @@ for j = 1:length(uid)
     MFMolecule(j).Results(:,8) = sum(MFData.itr.eco(idx,:),2); %this is now the eco
     MFMolecule(j).Results(:,9) = nan(length(idx),1);
     MFMolecule(j).Results(:,10) = zeros(length(idx),1);
-
+    
+    
+    % remove ending nans based on xpos, it messes up our distance calculation
+    if sum(~isnan(MFMolecule(j).Results(:,3))) > 0
+    nni = ~isnan(MFData.itr.loc(idx,4,1)); %not nan index
+    
+    MFMolecule(j).Results = []; %clear it
+    MFMolecule(j).Results = nan(length(idx(nni)),10); %reset it
+    MFMolecule(j).Results(:,1) = idx(nni)';
+    MFMolecule(j).Results(:,2) = MFData.tim(idx(nni))'; %s
+    MFMolecule(j).Results(:,3) = MFData.itr.loc(idx(nni),4,1)*10^9; %converted to nm
+    MFMolecule(j).Results(:,4) = MFData.itr.loc(idx(nni),4,2)*10^9;
+    % MFMolecule(j).Results(:,5) = MFData.itr.loc(:,4,3)*10^9;
+    MFMolecule(j).Results(:,5) = nan(length(idx(nni)),1);
+    MFMolecule(j).Results(:,6) = pdist2(MFMolecule(j).Results(:,3:4), MFMolecule(j).Results(1,3:4));
+    MFMolecule(j).Results(:,7) = sum(MFData.itr.efo(idx(nni),:),2,"omitnan"); %this is now the efo
+    MFMolecule(j).Results(:,8) = sum(MFData.itr.eco(idx(nni),:),2); %this is now the eco
+    MFMolecule(j).Results(:,9) = nan(length(idx(nni)),1);
+    MFMolecule(j).Results(:,10) = zeros(length(idx(nni)),1);
+    end
 
     % Mostly fixed
     MFMolecule(j).Type = 'symmetric';
@@ -87,7 +107,7 @@ for j = 1:length(uid)
     MFMolecule(j).PixelSize = 1;
 
 
-    MFMolecule(j).Channel = MFData.vld(idx(1));
+    MFMolecule(j).Channel = 1; %MFData.vld(idx(1))
     MFMolecule(j).Color = Colorwheel(MFMolecule(j).Channel,:);
     MFMolecule(j).PathData = [];
     MFMolecule(j).PlotHandles = [];
