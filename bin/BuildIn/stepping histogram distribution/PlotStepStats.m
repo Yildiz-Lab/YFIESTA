@@ -87,7 +87,8 @@ hold on
 
 % Define model according to https://www.mathworks.com/matlabcentral/answers/850245-how-to-do-curve-fitting-by-a-user-defined-function
 % mdl_gamma_pdf = fittype('A * x*k^2*exp(-k*x)','indep','x');
-mdl_gamma_cdf = fittype('real(gammainc(k*x,2))','indep','x');
+mdl_gamma_cdf = fittype('real(gammainc(k*x,1))','indep','x'); %single exponential
+% mdl_gamma_cdf = fittype('real(gammainc(k*x,2))','indep','x');
 X = obj0.XData(2:end-1); % get rid of infs
 Y = obj0.YData(2:end-1);
 fittedmdl = fit(X',Y',mdl_gamma_cdf,'start',[3.])
@@ -103,7 +104,8 @@ A = length(children.Data);
 
 k = fittedmdl.k;
 tt = linspace(0,max(children.BinEdges),500);
-plot(tt, A*k^2.*tt.*exp(-k.*tt));
+% plot(tt, A*k^2.*tt.*exp(-k.*tt));
+plot(tt, A*exp(-k.*tt)); %single exponential
 
 if ~isempty(savename)
     savefig(savename)
