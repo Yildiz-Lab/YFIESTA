@@ -16,7 +16,11 @@ handles.lineVector = 0;
 DataFilePath=strcat(path,filename);
 handles.currentPath=DataFilePath;
 
-trace_curr = load (DataFilePath,'-mat','trace');
+% JS Edit 2024/03/18 for new mat way to save data
+trace_curr = load(DataFilePath);
+trace_curr = trace_curr.data;
+
+% trace_curr = load (DataFilePath,'-mat','trace');
 
 handles.PSD1Data_Long = trace_curr.trace(:,1)';
 handles.PSD1Data_Short = trace_curr.trace(:,2)';
@@ -28,3 +32,12 @@ handles.usageVector = trace_curr.trace(:,6)';
 
 %FrameTime = str2double(get(handles.FrameLength, 'string'))/1000; % in sec
 handles.t = 1:length(trace_curr.trace(:,1));
+
+% JS Edit 2024/03/18 for new mat way to save data
+handles.neighbors = trace_curr.neighbors;
+
+% set all the things normally set in loading a new data file
+handles.xydisplayed = 0;
+set(handles.FileName,'string',filename);
+set(handles.FilePath,'string',path);
+set(handles.StepsFilename,'string',strcat(path,'adj_',filename));
