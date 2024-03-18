@@ -28,8 +28,9 @@ cnt=0; t=0;
     for i=1:length(forsteps)
         if(forsteps(i)==0)
             cnt=cnt+1;
-            %JS Edit 2024/03/07 % rather than count add dt
-            if i ~= length(forsteps)
+            %JS Edit 2024/03/07 % rather than count add dt if you have the
+            %time for it
+            if i < length(forsteps) && i < length(time)
             t = t + time(i+1)-time(i);
             end
         elseif(forsteps(i)==1)
