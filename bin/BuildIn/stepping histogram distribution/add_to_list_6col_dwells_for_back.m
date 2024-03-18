@@ -25,11 +25,13 @@ forsteps = zeros(L,1);
 dwell_for=[]; dwell_for_t=[];
 dwell_back=[]; dwell_back_t=[];
 cnt=0; t=0;
-    for i=1:length(forsteps)
+    for i=1:length(forsteps)-1
         if(forsteps(i)==0)
             cnt=cnt+1;
             %JS Edit 2024/03/07 % rather than count add dt
-            if i ~= length(forsteps)
+            if i < length(forsteps)-2
+                i
+                length(forsteps)
             t = t + time(i+1)-time(i);
             end
         elseif(forsteps(i)==1)
