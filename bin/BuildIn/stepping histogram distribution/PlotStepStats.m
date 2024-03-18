@@ -18,10 +18,10 @@ n = length(h);
 % On-axis step histogram
 figure(n+1)
 subplot(2,3,1)
-histogram(onsteps,'BinWidth',2);
+histogram(onsteps,'BinWidth',1.275);
 axis([-40,48,0,40]);
 set(gca, 'XTick', [-80 -32 -24 -16 -8 0 8 16 24 32 40 100]);
-ylim([0 70])
+% ylim([0 70])
 xlabel('step size (nm)');
 title ('on-axis steps')
 legend(sprintf(' traces = %.0f \n N = %.0f \n forward = %.0f \n backward = %.0f', [tracenum, N, Nfor(1), Nback(1)]))
@@ -35,10 +35,10 @@ fprintf(strcat("Backwards / forward stepping ", num2str(round(m,4)), " (", num2s
 
 % Off-axis step histogram
 subplot(2,3,2)
-histogram(offsteps,'BinWidth',2);
+histogram(offsteps,'BinWidth',1.275);
 axis([-40,48,0,100]);
 set(gca, 'XTick', [-80 -32 -24 -16 -8 0 8 16 24 32 40 100]);
-ylim([0 70])
+% ylim([0 70])
 xlabel('step size (nm)');
 title ('off-axis steps')
 
@@ -61,20 +61,20 @@ fprintf(strcat("Side / forward stepping ", num2str(round(m,4)), " (", num2str(ro
 % JS 220207 IDK who thought setting the xlimits to 0.25 seconds was a good
 % idea, but getting rid of that allows us to see the plots.
 subplot(2,3,3)
-histogram(dwells, 'BinWidth', 0.3);
+histogram(dwells, 'BinWidth', 0.01);
 xlabel('Time (s)');
 ylabel('Counts');
 title ('dwell times')
 
 % Forward_Dwell histogram
 subplot(2,3,4)
-histogram(dwells_for,'BinWidth',0.3);
+histogram(dwells_for,'BinWidth',0.01);
 xlabel('Time (s)');
 title ('forward dwell times')
 
 % BackwardDwell histogram
 subplot(2,3,6)
-histogram(dwells_back,'BinWidth',0.3);
+histogram(dwells_back,'BinWidth',0.01);
 xlabel('Time (s)');
 title ('backward dwell times')
 

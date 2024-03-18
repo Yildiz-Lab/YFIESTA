@@ -94,8 +94,8 @@ for i=1:fnum
 %     end
 %     % NaN's will be removed in the final figure
 %     % End of JS Edit 2024/03/07
-    
-    end %if trace exists
+%     
+%     end %if trace exists
     
 end
 
