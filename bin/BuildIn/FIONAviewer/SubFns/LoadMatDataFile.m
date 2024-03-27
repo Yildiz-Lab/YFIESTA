@@ -37,7 +37,10 @@ handles.t = 1:length(trace_curr.trace(:,1));
 handles.neighbors = trace_curr.neighbors;
 
 % set all the things normally set in loading a new data file
-handles.xydisplayed = 0;
+handles.xydisplayed = 1;
+if isfield(trace_curr,'time')
+handles.time = trace_curr.time;
+end
 set(handles.FileName,'string',filename);
 set(handles.FilePath,'string',path);
-set(handles.StepsFilename,'string',strcat(path,'adj_',filename));
+set(handles.StepsFilename,'string',strcat(path,filename));

@@ -23,29 +23,43 @@ if nargin < 2
     disp("Forgotten threshold or framerate")
     return
 end
+
+if fnum > 1
+    for i=fnum:-1:1
+        if contains(f(i).name,'._') %JS Edit to ignore extra '._' that randomly show up sometimes MAC
+        f(i) = [];
+        end
+    end
+    fnum = length(f);
+else
+    if contains(fname,'._') %JS Edit to ignore extra '._' that randomly show up sometimes MAC
+        fnum = 0;
+        return
+    end
+end
     
 for i=1:fnum
     
     if isfile(directory)
         [d,f,e] = fileparts(directory);
-        if contains(f,'._') %JS Edit to delete extra ._ from an error
-        f = f(3:end);
-        end
+        % if contains(f,'._') %JS Edit to delete extra ._ from an error
+        % f = f(3:end);
+        % end
         steptrace = load(fullfile(d,strcat(f,e)));
     else
         fname = f(i).name;
-        if contains(fname,'._') %JS Edit to delete extra ._ from an error
-        fname = fname(3:end);
-        end
+        % if contains(fname,'._') %JS Edit to delete extra ._ from an error
+        % fname = fname(3:end);
+        % end
         steptrace = load(fullfile(cd,'/',fname));
     end
     
     trace = steptrace.data;
-    if ~isfield(trace,'trace') || ~isfield(trace,'trace_yx')
+    if ~isfield(trace,'trace') %|| ~isfield(trace,'trace_yx')
         fnum = fnum - 1;
     else
     data = trace.trace;
-    data_yx = trace.trace_yx;
+    data_yx = trace.trace; % data_yx = trace.trace_yx;
     %JS Edit 2024/03/07 for loading MINFLUX times rather than framerate
     if isfield(trace,'time')
         framerate = trace.time; %framerate is now actually an array of times
@@ -97,7 +111,7 @@ for i=1:fnum
 %     
 %     end %if trace exists
     
-end
+    end
 
 
 end
