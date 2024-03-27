@@ -126,9 +126,10 @@ else
 end
 
 scavenge = load(fileName);
-if isfield(scavenge.data, 'trace')
+if isfield(scavenge.data, 'trace') && ~handles.xydisplayed
     data.trace = scavenge.data.trace;
-elseif isfield(scavenge.data, 'trace_yx')
+end
+if isfield(scavenge.data, 'trace_yx') && handles.xydisplayed
     data.trace_yx = scavenge.data.trace_yx;
 end
 

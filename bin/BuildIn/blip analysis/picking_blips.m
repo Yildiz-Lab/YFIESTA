@@ -87,7 +87,7 @@ function keyPressCallback(f, event)
 
                     % Store the nearest point for calculation purposes
                     f.UserData.nearestPoints = [f.UserData.nearestPoints; nearestPoint];
-                    nearestPoint
+                    % nearestPoint
                     data.blips = f.UserData.nearestPoints;
                     save(savename, 'data')
                     
