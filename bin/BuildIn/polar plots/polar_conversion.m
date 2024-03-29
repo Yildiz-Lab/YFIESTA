@@ -29,7 +29,7 @@ idx = [1; idx; length(x)]; %pad so that we can refer to steps i-1 and i+1 near b
 % then we just need to go through each step and ask ourselves what is the
 % mean distribution
 
-window = 10;
+window = 15;
 
 
 for i = 2:length(idx)-1
