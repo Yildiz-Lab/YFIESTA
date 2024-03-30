@@ -102,7 +102,7 @@ for i = 1:length(step_idx)
         end
         % now find first point that is > -1 sigma (only check one or two
         % points)
-        
+        step_sign(i)
         if step_sign(i) > 0
             bool1 = data.trace(sidx-10:sidx,1) > data.trace(sidx-10:sidx,3)-sigma;
             idx1 = find(bool1 > 0);
