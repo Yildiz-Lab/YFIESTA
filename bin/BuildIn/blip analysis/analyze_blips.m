@@ -39,12 +39,26 @@ for i = 1:length(blip_idx)
     end
     
     % now calculate time
-    dt(i) = n*(time(xidx-ceil(0.5*n)) - time(bidx+n));
+    
+    dt(i) = n*(time(xidx-ceil(0.5*n)) - time(bidx+n)); 
+    if dt(i) < 0 %ignore if dt is negative, there was an error picking blips
+        dt(i) = NaN;
+    end
     
     % and deltax by mean of blip and the nearby window or next step
 %     x(bidx+n:n:xidx-ceil(0.5*n))
 %     time(bidx+n:n:xidx-ceil(0.5*n))
-    meanblip = mean(x(bidx+n:n:xidx-ceil(0.5*n)),'omitnan');
+    
+    % toggle to only include the dip points due to missed steps. So we
+    % already know before blip, now we also check that after blip the mean
+    % isn't too large to make it positive (so remove ones that cross over the stepping boundary).
+    
+    % this is just for Ahmet's point
+    xblip = x(bidx+n:n:xidx-ceil(0.5*n));
+    xfilt = xblip(xblip < xsteps(bidx));
+    % xfilt = x(bidx+n:n:xidx-ceil(0.5*n));
+    meanblip = mean(xfilt,'omitnan');
+    
     
     next_idx = bidx - n*window;
     
@@ -56,11 +70,19 @@ for i = 1:length(blip_idx)
     
     % then we do it
 %     bidx:-n:next_idx
-    meanstep = mean(x(bidx:-n:next_idx));
+    if ~isnan(dt(i)) %only include if dt was not negative
+        % meanstep = mean(x(bidx:-n:next_idx));
+        meanstep = xsteps(bidx);
     
-    dx(i) = meanblip - meanstep;
+        dx(i) = meanblip - meanstep;
+    end
     
 end
+
+% blip_idx
+% step
+% dt
+% dx
 
 end
 end

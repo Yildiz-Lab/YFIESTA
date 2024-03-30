@@ -52,12 +52,20 @@ end
 
 f = figure();
 subplot(1,2,1)
-histogram(dt)
+ax = gca;
+hh = histogram(dt);
+hh.BinWidth = 0.002;
+ax.YLim = [0,90];
+ax.XLim = [-0.002,0.024];
+
 
 subplot(1,2,2)
-histogram(dx)
+hh = histogram(dx);
+ax = gca;
+hh.BinWidth = 2;
+ax.YLim = [0,58];
+ax.XLim = [-42,2];
 
-% subplot(1,3,3)
-% histogram(step)
+
 
 end
