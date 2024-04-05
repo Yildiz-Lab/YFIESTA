@@ -10,8 +10,14 @@ function handles = StepThresholdRemoval(hObject, handles)
 
 % User set parameters that should be incorporated into GUI eventually so
 % that people can set their own "manual step" corrections
+
+% good params for QD kinesin
 step_thresh = 10; %12 %nm
 avg_window = 4; %7
+
+% good params for LD655 dynein MINFLUX
+% step_thresh = 7.5;
+% avg_window = 8;
 
 % we have to set this to delete to use the prebuilt AddRmvStepManually func
 % remember the old state so we can return it when we plot later
