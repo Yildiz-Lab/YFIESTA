@@ -55,11 +55,11 @@ for i=1:fnum
     end
     
     trace = steptrace.data;
-    if ~isfield(trace,'trace') %|| ~isfield(trace,'trace_yx')
+    if ~isfield(trace,'trace') || ~isfield(trace,'trace_yx')
         fnum = fnum - 1;
     else
     data = trace.trace;
-    data_yx = trace.trace; % data_yx = trace.trace_yx;
+    data_yx = trace.trace_yx; % data_yx = trace.trace_yx;
     %JS Edit 2024/03/07 for loading MINFLUX times rather than framerate
     if isfield(trace,'time')
         framerate = trace.time; %framerate is now actually an array of times
