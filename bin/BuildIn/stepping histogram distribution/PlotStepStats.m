@@ -46,10 +46,15 @@ mdl_gauss = fittype('normcdf(x,mu,sigma)','indep','x');
 % mdl_gauss2 = fittype('A*normcdf(x,mu1,7.)+(1-A)*normcdf(x,mu2,7.)','indep','x');
 X = sort(abs(offsteps));
 Y = linspace(0,1,length(X));
+try
 fittedmdl = fit(X,Y',mdl_gauss,'start',[8.,8.])
+legend(sprintf(' N = %.0f \n mean = %.3f \n std = %.3f', [length(offsteps), fittedmdl.mu, fittedmdl.sigma]))
+catch
+    legend(sprintf(' N = %.0f', [length(offsteps)]))
+end
 % fittedmdl2 = fit(X,Y',mdl_gauss2,'start',[0.7,8.,20.])
 
-legend(sprintf(' N = %.0f \n mean = %.3f \n std = %.3f', [length(offsteps), fittedmdl.mu, fittedmdl.sigma]))
+
 
 % use betacdf to get the 95% confidence intervals
 [m,c1,c2] = beta_confidence(length(offsteps),totalsteps-length(offsteps));
@@ -85,6 +90,7 @@ title ('backward dwell times')
 % make a CDF plot and fit
 subplot(2,3,5)
 obj0 = cdfplot(dwells_for);
+% obj0 = cdfplot(dwells)
 xlabel('Time (s)');
 hold on
 

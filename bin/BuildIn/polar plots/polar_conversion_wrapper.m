@@ -1,7 +1,11 @@
 function [r,theta] = polar_conversion_wrapper(directory)
 
+% JS 2024/03/27
+
 %wrapper to convert x,y to polar coordinates and plot behavior for many
-%different traces
+%different traces. Check out polar_conversion.m for more details
+
+%option to pass in directory directly or let user choose through gui
 
 if nargin < 1
     directory = uigetdir()
