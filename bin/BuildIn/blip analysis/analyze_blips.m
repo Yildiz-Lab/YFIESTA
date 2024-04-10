@@ -59,20 +59,28 @@ for i = 1:length(blip_idx)
     % xfilt = x(bidx+n:n:xidx-ceil(0.5*n));
     meanblip = mean(xfilt,'omitnan');
     
-    
-    next_idx = bidx - n*window;
-    
-    if abs(bidx - xsteps_idx(idx-n)) < window
-        next_idx = xsteps_idx(idx-n) + floor(0.5*n);
-        % if ahead, subtract 1 since last spot is at n-1.
-        % otherwise, keep at 0
-    end
+    % Option for nearest step in size (i.e. before if jump forward, after
+    % if jump backward)
+%     next_idx = bidx - n*window;
+%     
+%     if abs(bidx - xsteps_idx(idx-n)) < window
+%         next_idx = xsteps_idx(idx-n) + floor(0.5*n);
+%         % if ahead, subtract 1 since last spot is at n-1.
+%         % otherwise, keep at 0
+%     end
+    % option for previous step in time (i.e. before for both forward and
+    % backward)
+%     next_idx = bidx - window;
+%     if abs(bidx - xsteps_idx(idx-1)) < window
+%         next_idx = xsteps_idx(idx-1);
+%     end
     
     % then we do it
 %     bidx:-n:next_idx
     if ~isnan(dt(i)) %only include if dt was not negative
-        % meanstep = mean(x(bidx:-n:next_idx));
-        meanstep = xsteps(bidx);
+%         meanstep = mean(x(bidx:-n:next_idx));
+%         meanstep = xsteps(bidx); %get current step in time
+        meanstep = xsteps(xidx-1); % get previous step in time
     
         dx(i) = meanblip - meanstep;
     end

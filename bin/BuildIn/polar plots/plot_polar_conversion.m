@@ -50,18 +50,19 @@ set(gca,'fontname','Arial');
 x = r.*cos(theta);
 y = r.*sin(theta);
 
-fig = figure('Position',[300,300,100,200]);
+fig = figure('Position',[300,300,600,1200]);
 % subplot(1,3,3)
-hist3([y',x'], 'CDataMode','auto','Ctrs', {-15:5:15, -28:2:38});
+hist3([y',x'], 'CDataMode','auto','Ctrs', {-20:5:20, -30:2:40});
 colormap('hot')
 view(2)
 % imagesc(flipud(hh3))
 ax = gca;
 set(ax,'XDir','reverse')
 ax.YTick = -24:8:32;
-ax.XTick = -15:10:15;
+ax.XTick = -20:10:20;
 % set(ax, 'YTick',[0 yt], 'YTickLabel', [flip([0 yt])]*10)
-fontsize(fig,11,'points');
+% fontsize(fig,11,'points');
 set(ax,'fontname','Arial');
+set(ax,'fontsize',36);
 
 end

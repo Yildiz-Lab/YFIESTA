@@ -66,6 +66,60 @@ hh.BinWidth = 2;
 ax.YLim = [0,58];
 ax.XLim = [-42,2];
 
+% f2 = figure();
+% % dt steps > 0
+% subplot(2,2,1)
+% ax = gca;
+% hh = histogram(dt(step > 0));
+% hh.BinWidth = 0.002;
+% ax.YLim = [0,90];
+% ax.XLim = [-0.002,0.024];
+% 
+% % dx steps > 0
+% subplot(2,2,2)
+% hh = histogram(dx(step > 0));
+% ax = gca;
+% hh.BinWidth = 2;
+% ax.YLim = [0,58];
+% ax.XLim = [-42,2];
+% 
+% % dt steps < 0
+% subplot(2,2,3)
+% ax = gca;
+% hh = histogram(dt(step < 0));
+% hh.BinWidth = 0.002;
+% ax.YLim = [0,90];
+% ax.XLim = [-0.002,0.024];
+% 
+% % dt steps < 0
+% subplot(2,2,4)
+% hh = histogram(dx(step < 0));
+% ax = gca;
+% hh.BinWidth = 2;
+% ax.YLim = [0,58];
+% ax.XLim = [-42,2];
+
+
+f3 = figure();
+% dt steps > 0
+subplot(1,2,1)
+hold on
+ax = gca;
+hh = histogram(dt(step > 0));
+hh2 = histogram(dt(step < 0));
+hh.BinWidth = 0.002; hh2.BinWidth = hh.BinWidth;
+ax.YLim = [0,60];
+ax.XLim = [-0.002,0.024];
+
+% dx steps > 0
+subplot(1,2,2)
+hold on
+hh = histogram(dx(step > 0));
+hh2 = histogram(dx(step < 0));
+ax = gca;
+hh.BinWidth = 2; hh2.BinWidth = hh.BinWidth;
+ax.YLim = [0,40];
+ax.XLim = [-56,2];
 
 
 end

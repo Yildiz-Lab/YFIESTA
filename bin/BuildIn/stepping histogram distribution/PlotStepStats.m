@@ -66,23 +66,26 @@ fprintf(strcat("Side / forward stepping ", num2str(round(m,4)), " (", num2str(ro
 % JS 220207 IDK who thought setting the xlimits to 0.25 seconds was a good
 % idea, but getting rid of that allows us to see the plots.
 subplot(2,3,3)
-histogram(dwells, 'BinWidth', 0.01);
-set(gca,'XLim',[-0.05,0.8])
+histogram(dwells);
+% histogram(dwells, 'BinWidth', 0.01);
+% set(gca,'XLim',[-0.05,0.8])
 xlabel('Time (s)');
 ylabel('Counts');
 title ('dwell times')
 
 % Forward_Dwell histogram
 subplot(2,3,4)
-histogram(dwells_for,'BinWidth',0.01);
-set(gca,'XLim',[-0.05,0.8])
+histogram(dwells_for);
+% histogram(dwells_for,'BinWidth',0.01);
+% set(gca,'XLim',[-0.05,0.8])
 xlabel('Time (s)');
 title ('forward dwell times')
 
 % BackwardDwell histogram
 subplot(2,3,6)
-histogram(dwells_back,'BinWidth',0.01);
-set(gca,'XLim',[-0.05,0.8])
+histogram(dwells_back);
+% histogram(dwells_back,'BinWidth',0.01);
+% set(gca,'XLim',[-0.05,0.8])
 xlabel('Time (s)');
 title ('backward dwell times')
 
@@ -96,8 +99,8 @@ hold on
 
 % Define model according to https://www.mathworks.com/matlabcentral/answers/850245-how-to-do-curve-fitting-by-a-user-defined-function
 % mdl_gamma_pdf = fittype('A * x*k^2*exp(-k*x)','indep','x');
-mdl_gamma_cdf = fittype('real(gammainc(k*x,1))','indep','x'); %single exponential
-% mdl_gamma_cdf = fittype('real(gammainc(k*x,2))','indep','x');
+% mdl_gamma_cdf = fittype('real(gammainc(k*x,1))','indep','x'); %single exponential
+mdl_gamma_cdf = fittype('real(gammainc(k*x,2))','indep','x');
 X = obj0.XData(2:end-1); % get rid of infs
 Y = obj0.YData(2:end-1);
 fittedmdl = fit(X',Y',mdl_gamma_cdf,'start',[3.])
@@ -112,8 +115,8 @@ children = ax.Children;
 
 k = fittedmdl.k;
 tt = linspace(0,max(children.BinEdges),500);
-% plot(tt, A*k^2.*tt.*exp(-k.*tt));
-% mdl_cdf = fittype('A*exp(-k*x)','indep','x');
+% plot(tt, max(children.Values)*k^2.*tt.*exp(-k.*tt)); %convolution of two exponentials
+mdl_cdf = fittype('A*exp(-k*x)','indep','x');
 plot(tt, max(children.Values)*exp(-k.*tt)); %single exponential
 
 if ~isempty(savename)
