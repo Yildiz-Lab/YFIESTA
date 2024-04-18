@@ -89,21 +89,24 @@ title ('backward dwell times')
 %% JS Edit 220307
 % make a CDF plot and fit
 subplot(2,3,5)
-obj0 = cdfplot(dwells_for);
-% obj0 = cdfplot(dwells)
+% obj0 = cdfplot(dwells_for);
+obj0 = cdfplot(dwells)
 xlabel('Time (s)');
 hold on
 
 % Define model according to https://www.mathworks.com/matlabcentral/answers/850245-how-to-do-curve-fitting-by-a-user-defined-function
 % mdl_gamma_pdf = fittype('A * x*k^2*exp(-k*x)','indep','x');
-mdl_gamma_cdf = fittype('real(gammainc(k*x,1))','indep','x'); %single exponential
-% mdl_gamma_cdf = fittype('real(gammainc(k*x,2))','indep','x');
+mdl_exp_cdf = fittype('real(gammainc(k*x,1))','indep','x'); %single exponential
+mdl_gamma_cdf = fittype('real(gammainc(k*x,2))','indep','x');
 X = obj0.XData(2:end-1); % get rid of infs
 Y = obj0.YData(2:end-1);
-fittedmdl = fit(X',Y',mdl_gamma_cdf,'start',[3.])
+fittedmdl = fit(X',Y',mdl_exp_cdf,'start',[3.])
+fittedmdl2 = fit(X',Y',mdl_gamma_cdf,'start',[3.])
 
-plot(fittedmdl)
-legend("Fitted k = "+num2str(fittedmdl.k))
+plot(fittedmdl,'r--')
+plot(fittedmdl2,'k--')
+legend(" ", "Fitted k = "+num2str(fittedmdl.k), "Fitted k2 = "+num2str(fittedmdl2.k))
+set(gca,'XLim',[0,2])
 
 subplot(2,3,4)
 hold on
@@ -112,9 +115,9 @@ children = ax.Children;
 
 k = fittedmdl.k;
 tt = linspace(0,max(children.BinEdges),500);
-% plot(tt, A*k^2.*tt.*exp(-k.*tt));
 % mdl_cdf = fittype('A*exp(-k*x)','indep','x');
-plot(tt, max(children.Values)*exp(-k.*tt)); %single exponential
+plot(tt, max(children.Values)*exp(-k.*tt), 'r--'); %single exponential
+plot(tt, max(children.Values)/max(k^2/2.*tt.*exp(-k.*tt))*k^2/2.*tt.*exp(-k.*tt), 'k--'); %double exponential
 
 if ~isempty(savename)
     savefig(savename)
