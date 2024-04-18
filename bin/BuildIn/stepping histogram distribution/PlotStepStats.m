@@ -66,23 +66,26 @@ fprintf(strcat("Side / forward stepping ", num2str(round(m,4)), " (", num2str(ro
 % JS 220207 IDK who thought setting the xlimits to 0.25 seconds was a good
 % idea, but getting rid of that allows us to see the plots.
 subplot(2,3,3)
-histogram(dwells, 'BinWidth', 0.01);
-set(gca,'XLim',[-0.05,0.8])
+histogram(dwells);
+% histogram(dwells, 'BinWidth', 0.01);
+% set(gca,'XLim',[-0.05,0.8])
 xlabel('Time (s)');
 ylabel('Counts');
 title ('dwell times')
 
 % Forward_Dwell histogram
 subplot(2,3,4)
-histogram(dwells_for,'BinWidth',0.01);
-set(gca,'XLim',[-0.05,0.8])
+histogram(dwells_for);
+% histogram(dwells_for,'BinWidth',0.01);
+% set(gca,'XLim',[-0.05,0.8])
 xlabel('Time (s)');
 title ('forward dwell times')
 
 % BackwardDwell histogram
 subplot(2,3,6)
-histogram(dwells_back,'BinWidth',0.01);
-set(gca,'XLim',[-0.05,0.8])
+histogram(dwells_back);
+% histogram(dwells_back,'BinWidth',0.01);
+% set(gca,'XLim',[-0.05,0.8])
 xlabel('Time (s)');
 title ('backward dwell times')
 
@@ -115,6 +118,7 @@ children = ax.Children;
 
 k = fittedmdl.k;
 tt = linspace(0,max(children.BinEdges),500);
+
 % mdl_cdf = fittype('A*exp(-k*x)','indep','x');
 plot(tt, max(children.Values)*exp(-k.*tt), 'r--'); %single exponential
 plot(tt, max(children.Values)/max(k^2/2.*tt.*exp(-k.*tt))*k^2/2.*tt.*exp(-k.*tt), 'k--'); %double exponential

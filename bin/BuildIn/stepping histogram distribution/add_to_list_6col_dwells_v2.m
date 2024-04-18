@@ -4,10 +4,12 @@ trace = varargin{1};
 use_thresh = varargin{2};
 dwells = varargin{3};
 time = varargin{4};
-if length(time) < 2
-    time = varargin{4}*0:length(trace(:,3))-1;
+% if length(time) < 2
+%     time = varargin{4}*0:length(trace(:,3))-1;
+% end
+if length(time) < length(trace(:,3))
+    time = (time(2)-time(1))*0:length(trace(:,3))-1;
 end
-
 cp = trace(:,5);
 usage = trace(:,6);
 limit = length(trace(:,3));
