@@ -36,8 +36,8 @@ fprintf(strcat("Backwards / forward stepping ", num2str(round(m,4)), " (", num2s
 % Off-axis step histogram
 subplot(2,3,2)
 histogram(offsteps,'BinWidth',1.5);
-axis([-40,48,0,100]);
-set(gca, 'XTick', [-80 -32 -24 -16 -8 0 8 16 24 32 40 100]);
+axis([-32,32,0,50]);
+set(gca, 'XTick', [-30 -25 -20 -15 -10 -5 0 5 10 15 20 25 30]);
 % ylim([0 70])
 xlabel('step size (nm)');
 title ('off-axis steps')
