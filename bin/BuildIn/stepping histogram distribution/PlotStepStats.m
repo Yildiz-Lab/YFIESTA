@@ -97,11 +97,13 @@ hold on
 % Define model according to https://www.mathworks.com/matlabcentral/answers/850245-how-to-do-curve-fitting-by-a-user-defined-function
 % mdl_gamma_pdf = fittype('A * x*k^2*exp(-k*x)','indep','x');
 mdl_exp_cdf = fittype('real(gammainc(k*x,1))','indep','x'); %single exponential
-mdl_gamma_cdf = fittype('real(gammainc(k*x,2))','indep','x');
+mdl_gamma_cdf = fittype('real(gammainc(k*x,2))','indep','x'); %k=2 fixed
+% mdl_gamma_mixed_cdf = fittype('k1*k2/(k1+k2)*(exp((-k1*x)+exp(-k2*x)))','indep','x');
 X = obj0.XData(2:end-1); % get rid of infs
 Y = obj0.YData(2:end-1);
 fittedmdl = fit(X',Y',mdl_exp_cdf,'start',[3.])
 fittedmdl2 = fit(X',Y',mdl_gamma_cdf,'start',[3.])
+% fittedmdlmix = fit(X',Y',mdl_gamma_mixed_cdf,'start',[3.])
 
 plot(fittedmdl,'r--')
 plot(fittedmdl2,'k--')
