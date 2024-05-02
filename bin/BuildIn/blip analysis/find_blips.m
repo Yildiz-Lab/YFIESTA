@@ -130,7 +130,7 @@ blips_percent = length(data.blips)/sum(data.trace(:,5))
 
 save(savename, 'data')
 
-plot(x_line(blip_idx), y_line(blip_idx), 'go', 'MarkerSize', 10);
+plot(x_line(blip_idx), y_line(blip_idx), 'ko', 'MarkerSize', 50);
 f.UserData.blips = data.blips;
 f.UserData.blips_percent = size(data.blips,1)/sum(data.trace(:,5));
 

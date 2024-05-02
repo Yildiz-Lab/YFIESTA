@@ -37,10 +37,11 @@ for i = 1:length(blip_idx)
     if xidx < bidx
         n = -1; % the step is before the blip
     end
-    
+
     % now calculate time
     
-    dt(i) = n*(time(xidx-ceil(0.5*n)) - time(bidx+n)); 
+    % dt(i) = n*(time(xidx-ceil(0.5*n)) - time(bidx+n))
+    dt(i) = n*(time(xidx) - time(bidx+ceil(0.5*n)));
     if dt(i) < 0 %ignore if dt is negative, there was an error picking blips
         dt(i) = NaN;
     end
