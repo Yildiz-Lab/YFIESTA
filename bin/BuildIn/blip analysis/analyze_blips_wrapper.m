@@ -70,7 +70,8 @@ ttest2(blipin,blipout)
 % cdf
 mdl_exp_cdf = fittype('real(gammainc(k*x,1))','indep','x');
 xcdf = sort(dt(~isnan(dt)));
-ycdf = (1:length(dt(~isnan(dt))))/length(dt(~isnan(dt)));
+% xcdf = xcdf(xcdf>0.003);
+ycdf = (1:length(xcdf))/length(xcdf);
 cdffit = fit(xcdf',ycdf',mdl_exp_cdf,'start',[0.001])
 
 f0 = figure();
@@ -78,6 +79,8 @@ histogram(blipin,'BinWidth',2,'Normalization','probability','DisplayName','By st
 hold on
 histogram(blipout,'BinWidth',2,'Normalization','probability','DisplayName','Away from step')
 legend('Location','northwest')
+% set(gcf,"Position",[360,360,600,260])
+
 
 f = figure();
 subplot(1,2,1)
@@ -86,14 +89,27 @@ hh = histogram(dt);
 hh.BinWidth = 0.002;
 ax.YLim = [0,90];
 ax.XLim = [-0.002,0.024];
-
+hold on
+xlin = 0:0.0001:0.03;
+plot(xlin,1.5*max(hh.Values)*exp(-cdffit.k*xlin),'LineWidth',2,'Color','r')
+ax.LineWidth = 0.75; % Set the axes linewidth
+ax.XColor = 'k'; % Set the color of x-axis
+ax.YColor = 'k'; % Set the color of y-axis
+set(ax, 'XColor', 'k', 'YColor', 'k'); % Set font size for axis labels and ticks, and set color of axes lines
+set(findall(gca, 'Type', 'Text'), 'Color', 'k', 'FontName', 'Arial', 'FontSize', 10); % Set the color of all text objects to black
 
 subplot(1,2,2)
 hh = histogram(dx);
 ax = gca;
 hh.BinWidth = 2;
 ax.YLim = [0,58];
-ax.XLim = [-42,2];
+ax.XLim = [-56,2];
+ax.LineWidth = 0.75; % Set the axes linewidth
+ax.XColor = 'k'; % Set the color of x-axis
+ax.YColor = 'k'; % Set the color of y-axis
+set(ax, 'FontName', 'Arial', 'FontSize', 10, 'XColor', 'k', 'YColor', 'k'); % Set font size for axis labels and ticks, and set color of axes lines
+set(findall(gca, 'Type', 'Text'), 'Color', 'k', 'FontName', 'Arial', 'FontSize', 10); % Set the color of all text objects to black
+set(gcf,"Position",[360,360,600,260])
 
 % f2 = figure();
 % % dt steps > 0
@@ -139,16 +155,31 @@ hh2 = histogram(dt(step < 0));
 hh.BinWidth = 0.002; hh2.BinWidth = hh.BinWidth;
 ax.YLim = [0,60];
 ax.XLim = [-0.002,0.024];
+ax.LineWidth = 0.75; % Set the axes linewidth
+ax.XColor = 'k'; % Set the color of x-axis
+ax.YColor = 'k'; % Set the color of y-axis
+ax.LineWidth = 0.75; % Set the axes linewidth
+ax.XColor = 'k'; % Set the color of x-axis
+ax.YColor = 'k'; % Set the color of y-axis
+set(ax, 'FontName', 'Arial', 'FontSize', 10, 'XColor', 'k', 'YColor', 'k'); % Set font size for axis labels and ticks, and set color of axes lines
+set(findall(gca, 'Type', 'Text'), 'Color', 'k', 'FontName', 'Arial', 'FontSize', 10); % Set the color of all text objects to black
 
 % dx steps > 0
 subplot(1,2,2)
 hold on
-hh = histogram(dx(step > 0));
-hh2 = histogram(dx(step < 0));
+hh = histogram(dx(step > 0),'DisplayName','Before forward');
+hh2 = histogram(dx(step < 0),'DisplayName','After backward');
 ax = gca;
 hh.BinWidth = 2; hh2.BinWidth = hh.BinWidth;
 ax.YLim = [0,40];
 ax.XLim = [-56,2];
+legend('Location','Northwest','FontName', 'Arial', 'FontSize', 10)
+ax.LineWidth = 0.75; % Set the axes linewidth
+ax.XColor = 'k'; % Set the color of x-axis
+ax.YColor = 'k'; % Set the color of y-axis
+set(ax, 'FontName', 'Arial', 'FontSize', 10, 'XColor', 'k', 'YColor', 'k'); % Set font size for axis labels and ticks, and set color of axes lines
+set(findall(gca, 'Type', 'Text'), 'Color', 'k', 'FontName', 'Arial', 'FontSize', 10); % Set the color of all text objects to black
 
+set(gcf,"Position",[360,360,600,260])
 
 end
