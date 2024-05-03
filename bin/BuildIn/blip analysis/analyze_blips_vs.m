@@ -1,4 +1,4 @@
-function [blipin, blipout, totpts, totsteps] = analyze_blips_vs(data)
+function [blipin, blipout, ptsin, ptsout, totpts, totsteps] = analyze_blips_vs(data)
 
 % this is basically just find_blips again, but used to report blips that
 % were included in the before steps and ones not for sake of p-value
@@ -146,6 +146,9 @@ totpts = length(data.trace(:,1));
 
 blipin = dx_mean_subtract(intersect_mask);
 blipout = dx_mean_subtract(outsider_mask);
+
+ptsin = dx_mean_subtract(and(window_mask,window_mask));
+ptsout = dx_mean_subtract(and(~window_mask,~window_mask));
 
 end
 end
