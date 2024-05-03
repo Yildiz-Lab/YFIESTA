@@ -27,6 +27,7 @@ fnum = length(f);
 dt = [];
 dx = []; step = [];
 blipin = []; blipout = [];
+ptsin = []; ptsout = []; % this is so unnecessary, but for a ttest I have to do some stupid things
 totpts = 0; stepnum = 0;
 
 for i=1:fnum
@@ -48,8 +49,9 @@ for i=1:fnum
     if isfield(steptrace,'data')
     [dtprime, dxprime, stepprime] = analyze_blips(steptrace.data);
     dt = [dt, dtprime]; dx = [dx, dxprime]; step = [step, stepprime];
-    [bin, bout, pts, num] = analyze_blips_vs(steptrace.data);
+    [bin, bout, pin, pout, pts, num] = analyze_blips_vs(steptrace.data);
     blipin = [blipin; bin]; blipout = [blipout; bout];
+    ptsin = [ptsin; pin]; ptsout = [ptsout; pout];
     totpts = totpts + pts; stepnum = stepnum + num;
 
     if mean(blipout) < -30
@@ -60,12 +62,15 @@ for i=1:fnum
 
 end
 
-fprintf(strcat("Prob inside window (window size 3): ", num2str(round(length(blipin)/(3*stepnum),2)),"\n"))
+[mu,s1,s2] = beta_confidence(length(blipin),length(ptsin));
+fprintf(strcat("Prob inside window (window size 3): ", num2str(round(mu,3)), " +/- [", num2str(round(s1,3)), ", ", num2str(round(s2,3)), "]", "\n"))
 fprintf(strcat("Size ",num2str(round(-mean(blipin),2))," +/- ",num2str(round(std(blipin),2)),"\n"))
-fprintf(strcat("Prob outside window: ", num2str(round(length(blipout)/(totpts-3*stepnum),2)),"\n"))
+
+[mu,s1,s2] = beta_confidence(length(blipout),length(ptsout));
+fprintf(strcat("Prob outside window: ", num2str(round(mu,3)), " +/- [", num2str(round(s1,3)), ", ", num2str(round(s2,3)), "]", "\n"))
 fprintf(strcat("Size ",num2str(round(-mean(blipout),2))," +/- ",num2str(round(std(blipout),2)),"\n"))
 
-ttest2(blipin,blipout)
+ttest2(ptsin,ptsout)
 
 % cdf
 mdl_exp_cdf = fittype('real(gammainc(k*x,1))','indep','x');
