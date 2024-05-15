@@ -24,7 +24,7 @@ if nargin < 2
     return
 end
 
-if fnum > 1
+if fnum > 1 
     for i=fnum:-1:1
         if contains(f(i).name,'._') %JS Edit to ignore extra '._' that randomly show up sometimes MAC
         f(i) = [];
@@ -62,9 +62,9 @@ for i=1:fnum
     data_yx = trace.trace_yx;
     
     % if want to merge_step_components
-    trace = merge_step_components(trace);
-    data = trace.trace_2d;
-    data_yx = trace.trace_2d;
+%     trace = merge_step_components(trace);
+%     data = trace.trace_2d
+%     data_yx = trace.trace_2d
     
     %JS Edit 2024/03/07 for loading MINFLUX times rather than framerate
     if isfield(trace,'time')
