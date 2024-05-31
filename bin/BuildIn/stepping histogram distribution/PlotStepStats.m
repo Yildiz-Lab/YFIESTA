@@ -1,7 +1,12 @@
-function PlotStepStats(tracenum, onsteps, offsteps, dwells, dwells_for, dwells_back, savename)
+function PlotStepStats(tracenum, onsteps, offsteps, dwells, dwells_for, dwells_back, options, savename)
 %Plot the characteristic statistics in nice figures
 
 if nargin < 7
+    options.Poissonk1 = 1;
+    options.Poissonk2 = 1;
+    options.FwdDwells = 1;
+    savename = [];
+elseif nargin < 8
     savename = [];
 end
 
@@ -92,8 +97,11 @@ title ('backward dwell times')
 %% JS Edit 220307
 % make a CDF plot and fit
 subplot(2,3,5)
-% obj0 = cdfplot(dwells_for);
-obj0 = cdfplot(dwells)
+if options.FwdDwells
+    obj0 = cdfplot(dwells_for);
+else
+    obj0 = cdfplot(dwells);
+end
 xlabel('Time (s)');
 hold on
 
@@ -104,26 +112,39 @@ mdl_gamma_cdf = fittype('real(gammainc(k*x,2))','indep','x'); %k=2 fixed
 % mdl_gamma_mixed_cdf = fittype('k1*k2/(k1+k2)*(exp((-k1*x)+exp(-k2*x)))','indep','x');
 X = obj0.XData(2:end-1); % get rid of infs
 Y = obj0.YData(2:end-1);
-fittedmdl = fit(X',Y',mdl_exp_cdf,'start',[3.])
-fittedmdl2 = fit(X',Y',mdl_gamma_cdf,'start',[3.])
 % fittedmdlmix = fit(X',Y',mdl_gamma_mixed_cdf,'start',[3.])
 
-plot(fittedmdl,'r--')
-plot(fittedmdl2,'k--')
-legend(" ", "Fitted k = "+num2str(fittedmdl.k), "Fitted k2 = "+num2str(fittedmdl2.k))
-set(gca,'XLim',[0,2])
+if options.Poissonk1
+    fittedmdl = fit(X',Y',mdl_exp_cdf,'start',[3.])
+plot(X',fittedmdl(X'),'r--','DisplayName',"Fitted 1/theta = "+num2str(fittedmdl.k))
+end
+if options.Poissonk2
+    fittedmdl2 = fit(X',Y',mdl_gamma_cdf,'start',[3.])
+plot(X',fittedmdl2(X'),'k--','DisplayName',"Fitted 1/theta2 = "+num2str(fittedmdl2.k))
+end
+legend()
+% set(gca,'XLim',[0,2])
 
-subplot(2,3,4)
+if options.FwdDwells
+    subplot(2,3,4)
+else
+    subplot(2,3,3)
+end
 hold on
 ax = gca;
 children = ax.Children;
 
-k = fittedmdl.k;
 tt = linspace(0,max(children.BinEdges),500);
 
 % mdl_cdf = fittype('A*exp(-k*x)','indep','x');
+if options.Poissonk1
+    k = fittedmdl.k;
 plot(tt, max(children.Values)*exp(-k.*tt), 'r--'); %single exponential
+end
+if options.Poissonk2
+    k = fittedmdl2.k;
 plot(tt, max(children.Values)/max(k^2/2.*tt.*exp(-k.*tt))*k^2/2.*tt.*exp(-k.*tt), 'k--'); %double exponential
+end
 
 if ~isempty(savename)
     savefig(savename)

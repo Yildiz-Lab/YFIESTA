@@ -62,9 +62,11 @@ for i=1:fnum
     data_yx = trace.trace_yx;
     
     % if want to merge_step_components
-%     trace = merge_step_components(trace);
-%     data = trace.trace_2d
-%     data_yx = trace.trace_2d
+    if options.Merge
+        trace = merge_step_components(trace);
+        data = trace.trace_2d;
+        data_yx = trace.trace_2d;
+    end
     
     %JS Edit 2024/03/07 for loading MINFLUX times rather than framerate
     if isfield(trace,'time')

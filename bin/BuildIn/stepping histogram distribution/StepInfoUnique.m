@@ -26,7 +26,7 @@ fnames = cell(fnum,1);
 for i = 1:fnum
     fnames{i} = f(i).name;
     fullname = strcat(rootfolder,f(i).name);
-    StatsArr = FillStatsArray(StatsArr, fullname, i, framerate); 
+    StatsArr = FillStatsArray(StatsArr, fullname, i, framerate, options); 
 end
 
 StatsTable = ConvertToTable(StatsArr, fnames);
@@ -67,9 +67,9 @@ end
 
 
 %% AND EXTENDED FUNCTIONS
-function StatsArr = FillStatsArray(StatsArr, fullname, row, framerate)
+function StatsArr = FillStatsArray(StatsArr, fullname, row, framerate, options)
 i = row;
-[~,ONsteps,OFFsteps,dwells,dwells_for,dwells_back] = StepandDwellHist_subfn(fullname, 0, framerate);
+[~,ONsteps,OFFsteps,dwells,dwells_for,dwells_back] = StepandDwellHist_subfn(fullname, 0, framerate, options);
 
 % Put whatever individual stats you want, but make sure to change it in
 % FillNeighborStatsArray as well

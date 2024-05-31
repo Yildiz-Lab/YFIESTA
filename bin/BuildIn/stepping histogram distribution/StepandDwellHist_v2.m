@@ -18,6 +18,7 @@
 function [ONsteps,OFFsteps,dwells,dwells_for,dwells_back] = StepandDwellHist_v2(directory,threshold,framerate,options)
 % Default threshold is 0.
 
+options
 [fnum,ONsteps,OFFsteps,dwells,dwells_for,dwells_back] = StepandDwellHist_subfn(directory,threshold,framerate,options);
 
 % JS Edit 2022/11/11
@@ -26,7 +27,7 @@ function [ONsteps,OFFsteps,dwells,dwells_for,dwells_back] = StepandDwellHist_v2(
 % Also option for common titles eventually?
 
 if ~isfile(directory) %only plot for summary
-PlotStepStats(fnum, ONsteps, OFFsteps, dwells, dwells_for, dwells_back, fullfile(directory,"AllStats.fig"))
+PlotStepStats(fnum, ONsteps, OFFsteps, dwells, dwells_for, dwells_back, options, fullfile(directory,"AllStats.fig"))
 StepInfoUnique(options,framerate,fullfile(directory,'/'))
 end
 
