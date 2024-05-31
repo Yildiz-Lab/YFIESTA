@@ -33,7 +33,7 @@ hold on
 ax = gca;
 polarplot(median(theta(fwd_mask),'omitnan')*[1,1],[0,ax.RLim(2)],'r--')
 polarplot(median(theta(~fwd_mask),'omitnan')*[1,1],[0,ax.RLim(2)],'r--')
-fprintf(strcat("Mean fwd theta (deg): ", num2str(mean(theta(fwd_mask)*180/pi,'omitnan')), "\n"))
+fprintf(strcat("Mean fwd theta (deg): ", num2str(mean(theta(fwd_mask)*180/pi,'omitnan')), "+/-", num2str(std(theta(fwd_mask)*180/pi,'omitnan')), "\n"))
 set(gca,'ThetaZeroLocation','top')
 
 % subplot(2,2,3)
@@ -49,9 +49,17 @@ set(gca,'ThetaZeroLocation','top')
 x = r.*cos(theta);
 y = r.*sin(theta);
 
-
 subplot(1,3,3)
-hist3([y',x'], 'CDataMode','auto','Ctrs', {-20:10:20, -32:2:42});
+% hist3([y',x'], 'CDataMode','auto','Ctrs', {-20:10:20, -32:2:42});
+% fig = figure('Position',[300,300,600,1200]);
+% subplot(1,3,3)
+% hist3([y',x'], 'CDataMode','auto','Ctrs', {-20:5:20, -30:2:40});
+% hist3([y',x'], 'CDataMode','auto','Ctrs', {-21:1.5:21, -33:1.5:42});
+% hist3([y',x'], 'CDataMode','auto','Ctrs', {-21:3:21, -33:3:42});
+z = hist3([y',x'], 'CDataMode','auto','Ctrs', {-20:2.5:20, -33:3:42});
+colormap('hot')
+% caxis([0, max(max(z))]);
+
 view(2)
 % imagesc(flipud(hh3))
 ax = gca;

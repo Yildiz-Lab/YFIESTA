@@ -66,11 +66,20 @@ end
 fprintf(strcat("Prob inside window (window size 3): ", num2str(round(mu,3)), " +/- [", num2str(round(s1,3)), ", ", num2str(round(s2,3)), "]", "\n"))
 fprintf(strcat("Size ",num2str(round(-mean(blipin),2))," +/- ",num2str(round(std(blipin),2)),"\n"))
 
-[mu,s1,s2] = beta_confidence(length(blipout),length(ptsout));
-fprintf(strcat("Prob outside window: ", num2str(round(mu,3)), " +/- [", num2str(round(s1,3)), ", ", num2str(round(s2,3)), "]", "\n"))
+[mu0,s10,s20] = beta_confidence(length(blipout),length(ptsout));
+fprintf(strcat("Prob outside window: ", num2str(round(mu0,3)), " +/- [", num2str(round(s10,3)), ", ", num2str(round(s20,3)), "]", "\n"))
 fprintf(strcat("Size ",num2str(round(-mean(blipout),2))," +/- ",num2str(round(std(blipout),2)),"\n"))
 
-ttest2(ptsin,ptsout)
+fn1 = figure();
+hold on
+c_on = bar(1:2,[mu,mu0]);
+er = errorbar(1:2,[mu,mu0],[s1-mu,s10-mu0],[s2-mu,s20-mu0],'Color',[0 0 0],'LineStyle','none','LineWidth',1);
+ax = gca;
+ax.YLim = [0,0.08];
+ax.XLim = [0.3,2.7];
+set(gcf,"Position",[250,250,200,300])
+
+% ttest2(ptsin,ptsout)
 
 % cdf
 mdl_exp_cdf = fittype('real(gammainc(k*x,1))','indep','x');
