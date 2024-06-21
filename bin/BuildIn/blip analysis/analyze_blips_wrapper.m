@@ -30,6 +30,14 @@ blipin = []; blipout = [];
 ptsin = []; ptsout = []; % this is so unnecessary, but for a ttest I have to do some stupid things
 totpts = 0; stepnum = 0;
 
+% compiled steps with modded means, define what histogram binsize you want
+% 
+time_mean_modded_bins = 0:0.0005:0.05;
+min_step_length = 0.05;
+% mean_modded = struct(0,2); % storage of forward and backward cells
+fwd_mean_modded = cell(0,1);
+bwd_mean_modded = cell(0,1);
+
 for i=1:fnum
     
     if isfile(directory)
@@ -49,10 +57,14 @@ for i=1:fnum
     if isfield(steptrace,'data')
     [dtprime, dxprime, stepprime] = analyze_blips(steptrace.data);
     dt = [dt, dtprime]; dx = [dx, dxprime]; step = [step, stepprime];
+    
     [bin, bout, pin, pout, pts, num] = analyze_blips_vs(steptrace.data);
     blipin = [blipin; bin]; blipout = [blipout; bout];
     ptsin = [ptsin; pin]; ptsout = [ptsout; pout];
     totpts = totpts + pts; stepnum = stepnum + num;
+    
+    m = length(fwd_mean_modded);
+    [fwd_mean_modded{m+1}, bwd_mean_modded{m+1}] = align_to_step_mod_mean(steptrace.data,min_step_length);
 
     if mean(blipout) < -30
         fprintf(fname)
@@ -61,6 +73,8 @@ for i=1:fnum
     end
 
 end
+
+plot_step_mod_mean(fwd_mean_modded,bwd_mean_modded,time_mean_modded_bins)
 
 [mu,s1,s2] = beta_confidence(length(blipin),length(ptsin));
 fprintf(strcat("Prob inside window (window size 3): ", num2str(round(mu,3)), " +/- [", num2str(round(s1,3)), ", ", num2str(round(s2,3)), "]", "\n"))
@@ -86,8 +100,10 @@ mdl_exp_cdf = fittype('real(gammainc(k*x,1))','indep','x');
 xcdf = sort(dt(~isnan(dt)));
 % xcdf = xcdf(xcdf>0.003);
 ycdf = (1:length(xcdf))/length(xcdf);
-cdffit = fit(xcdf',ycdf',mdl_exp_cdf,'start',[0.001])
-
+% weight matrix, goes as sqrt(time) since more time means more data points,
+% less variance by sqrt(time)
+w = xcdf; w(xcdf < 0.003) = 0; w = sqrt(w);
+cdffit = fit(xcdf',ycdf',mdl_exp_cdf,'start',[300],'Weights',w)
 f0 = figure();
 histogram(blipin,'BinWidth',2,'Normalization','probability','DisplayName','By step')
 hold on
@@ -100,12 +116,12 @@ f = figure();
 subplot(1,2,1)
 ax = gca;
 hh = histogram(dt);
-hh.BinWidth = 0.002;
-ax.YLim = [0,90];
-ax.XLim = [-0.002,0.024];
+hh.BinWidth = 0.001;
+ax.YLim = [0,110];
+ax.XLim = [-0.002,0.012];
 hold on
-xlin = 0:0.0001:0.03;
-plot(xlin,1.5*max(hh.Values)*exp(-cdffit.k*xlin),'LineWidth',2,'Color','r')
+xlin = 0:0.0001:0.012;
+plot(xlin,2*max(hh.Values)*exp(-cdffit.k*xlin),'LineWidth',2,'Color','r')
 ax.LineWidth = 0.75; % Set the axes linewidth
 ax.XColor = 'k'; % Set the color of x-axis
 ax.YColor = 'k'; % Set the color of y-axis
@@ -166,9 +182,9 @@ hold on
 ax = gca;
 hh = histogram(dt(step > 0));
 hh2 = histogram(dt(step < 0));
-hh.BinWidth = 0.002; hh2.BinWidth = hh.BinWidth;
-ax.YLim = [0,60];
-ax.XLim = [-0.002,0.024];
+hh.BinWidth = 0.001; hh2.BinWidth = hh.BinWidth;
+ax.YLim = [0,90];
+ax.XLim = [-0.002,0.012];
 ax.LineWidth = 0.75; % Set the axes linewidth
 ax.XColor = 'k'; % Set the color of x-axis
 ax.YColor = 'k'; % Set the color of y-axis
@@ -185,7 +201,7 @@ hh = histogram(dx(step > 0),'DisplayName','Before forward');
 hh2 = histogram(dx(step < 0),'DisplayName','After backward');
 ax = gca;
 hh.BinWidth = 2; hh2.BinWidth = hh.BinWidth;
-ax.YLim = [0,40];
+ax.YLim = [0,85];
 ax.XLim = [-56,2];
 legend('Location','Northwest','FontName', 'Arial', 'FontSize', 10)
 ax.LineWidth = 0.75; % Set the axes linewidth

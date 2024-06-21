@@ -872,6 +872,17 @@ for k = 1:length(FileName)
     end
 end
 
+if isempty(Config.Directory{1})
+    for k = 1:length(FileName)
+        [~,fname1,ext] = fileparts(fullfile(PathName,FileName{k}));
+        FileName{k} = strcat(fname1,ext); %remove it
+        % and set the directory for FIONA
+        Config.Directory{k}=PathName;
+        Config.StackName{k}=FileName{k};
+        hMainGui.Directory.Stack={PathName};
+    end
+end
+
 % End of JS edit
 
 if PathName~=0

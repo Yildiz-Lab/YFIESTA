@@ -26,6 +26,8 @@ dx = nan(1,length(blip_idx));
 step = nan(1,length(blip_idx));
 
 % find step nearest the blip
+numsig1 = 0;
+% numsig2 = 0;
 for i = 1:length(blip_idx)
     bidx = blip_idx(i);
     [~,idx] = min(abs(xsteps_idx - bidx));
@@ -59,6 +61,14 @@ for i = 1:length(blip_idx)
     xfilt = xblip(xblip < xsteps(bidx));
     % xfilt = x(bidx+n:n:xidx-ceil(0.5*n));
     meanblip = mean(xfilt,'omitnan');
+    [h1,~] = ttest(xblip - xsteps(bidx+n:n:xidx-ceil(0.5*n)));
+    % [h2,~] = ttest2(xblip,xsteps(bidx+n:n:xidx-ceil(0.5*n)));
+    if ~isnan(h1)
+    numsig1 = numsig1 + h1;
+    end
+    % if ~isnan(h2)
+    % numsig2 = numsig2 + h2;
+    % end
     
     % Option for nearest step in size (i.e. before if jump forward, after
     % if jump backward)
@@ -87,6 +97,11 @@ for i = 1:length(blip_idx)
     end
     
 end
+
+
+fprintf(strcat('(', num2str(length(blip_idx)), ',' , num2str(numsig1), ') / ',num2str(sum(xsteps_bool)),'\n'))
+% fprintf(strcat(num2str(numsig2),' / ',num2str(sum(xsteps_bool)),'\n'))
+
 
 % blip_idx
 % step

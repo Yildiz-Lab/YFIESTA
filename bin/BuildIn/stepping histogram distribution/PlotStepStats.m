@@ -4,6 +4,7 @@ function PlotStepStats(tracenum, onsteps, offsteps, dwells, dwells_for, dwells_b
 if nargin < 7
     options.Poissonk1 = 1;
     options.Poissonk2 = 1;
+    options.DoubleExp = 1;
     options.FwdDwells = 1;
     savename = [];
 elseif nargin < 8
@@ -71,26 +72,26 @@ fprintf(strcat("Side / forward stepping ", num2str(round(m,4)), " (", num2str(ro
 % JS 220207 IDK who thought setting the xlimits to 0.25 seconds was a good
 % idea, but getting rid of that allows us to see the plots.
 subplot(2,3,3)
-histogram(dwells);
-% histogram(dwells, 'BinWidth', 0.01);
-% set(gca,'XLim',[-0.05,0.8])
+% histogram(dwells);
+histogram(dwells, 'BinWidth', 0.01);
+set(gca,'XLim',[-0.05,0.8])
 xlabel('Time (s)');
 ylabel('Counts');
 title ('dwell times')
 
 % Forward_Dwell histogram
 subplot(2,3,4)
-histogram(dwells_for);
-% histogram(dwells_for,'BinWidth',0.01);
-% set(gca,'XLim',[-0.05,0.8])
+% histogram(dwells_for);
+histogram(dwells_for,'BinWidth',0.01);
+set(gca,'XLim',[-0.05,0.8])
 xlabel('Time (s)');
 title ('forward dwell times')
 
 % BackwardDwell histogram
 subplot(2,3,6)
-histogram(dwells_back);
-% histogram(dwells_back,'BinWidth',0.01);
-% set(gca,'XLim',[-0.05,0.8])
+% histogram(dwells_back);
+histogram(dwells_back,'BinWidth',0.01);
+set(gca,'XLim',[-0.05,0.8])
 xlabel('Time (s)');
 title ('backward dwell times')
 
@@ -109,19 +110,44 @@ hold on
 % mdl_gamma_pdf = fittype('A * x*k^2*exp(-k*x)','indep','x');
 mdl_exp_cdf = fittype('real(gammainc(k*x,1))','indep','x'); %single exponential
 mdl_gamma_cdf = fittype('real(gammainc(k*x,2))','indep','x'); %k=2 fixed
+% also should work: fittype(gamcdf(x,2,1/k))
 % mdl_gamma_mixed_cdf = fittype('k1*k2/(k1+k2)*(exp((-k1*x)+exp(-k2*x)))','indep','x');
+mdl_de_cdf = fittype('1-((p)*exp(-a*x) + (1-p)*exppdf(-b*x))','indep','x');
 X = obj0.XData(2:end-1); % get rid of infs
 Y = obj0.YData(2:end-1);
 % fittedmdlmix = fit(X',Y',mdl_gamma_mixed_cdf,'start',[3.])
+xsortminusnan = sort(dwells);
+xsortminusnan = xsortminusnan(~isnan(xsortminusnan));
+n = size(xsortminusnan,1);
+p = ((1:n)-0.5)' ./ n;
+ylog = -log(1 - p);
+muHat = ylog \ xsortminusnan
+muMLE = expfit(xsortminusnan)
 
 if options.Poissonk1
-    fittedmdl = fit(X',Y',mdl_exp_cdf,'start',[3.])
-plot(X',fittedmdl(X'),'r--','DisplayName',"Fitted 1/theta = "+num2str(fittedmdl.k))
+    [fittedmdl,gof] = fit(X',Y',mdl_exp_cdf,'start',[3.])
+    cfint = confint(fittedmdl);
+plot(X',fittedmdl(X'),'r--','DisplayName',"Fitted 1/theta = "+num2str(round(fittedmdl.k,1))+" ("+num2str(round(cfint(1),1))+","+num2str(round(cfint(2),1))+") R2="+num2str(round(gof.rsquare,2)))
 end
 if options.Poissonk2
-    fittedmdl2 = fit(X',Y',mdl_gamma_cdf,'start',[3.])
-plot(X',fittedmdl2(X'),'k--','DisplayName',"Fitted 1/theta2 = "+num2str(fittedmdl2.k))
+    [fittedmdl2,gof2] = fit(X',Y',mdl_gamma_cdf,'start',[3.])
+    cfint2 = confint(fittedmdl2);
+plot(X',fittedmdl2(X'),'k--','DisplayName',"Fitted 1/theta2 = "+num2str(round(fittedmdl2.k,1))+" ("+num2str(round(cfint2(1),1))+","+num2str(round(cfint2(2),1))+") R2="+num2str(round(gof2.rsquare,2)))
 end
+if options.DoubleExp
+    % double exponential is 1 - (p*exp(-a*x)+(1-p)*exp(-b*x))
+    % de_pdf = @(x,p,a,b) (p)*exppdf(x,a) + (1-p)*exppdf(x,b);
+    opts = fitoptions('Method', 'NonlinearLeastSquares', ...
+                     'Lower',[0. 0. 0.], 'Upper',[200. 200. 1.]);
+    [fittedmdl3,gof3] = fit(X',Y',mdl_de_cdf,opts) %,'start',[3.,3.,0.5])
+    % mle(dwells,'pdf',de_pdf,'start',[.5,-2,-3])
+    plot(X',fittedmdl3(X'),'b--','DisplayName',"Fitted p = "+num2str(fittedmdl3.p))
+end
+mdl_glue_cdf = fittype('1-(p*exp(-a*x) + (1-p)*real(gammainc(b*x,2)))','indep','x')
+opts = fitoptions('Method', 'NonlinearLeastSquares', ...
+                     'Lower',[0. 15. 0.], 'Upper',[200. 30. 1.]);
+[fittedmdl4,gof4] = fit(X',Y',mdl_glue_cdf,opts) %,'start',[3.,3.,0.5])
+
 legend()
 % set(gca,'XLim',[0,2])
 

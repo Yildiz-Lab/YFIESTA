@@ -48,6 +48,10 @@ uid = unique(MFData.tid);
 
 Colorwheel = [0,0,1; 0,1,0; 1,0,0];
 
+% for tracking, we only care about the last index, so make sure we only
+% grab the last index
+lastitr = size(MFData.itr.loc,2);
+
 for j = 1:length(uid)
 
     idx = find(MFData.tid == uid(j));
@@ -65,8 +69,8 @@ for j = 1:length(uid)
     MFMolecule(j).Results = nan(length(idx),10);
     MFMolecule(j).Results(:,1) = idx';
     MFMolecule(j).Results(:,2) = MFData.tim(idx)'; %s
-    MFMolecule(j).Results(:,3) = MFData.itr.loc(idx,4,1)*10^9; %converted to nm
-    MFMolecule(j).Results(:,4) = MFData.itr.loc(idx,4,2)*10^9;
+    MFMolecule(j).Results(:,3) = MFData.itr.loc(idx,lastitr,1)*10^9; %converted to nm
+    MFMolecule(j).Results(:,4) = MFData.itr.loc(idx,lastitr,2)*10^9;
     % MFMolecule(j).Results(:,5) = MFData.itr.loc(:,4,3)*10^9;
     MFMolecule(j).Results(:,5) = nan(length(idx),1);
     MFMolecule(j).Results(:,6) = pdist2(MFMolecule(j).Results(:,3:4), MFMolecule(j).Results(1,3:4));
@@ -74,18 +78,18 @@ for j = 1:length(uid)
     MFMolecule(j).Results(:,8) = sum(MFData.itr.eco(idx,:),2); %this is now the eco
     MFMolecule(j).Results(:,9) = nan(length(idx),1);
     MFMolecule(j).Results(:,10) = zeros(length(idx),1);
-    
+    length(MFMolecule(j).Results)
     
     % remove ending nans based on xpos, it messes up our distance calculation
     if sum(~isnan(MFMolecule(j).Results(:,3))) > 0
-    nni = ~isnan(MFData.itr.loc(idx,4,1)); %not nan index
+    nni = ~isnan(MFData.itr.loc(idx,lastitr,1)); %not nan index
     
     MFMolecule(j).Results = []; %clear it
     MFMolecule(j).Results = nan(length(idx(nni)),10); %reset it
     MFMolecule(j).Results(:,1) = idx(nni)';
     MFMolecule(j).Results(:,2) = MFData.tim(idx(nni))'; %s
-    MFMolecule(j).Results(:,3) = MFData.itr.loc(idx(nni),4,1)*10^9; %converted to nm
-    MFMolecule(j).Results(:,4) = MFData.itr.loc(idx(nni),4,2)*10^9;
+    MFMolecule(j).Results(:,3) = MFData.itr.loc(idx(nni),lastitr,1)*10^9; %converted to nm
+    MFMolecule(j).Results(:,4) = MFData.itr.loc(idx(nni),lastitr,2)*10^9;
     % MFMolecule(j).Results(:,5) = MFData.itr.loc(:,4,3)*10^9;
     MFMolecule(j).Results(:,5) = nan(length(idx(nni)),1);
     MFMolecule(j).Results(:,6) = pdist2(MFMolecule(j).Results(:,3:4), MFMolecule(j).Results(1,3:4));
@@ -94,6 +98,7 @@ for j = 1:length(uid)
     MFMolecule(j).Results(:,9) = nan(length(idx(nni)),1);
     MFMolecule(j).Results(:,10) = zeros(length(idx(nni)),1);
     end
+    length(MFMolecule(j).Results)
 
     % Mostly fixed
     MFMolecule(j).Type = 'symmetric';
