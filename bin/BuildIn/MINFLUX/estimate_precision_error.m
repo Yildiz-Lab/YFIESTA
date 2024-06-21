@@ -40,7 +40,7 @@ for i=1:fnum
         % end
         steptrace = load(fullfile(d,strcat(f,e)));
     else
-        fname = f(i).name;
+        fname = f(i).name
         % if contains(fname,'._') %JS Edit to delete extra ._ from an error
         % fname = fname(3:end);
         % end
@@ -52,6 +52,9 @@ for i=1:fnum
         data = steptrace.data;
         dr = [dr; sqrt( (data.trace(1:end-1,1)-data.trace(2:end,1)).^2 + (data.trace(1:end-1,2)-data.trace(2:end,2)).^2 )];
         dt = [dt; data.time(2:end)-data.time(1:end-1)];
+        % trace specific
+        drind = sqrt(var(sqrt( (data.trace(1:end-1,1)-data.trace(2:end,1)).^2 + (data.trace(1:end-1,2)-data.trace(2:end,2)).^2 ),'omitnan'))/sqrt(2)
+        dtind = mean(data.time(2:end)-data.time(1:end-1),'omitnan')
     end
 
 end

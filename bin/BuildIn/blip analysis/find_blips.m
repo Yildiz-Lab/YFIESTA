@@ -50,19 +50,20 @@ end
 % okay look at all data and find points that are >2*sigma dips
 two_sigma_mask = data.trace(:,1) < data.trace(:,3)-2*sigma;
 step_idx = find(data.trace(:,5) > 0);
+x_line(step_idx)
 step_sign = sign(data.trace(step_idx,3) - data.trace(step_idx-1,3));
 
 % make a mask that goes window before a forward step and window after a
 % backward step
 window_mask = zeros(length(data.trace(:,1)),1);
 
-set_window = 5;
+set_window = 20; %5 low time res; %20 7.0 power high res; %25 8.0 power high res
 for i=1:length(step_idx)
     window = set_window;
     % if forward
     if step_sign(i) > 0
         if i-1 < 1
-            window = max(1, step_idx(i)-window) - step_idx(i);
+            window = -max(1, step_idx(i)-window) + step_idx(i);
         elseif step_idx(i-1) > step_idx(i)-window
             window = step_idx(i)-1 - step_idx(i-1);
         end
@@ -85,6 +86,8 @@ end
 % hit on both ends
 intersect_mask = and(two_sigma_mask,window_mask);
 blip_idx_raw = find(intersect_mask > 0);
+x_line(two_sigma_mask)
+x_line(window_mask > 0)
 
 blip_idx = [];
 % finally, we remove extras in a single window spot, we only want the spot
@@ -102,16 +105,17 @@ for i = 1:length(step_idx)
         end
         % now find first point that is > -1 sigma (only check one or two
         % points)
+        return_sigma = 1.0;
         step_sign(i)
         if step_sign(i) > 0
-            bool1 = data.trace(sidx-10:sidx,1) > data.trace(sidx-10:sidx,3)-sigma;
+            bool1 = data.trace(sidx-10:sidx,1) > data.trace(sidx-10:sidx,3)-return_sigma*sigma;
             idx1 = find(bool1 > 0);
             if length(idx1) > 1
                 idx1 = idx1(end);
             end
             idx1 = idx1-1+sidx-10;
         elseif step_sign(i) < 0
-            bool1 = data.trace(sidx:sidx+10,1) > data.trace(sidx:sidx+10,3)-sigma;
+            bool1 = data.trace(sidx:sidx+10,1) > data.trace(sidx:sidx+10,3)-return_sigma*sigma;
             idx1 = find(bool1 > 0);
             if length(idx1) > 1
                 idx1 = idx1(1);

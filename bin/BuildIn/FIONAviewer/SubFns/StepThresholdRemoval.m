@@ -11,13 +11,25 @@ function handles = StepThresholdRemoval(hObject, handles)
 % User set parameters that should be incorporated into GUI eventually so
 % that people can set their own "manual step" corrections
 
+% step_thresh (remove steps smaller than this in the avg_window)
+% avg_window (average together points before and after this to determine
+% step size)
+% minsteplength (minimum number of points in a step to be called a step)
+
 % good params for QD kinesin
 step_thresh = 10; %12 %nm
 avg_window = 4; %7
+minsteplength = 1;
 
 % good params for LD655 dynein MINFLUX
 step_thresh = 7.5;
 avg_window = 8;
+minsteplength = 1;
+
+% good params for high temporal resolution dynein MINFLUX
+step_thresh = 7;
+avg_window = 30;
+minsteplength = round(7.0/0.33);
 
 % we have to set this to delete to use the prebuilt AddRmvStepManually func
 % remember the old state so we can return it when we plot later
@@ -25,6 +37,21 @@ oldstate = get(handles.AddDeleteStep,'String');
 set(handles.AddDeleteStep,'String','Delete');
 
 PSD1Data_LongPadded = horzcat(nan(1,avg_window),handles.PSD1Data_Long,nan(1,avg_window));
+
+% first remove steps that are too short
+for i = length(handles.stepVector):-1:2
+    if ~isnan(handles.stepVector(i-1)) && ~isnan(handles.stepVector(i))
+        if abs(handles.stepVector(i) - handles.stepVector(i-1)) > 0
+            % if the number of points in the step is less than a certain
+            % number, remove
+            if sum(abs(handles.stepVector(i:min(i-1+minsteplength,length(handles.stepVector)))-handles.stepVector(i))) > 1e-30
+                handles = AddRmvStepManually(hObject, handles, handles.t(i));
+            end
+        end
+    end
+end
+
+% then remove steps based on size
 for i = 2:length(handles.stepVector)
     if ~isnan(handles.stepVector(i-1)) && ~isnan(handles.stepVector(i))
         

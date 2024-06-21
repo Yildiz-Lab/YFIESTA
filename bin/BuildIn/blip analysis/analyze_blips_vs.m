@@ -110,7 +110,7 @@ step_sign = sign(data.trace(step_idx,3) - data.trace(step_idx-1,3));
 % backward step
 window_mask = zeros(length(data.trace(:,1)),1);
 
-set_window = 3;
+set_window = 20;
 for i=1:length(step_idx)
     window = set_window;
     % if forward

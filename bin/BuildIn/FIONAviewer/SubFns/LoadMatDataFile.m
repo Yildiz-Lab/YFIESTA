@@ -23,18 +23,18 @@ trace_curr = trace_curr.data;
 % trace_curr = load (DataFilePath,'-mat','trace');
 
 % show xy axis
-% handles.xydisplayed = 1;
-% handles.PSD1Data_Long = trace_curr.trace(:,1)';
-% handles.PSD1Data_Short = trace_curr.trace(:,2)';
-% handles.stepVector = trace_curr.trace(:,3)';
-% handles.shortStepVector = trace_curr.trace(:,4)';
+handles.xydisplayed = 1;
+handles.PSD1Data_Long = trace_curr.trace(:,1)';
+handles.PSD1Data_Short = trace_curr.trace(:,2)';
+handles.stepVector = trace_curr.trace(:,3)';
+handles.shortStepVector = trace_curr.trace(:,4)';
 
-% show yx axis
-handles.xydisplayed = 0;
-handles.PSD1Data_Long = trace_curr.trace(:,2)';
-handles.PSD1Data_Short = trace_curr.trace(:,1)';
-handles.stepVector = trace_curr.trace(:,4)';
-handles.shortStepVector = trace_curr.trace(:,3)';
+% % show yx axis
+% handles.xydisplayed = 0;
+% handles.PSD1Data_Long = trace_curr.trace(:,2)';
+% handles.PSD1Data_Short = trace_curr.trace(:,1)';
+% handles.stepVector = trace_curr.trace(:,4)';
+% handles.shortStepVector = trace_curr.trace(:,3)';
 
 %make a new handle for the usage from the mat file...so we can save it
 %right later.s
