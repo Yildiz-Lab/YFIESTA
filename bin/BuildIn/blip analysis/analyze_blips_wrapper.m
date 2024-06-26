@@ -58,7 +58,12 @@ for i=1:fnum
     [dtprime, dxprime, stepprime] = analyze_blips(steptrace.data);
     dt = [dt, dtprime]; dx = [dx, dxprime]; step = [step, stepprime];
     
-    [bin, bout, pin, pout, pts, num] = analyze_blips_vs(steptrace.data);
+    % [bin, bout, pin, pout, pts, num] = analyze_blips_vs(steptrace.data);
+    % blipin = [blipin; bin]; blipout = [blipout; bout];
+    % ptsin = [ptsin; pin]; ptsout = [ptsout; pout];
+    % totpts = totpts + pts; stepnum = stepnum + num;
+    
+    [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,20,3,6);
     blipin = [blipin; bin]; blipout = [blipout; bout];
     ptsin = [ptsin; pin]; ptsout = [ptsout; pout];
     totpts = totpts + pts; stepnum = stepnum + num;
@@ -89,7 +94,7 @@ hold on
 c_on = bar(1:2,[mu,mu0]);
 er = errorbar(1:2,[mu,mu0],[s1-mu,s10-mu0],[s2-mu,s20-mu0],'Color',[0 0 0],'LineStyle','none','LineWidth',1);
 ax = gca;
-ax.YLim = [0,0.08];
+ax.YLim = [0,0.1];
 ax.XLim = [0.3,2.7];
 set(gcf,"Position",[250,250,200,300])
 

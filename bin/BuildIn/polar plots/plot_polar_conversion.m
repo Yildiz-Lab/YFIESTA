@@ -50,12 +50,12 @@ set(gca,'fontname','Arial');
 x = r.*cos(theta);
 y = r.*sin(theta);
 
-fig = figure('Position',[300,300,600,1200]);
+f2 = figure('Position',[300,300,600,1200]);
 % subplot(1,3,3)
-% hist3([y',x'], 'CDataMode','auto','Ctrs', {-20:5:20, -30:2:40});
+hist3([y',x'], 'CDataMode','auto','Ctrs', {-20:5:20, -30:2:40});
 % hist3([y',x'], 'CDataMode','auto','Ctrs', {-21:1.5:21, -33:1.5:42});
 % hist3([y',x'], 'CDataMode','auto','Ctrs', {-21:3:21, -33:3:42});
-z = hist3([y',x'], 'CDataMode','auto','Ctrs', {-20:2.5:20, -33:3:42});
+% hist3([y',x'], 'CDataMode','auto','Ctrs', {-20:2.5:20, -33:3:42})
 colormap('hot')
 % caxis([0, max(max(z))]);
 view(2)
