@@ -37,7 +37,10 @@ else
         return
     end
 end
-    
+
+r = [];
+theta = [];
+
 for i=1:fnum
     
     if isfile(directory)
@@ -61,22 +64,32 @@ for i=1:fnum
     data = trace.trace;
     data_yx = trace.trace_yx;
     
-    % if want to merge_step_components
-    if options.Merge
-        trace = merge_step_components(trace);
-        data = trace.trace_2d;
-        data_yx = trace.trace_2d;
-    end
-    
     %JS Edit 2024/03/07 for loading MINFLUX times rather than framerate
     if isfield(trace,'time')
         framerate = trace.time; %framerate is now actually an array of times
     end
 
-    
     % going to add in option to ignore steps that have too little data
     % points (i.e. <7 to increase accuracy);
-        
+    % actually adjust to have it not just remove the steps but add it to
+    % the step that leads to the smallest change in position, maybe because
+    % they are just short backwards dips
+    remove_dips_time = str2double(options.OmitBlips)/1000; % convert to seconds
+    data = modify_filter_trace(data,remove_dips_time,[],framerate);
+    data_yx = modify_filter_trace(data_yx,remove_dips_time,[],framerate);
+    trace.trace = data; trace.trace_yx = data_yx;
+    
+    % if want to merge_step_components in post
+    if options.Merge
+        % automatically show polar plots
+        [rprime, thetaprime] = polar_conversion(trace,0);
+        r = [r, rprime]; theta = [theta, thetaprime];
+
+        trace = merge_step_components(trace);
+        data = trace.trace_2d;
+        data_yx = trace.trace_2d;
+    end
+
     % Steps
     [on_steps, ~] = add_to_list_6col_steps_v2(data,threshold);
     ONsteps = [ONsteps; on_steps'];
@@ -92,7 +105,11 @@ for i=1:fnum
         dwells = [dwells; dwell];
     
         % Forward and Backward dwells
-        [forward,backward] = add_to_list_6col_dwells_for_back(data,framerate);
+        if options.TieDwells % tie to the previous step (so the dwell is after the step)
+        [forward,backward] = add_to_list_6col_dwells_after_for_back(data,framerate);
+        else % otherwise normally where the ending is the rate, this is the common and actual definition way to do it
+            [forward,backward] = add_to_list_6col_dwells_for_back(data,framerate);
+        end
         dwells_for = [dwells_for; forward];
         dwells_back = [dwells_back; backward];
     end
@@ -124,3 +141,6 @@ for i=1:fnum
 
 end
 
+if options.Merge
+    plot_polar_conversion(r, theta, 24)
+end

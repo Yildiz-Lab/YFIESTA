@@ -29,7 +29,9 @@ else %defaults
     prevopts.UseNeighborRegions = 0;
     prevopts.XB = [0,100,200]; prevopts.XA = prevopts.XB;
     prevopts.YB = [0,50,100]; prevopts.YA = prevopts.YB;
-    prevopts.Merge = 0; prevopts.k1 = 0; prevopts.k2=1; prevopts.FwdDwells = 0;
+    prevopts.OmitBlips = '0';
+    prevopts.TieDwells = 0; %0 is for normal, tie with ending step. Other is for before.
+    prevopts.Merge = 0; prevopts.k1 = 1; prevopts.k2=1; prevopts.k12=0; prevopts.FwdDwells = 0;
 end
 prevopts.XB(prevopts.XB == 0) = []; prevopts.XA(prevopts.XA == 0) = [];
 prevopts.YB(prevopts.YB == 0) = []; prevopts.YA(prevopts.YA == 0) = [];
@@ -139,24 +141,33 @@ hNeighborRegion.eYA(5) = uicontrol('Parent',hNeighborRegion.fig,'Units','normali
 % hNeighborRegion.tMerge = uicontrol('Parent',hNeighborRegion.fig,'Units','normalized','Position',[0.05 0.3 0.3 0.05],'Enable','on','FontSize',12,...
 %                                  'String','Merge on-off axis steps','Style','text','Tag','tYA','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);                
                              
-hNeighborRegion.cMerge = uicontrol('Parent',hNeighborRegion.fig,'Units','normalized','Position',[0.1 0.34 0.37 0.05],'Enable','on','FontSize',12,'Value',prevopts.Merge,...
-                                          'String','Merge on-off axis steps','Style','checkbox','Tag','Neighbors','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);  
+hNeighborRegion.cMerge = uicontrol('Parent',hNeighborRegion.fig,'Units','normalized','Position',[0.1 0.34 0.34 0.05],'Enable','on','FontSize',12,'Value',prevopts.Merge,...
+                                          'String','Merge components','Style','checkbox','Tag','Neighbors','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);  
 
-hNeighborRegion.cFwdDwells = uicontrol('Parent',hNeighborRegion.fig,'Units','normalized','Position',[0.45 0.34 0.37 0.05],'Enable','on','FontSize',12,'Value',prevopts.FwdDwells,...
-                                          'String','Use forward dwells only','Style','checkbox','Tag','Neighbors','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext); 
+hNeighborRegion.tOmitBlips = uicontrol('Parent',hNeighborRegion.fig,'Units','normalized','Position',[0.4 0.335 0.4 0.05],'Enable','on','FontSize',12,...
+                                          'String','Omit Blips (ms)','Style','text','Tag','Neighbors','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);  
+hNeighborRegion.eOmitBlips = uicontrol('Parent',hNeighborRegion.fig,'Units','normalized','Position',[0.6 0.325 0.12 0.08],'Enable','on','FontSize',12,'String',prevopts.OmitBlips,...
+                                'Style','edit','Tag','eYA','HorizontalAlignment','center','BackgroundColor',c,'ForegroundColor',ctext);
+
 
 % Lifetime options
 
 hNeighborRegion.tLifetime = uicontrol('Parent',hNeighborRegion.fig,'Units','normalized','Position',[0.05 0.29 0.3 0.05],'Enable','on','FontSize',12,...
                                  'String','Rate fitting options','Style','text','Tag','tYA','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);                
                              
-hNeighborRegion.cPoissonk1 = uicontrol('Parent',hNeighborRegion.fig,'Units','normalized','Position',[0.1 0.24 0.3 0.05],'Enable','on','FontSize',12,'Value',prevopts.k1,...
-                                          'String','Exponential Decay','Style','checkbox','Tag','Neighbors','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);  
+hNeighborRegion.cFwdDwells = uicontrol('Parent',hNeighborRegion.fig,'Units','normalized','Position',[0.1 0.24 0.3 0.05],'Enable','on','FontSize',12,'Value',prevopts.FwdDwells,...
+                                          'String','Fit fwd dwells','Style','checkbox','Tag','Neighbors','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext); 
 
-hNeighborRegion.cPoissonk2 = uicontrol('Parent',hNeighborRegion.fig,'Units','normalized','Position',[0.4 0.24 0.3 0.05],'Enable','on','FontSize',12,'Value',prevopts.k2,...
+hNeighborRegion.cTieDwells = uicontrol('Parent',hNeighborRegion.fig,'Units','normalized','Position',[0.4 0.24 0.5 0.05],'Enable','on','FontSize',12,'Value',prevopts.TieDwells,...
+                                          'String','Tie dwells to prev step','Style','checkbox','Tag','Neighbors','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);
+
+hNeighborRegion.cPoissonk1 = uicontrol('Parent',hNeighborRegion.fig,'Units','normalized','Position',[0.1 0.18 0.3 0.05],'Enable','on','FontSize',12,'Value',prevopts.k1,...
+                                          'String','Exp Decay','Style','checkbox','Tag','Neighbors','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);  
+
+hNeighborRegion.cPoissonk2 = uicontrol('Parent',hNeighborRegion.fig,'Units','normalized','Position',[0.7 0.18 0.3 0.05],'Enable','on','FontSize',12,'Value',prevopts.k2,...
                                           'String','Poisson k=2','Style','checkbox','Tag','Neighbors','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext); 
 
-hNeighborRegion.cDoubleExp = uicontrol('Parent',hNeighborRegion.fig,'Units','normalized','Position',[0.1 0.18 0.3 0.05],'Enable','on','FontSize',12,'Value',prevopts.k2,...
+hNeighborRegion.cDoubleExp = uicontrol('Parent',hNeighborRegion.fig,'Units','normalized','Position',[0.4 0.18 0.3 0.05],'Enable','on','FontSize',12,'Value',prevopts.k12,...
                                           'String','Double Exp','Style','checkbox','Tag','Neighbors','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext); 
 
 
@@ -190,6 +201,8 @@ opts.Poissonk1 = hNeighborRegion.cPoissonk1.Value;
 opts.Poissonk2 = hNeighborRegion.cPoissonk2.Value;
 opts.DoubleExp = hNeighborRegion.cDoubleExp.Value;
 opts.FwdDwells = hNeighborRegion.cFwdDwells.Value;
+opts.TieDwells = hNeighborRegion.cTieDwells.Value;
+opts.OmitBlips = hNeighborRegion.eOmitBlips.String;
 Config.NeighborRegionsOpts = opts;
 opts.UseNeighborRegions = hNeighborRegion.cUseNeighborRegions.Value;
 setappdata(hNeighborRegion.fig,'opts',opts);
@@ -205,6 +218,8 @@ opts.Poissonk1 = hNeighborRegion.cPoissonk1.Value;
 opts.Poissonk2 = hNeighborRegion.cPoissonk2.Value;
 opts.DoubleExp = hNeighborRegion.cDoubleExp.Value;
 opts.FwdDwells = hNeighborRegion.cFwdDwells.Value;
+opts.TieDwells = hNeighborRegion.cTieDwells.Value;
+opts.OmitBlips = hNeighborRegion.eOmitBlips.String;
 setappdata(hNeighborRegion.fig,'opts',opts);
 uiresume(gcbf);
 
