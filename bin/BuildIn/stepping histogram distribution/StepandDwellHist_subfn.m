@@ -141,6 +141,6 @@ for i=1:fnum
 
 end
 
-if options.Merge
+if options.Merge && ~isfile(directory)
     plot_polar_conversion(r, theta, 24)
 end
