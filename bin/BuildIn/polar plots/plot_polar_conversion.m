@@ -52,7 +52,8 @@ y = r.*sin(theta);
 
 f2 = figure('Position',[300,300,600,1200]);
 % subplot(1,3,3)
-hist3([y',x'], 'CDataMode','auto','Ctrs', {-20:5:20, -30:2:40});
+% hist3([y',x'], 'CDataMode','auto','Ctrs', {-20:5:20, -30:2:40});
+hist3([y',x'], 'CDataMode','auto','Ctrs', {-20:5:20, -31.5:3:40.5});
 % hist3([y',x'], 'CDataMode','auto','Ctrs', {-21:1.5:21, -33:1.5:42});
 % hist3([y',x'], 'CDataMode','auto','Ctrs', {-21:3:21, -33:3:42});
 % hist3([y',x'], 'CDataMode','auto','Ctrs', {-20:2.5:20, -33:3:42})
