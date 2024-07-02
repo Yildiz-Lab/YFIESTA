@@ -35,6 +35,20 @@ f = dir(fullfile(cd,'*.mat')); %JS Edit 220207
 fnum = length(f);
 end
 
+if fnum > 1 
+    for i=fnum:-1:1
+        if contains(f(i).name,'._') %JS Edit to ignore extra '._' that randomly show up sometimes MAC
+        f(i) = [];
+        end
+    end
+    fnum = length(f);
+else
+    if contains(fname,'._') %JS Edit to ignore extra '._' that randomly show up sometimes MAC
+        fnum = 0;
+        return
+    end
+end
+
 HistVals = [];
 pause_frequency = [];
 pause_fraction = [];
@@ -86,15 +100,28 @@ if opts.UseNeighborRegions
 else
     for i=1:fnum
     
+%         if isfile(directory)
+%             [d,f,e] = fileparts(directory);
+%             if contains(f,'._') %JS Edit to delete extra ._ from an error
+%             f = f(3:end);
+%             end
+%             steptrace = load(fullfile(d,strcat(f,e)));
+%         else
+%             fname = f(i).name;
+%             steptrace = load(fullfile(cd,fname));
+%         end
         if isfile(directory)
             [d,f,e] = fileparts(directory);
-            if contains(f,'._') %JS Edit to delete extra ._ from an error
-            f = f(3:end);
-            end
+            % if contains(f,'._') %JS Edit to delete extra ._ from an error
+            % f = f(3:end);
+            % end
             steptrace = load(fullfile(d,strcat(f,e)));
         else
             fname = f(i).name;
-            steptrace = load(fullfile(cd,fname));
+            % if contains(fname,'._') %JS Edit to delete extra ._ from an error
+            % fname = fname(3:end);
+            % end
+            steptrace = load(fullfile(cd,'/',fname));
         end
 
         trace = steptrace.data;
@@ -118,7 +145,12 @@ else
         
         d = max(data(:,3))-min(data(:,3));
         run_length = [run_length, d];
-        velocity = [velocity, d/size(data,1)/framerate];
+        if isfield(trace,'time') %if there is a time field (i.e. MINFLUX), use this to calculate velocity instead
+            velocity = [velocity, d/(trace.time(end)-trace.time(1))];
+        else
+            velocity = [velocity, d/size(data,1)/framerate];
+        end
+        
         end
     end 
     
