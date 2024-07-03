@@ -54,6 +54,6 @@ for i=1:fnum
 
 end
 
-plot_polar_conversion(r, theta, 24)
+% plot_polar_conversion(r, theta, 24)
 
 end

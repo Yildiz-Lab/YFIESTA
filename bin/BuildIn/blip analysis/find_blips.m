@@ -57,7 +57,7 @@ step_sign = sign(data.trace(step_idx,3) - data.trace(step_idx-1,3));
 % backward step
 window_mask = zeros(length(data.trace(:,1)),1);
 
-set_window = 20; %5 low time res; %20 7.0 power high res; %25 8.0 power high res
+set_window = 5; %5 low time res; %20 7.0 power high res; %25 8.0 power high res
 for i=1:length(step_idx)
     window = set_window;
     % if forward

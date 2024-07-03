@@ -63,7 +63,7 @@ for i=1:fnum
     % ptsin = [ptsin; pin]; ptsout = [ptsout; pout];
     % totpts = totpts + pts; stepnum = stepnum + num;
     
-    [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,20,3,6);
+    [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,5,1,2);
     blipin = [blipin; bin]; blipout = [blipout; bout];
     ptsin = [ptsin; pin]; ptsout = [ptsout; pout];
     totpts = totpts + pts; stepnum = stepnum + num;
