@@ -25,6 +25,9 @@ totsteps = sum(xsteps_bool);
 
 dt = []; dx = []; step = [];
 
+% In case this if statement doesn't go through, just assign blank variables
+blipin = []; blipout = []; ptsin = []; ptsout = []; totpts = [];
+
 if isfield(data,'blips')
 if ~isempty(data.blips)
 blip_idx = data.blips(:,1);
@@ -197,6 +200,7 @@ ptsin = dx_mean_subtract(and(interval_window_mask,interval_window_mask));
 ptsout = dx_mean_subtract(and(outside_window_mask,outside_window_mask));
 
 end
+    
 end
 
 
