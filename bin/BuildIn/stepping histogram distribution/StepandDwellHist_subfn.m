@@ -2,6 +2,7 @@ function [fnum,ONsteps,OFFsteps,dwells,dwells_for,dwells_back] = StepandDwellHis
 % Function for StepandDwellHist which goes through all files in a directory
 % or just one file if passed and returns the statistics
 
+framerate = 0.1;
 % check if directory is a file or a folder
 if isfile(directory)
     fname = directory;
@@ -57,7 +58,12 @@ for i=1:fnum
         steptrace = load(fullfile(cd,'/',fname));
     end
     
+    if isfield(steptrace,'data')
     trace = steptrace.data;
+    elseif isfield(steptrace,'trace')
+    trace = steptrace;
+    end
+
     if ~isfield(trace,'trace') || ~isfield(trace,'trace_yx')
         fnum = fnum - 1;
     else
@@ -103,7 +109,7 @@ for i=1:fnum
     if ~isempty(mat) %check that dwells were found (JS Edit 220310)
         dwell = mat(:,3);
         dwells = [dwells; dwell];
-    
+
         % Forward and Backward dwells
         if options.TieDwells % tie to the previous step (so the dwell is after the step)
         [forward,backward] = add_to_list_6col_dwells_after_for_back(data,framerate);

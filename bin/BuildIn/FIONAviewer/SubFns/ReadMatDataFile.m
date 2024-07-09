@@ -4,7 +4,3 @@ function FIONAdata = ReadMatDataFile( fullFileName )
 
 s = load(fullFileName);
 FIONAdata = s.data;
-
-
-
-

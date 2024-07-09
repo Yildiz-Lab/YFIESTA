@@ -18,10 +18,13 @@ handles.currentPath=DataFilePath;
 
 % JS Edit 2024/03/18 for new mat way to save data
 trace_curr = load(DataFilePath);
-trace_curr = trace_curr.data; 
+if isfield(trace_curr,'data')
+trace_curr = trace_curr.data;
+end
 
-data_xy_yx = trace_curr.trace; handles.xydisplayed = 1; %show xy
-data_xy_yx = trace_curr.trace_yx; handles.xydisplayed = 0; %show yx
+% data_xy_yx = trace_curr.trace; handles.xydisplayed = 1; %show xy
+% data_xy_yx = trace_curr.trace_yx; handles.xydisplayed = 0; %show yx
+data_xy_yx = trace_curr.trace(:,[2,1,4,3,5,6]); handles.xydisplayed = 0; %Old data format, set to yx
 
 % trace_curr = load (DataFilePath,'-mat','trace');
 
@@ -46,12 +49,18 @@ handles.usageVector = data_xy_yx(:,6)';
 handles.t = 1:length(trace_curr.trace(:,1));
 
 % JS Edit 2024/03/18 for new mat way to save data
+if isfield(trace_curr,'neighbors')
 handles.neighbors = trace_curr.neighbors;
+else
+    handles.neighbors = [];
+end
 
 % set all the things normally set in loading a new data file
 
 if isfield(trace_curr,'time')
 handles.time = trace_curr.time;
+else
+    handles.time = [];
 end
 set(handles.FileName,'string',filename);
 set(handles.FilePath,'string',path);
