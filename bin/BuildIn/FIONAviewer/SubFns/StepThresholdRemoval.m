@@ -22,9 +22,9 @@ avg_window = 4; %7
 minsteplength = 1;
 
 % good params for LD655 dynein MINFLUX
-step_thresh = 7.5;
-avg_window = 12; %8
-minsteplength = 5; %1
+% step_thresh = 7.5;
+% avg_window = 12; %8
+% minsteplength = 5; %1
 
 % good params for high temporal resolution dynein MINFLUX
 % step_thresh = 7;
