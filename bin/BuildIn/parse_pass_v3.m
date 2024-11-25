@@ -13,10 +13,10 @@ n = length(h);
 figure(n+1)
 
 title("Select [endpoint,startpoint] OR just ENTER for entire")
-plot(xytrace(:,1));
+scatter(1:length(xytrace), xytrace(:,1)', 'filled');
 hold on
-plot(xytrace(:,2));
-set(gca,'XLim',[-50,length(xytrace)+50]) %give us some room to crop
+scatter(1:length(xytrace), xytrace(:,2)', 'filled');
+set(gca,'XLim',[-0.05*length(xytrace),1.05*length(xytrace)]) %give us some room to crop
 %prompt = ['Trace ' num2str(i) ': keep (k), modify(m), separate(s), or delete(d) [k]'];
 %review = input(prompt,'s');
 endpoint = length(xytrace(:,1));

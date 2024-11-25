@@ -52,6 +52,7 @@ Metric(1:end-1) = UpdateMetric( RCumx, LCumx, R_N, L_N );
 
 NoFittedSteps=1;    % current number of steps found =1
 
+% FitSquidual=(std(x))^2*NP; % Chi2 = Variance*NP = total noise
 FitSquidual=(std(x))^2*NP; % Chi2 = Variance*NP = total noise
 
 % need to get the first step running

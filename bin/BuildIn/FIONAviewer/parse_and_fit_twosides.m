@@ -82,7 +82,6 @@ end
 %so...now we have a set of sub traces with NaNs removed
 %run through step fitter, get changepoints
 %then apply cps to off-axis trace, subtract fit and then fit residuals
-
 for (i = 1:length(sub_traces_x))  %fit each sub trace with the SIC step fitter
     fit = SICstepFinder(sub_traces_x{i});       %run the step finder on both the on and off axes
     changepoints_x = [ 0  ( ( fit.StepFit(1:length(fit.StepFit)-1) - fit.StepFit(2:length(fit.StepFit)) ) ~= 0) ]; %make a changepoints array (1=step, 0=no step)
