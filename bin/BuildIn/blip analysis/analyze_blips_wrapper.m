@@ -58,19 +58,20 @@ for i=1:fnum
     [dtprime, dxprime, stepprime] = analyze_blips(steptrace.data);
     dt = [dt, dtprime]; dx = [dx, dxprime]; step = [step, stepprime];
     
-    % [bin, bout, pin, pout, pts, num] = analyze_blips_vs(steptrace.data);
-    % blipin = [blipin; bin]; blipout = [blipout; bout];
-    % ptsin = [ptsin; pin]; ptsout = [ptsout; pout];
-    % totpts = totpts + pts; stepnum = stepnum + num;
+%     [bin, bout, pin, pout, pts, num] = analyze_blips_vs(steptrace.data);
+%     blipin = [blipin; bin]; blipout = [blipout; bout];
+%     ptsin = [ptsin; pin]; ptsout = [ptsout; pout];
+%     totpts = totpts + pts; stepnum = stepnum + num;
     
-    [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,2,1,1);
+    [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,5,1,1);
     blipin = [blipin; bin]; blipout = [blipout; bout];
     ptsin = [ptsin; pin]; ptsout = [ptsout; pout];
     totpts = totpts + pts; stepnum = stepnum + num;
     
     m = length(fwd_mean_modded);
     [fwd_mean_modded{m+1}, bwd_mean_modded{m+1}] = align_to_step_mod_mean(steptrace.data,min_step_length);
-
+    
+    
     if mean(blipout) < -30
         fprintf(fname)
     end
@@ -123,7 +124,7 @@ ax = gca;
 hh = histogram(dt);
 hh.BinWidth = 0.001;
 ax.YLim = [0,110];
-ax.XLim = [-0.002,0.012];
+ax.XLim = [-0.002,0.024];
 hold on
 xlin = 0:0.0001:0.012;
 plot(xlin,2*max(hh.Values)*exp(-cdffit.k*xlin),'LineWidth',2,'Color','r')
@@ -137,7 +138,7 @@ subplot(1,2,2)
 hh = histogram(dx);
 ax = gca;
 hh.BinWidth = 2;
-ax.YLim = [0,58];
+ax.YLim = [0,48];
 ax.XLim = [-56,2];
 ax.LineWidth = 0.75; % Set the axes linewidth
 ax.XColor = 'k'; % Set the color of x-axis
