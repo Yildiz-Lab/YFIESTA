@@ -31,6 +31,9 @@ fnum = length(f);
 dr = [];
 dt = [];
 
+r = [];
+t = [];
+
 for i=1:fnum
     
     if isfile(directory)
@@ -52,6 +55,8 @@ for i=1:fnum
         data = steptrace.data;
         dr = [dr; sqrt( (data.trace(1:end-1,1)-data.trace(2:end,1)).^2 + (data.trace(1:end-1,2)-data.trace(2:end,2)).^2 )];
         dt = [dt; data.time(2:end)-data.time(1:end-1)];
+        r = [r; sqrt( (data.trace(1,1)-data.trace(end,1)).^2 + (data.trace(1,2)-data.trace(end,2)).^2 )];
+        t = [t; data.time(end)-data.time(1)];
         % trace specific
         drind = sqrt(var(sqrt( (data.trace(1:end-1,1)-data.trace(2:end,1)).^2 + (data.trace(1:end-1,2)-data.trace(2:end,2)).^2 ),'omitnan'))/sqrt(2)
         dtind = mean(data.time(2:end)-data.time(1:end-1),'omitnan')
@@ -63,5 +68,7 @@ sigma = sqrt(var(dr,'omitnan'))
 sigma/sqrt(2)
 
 meandt = mean(dt,'omitnan')
+
+lifetime = mean(t, 'omitnan')
 
 end

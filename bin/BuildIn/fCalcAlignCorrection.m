@@ -10,7 +10,8 @@ function F = fCalcAlignCorrection(ch1file, ch2file)
 %    output will be x, y dependent translation correction for Ch2 to move
 %    to Ch1 coordinates in nm
 
-too_large_nm = 1000;
+too_large_nm = 1000; %FIONA using nanohole
+% too_large_nm = 20; %sqrt(3^2 + 7^2) %MINFLUX using 2C gold beads
 
 % user choose option
 if nargin < 1
@@ -25,6 +26,115 @@ end
 ch1data = load(ch1file);
 ch2data = load(ch2file);
 
+% JS Edit 2024/11/21 for MINFLUX data which already loads as molecules and
+% has the channel corresponding
+if ~isfield(ch1data,'Objects')
+
+    % First a prefiltering/merging. If there are multiple Objects/Molecules within
+    % a certain radius, we should combine them because they are actually the same localization.
+    % This is because we don't want to mess up having pairings that look
+    % like they are drifting away.
+    
+    xyc1 = nan(length(ch1data.Molecule),3);
+    xyc2 = nan(length(ch2data.Molecule),3);
+    for t = length(ch1data.Molecule):-1:1 %delete all ch1 files that don't belong to ch1
+        if ch1data.Molecule(t).Channel == 1
+            xyc1(t,1:2) = median(ch1data.Molecule(t).Results(:,3:4)); % package arrays for easy result comparison
+            xyc1(t,3) = ch1data.Molecule(t).Channel;
+        else
+            xyc1(t,:) = [];
+            ch1data.Molecule(t) = [];
+        end
+    end
+    for t = length(ch2data.Molecule):-1:1 %delete all ch2 files that don't belong to ch2
+        if ch2data.Molecule(t).Channel == 2
+            xyc2(t,1:2) = median(ch2data.Molecule(t).Results(:,3:4)); % package arrays for easy result comparison
+            xyc2(t,3) = ch2data.Molecule(t).Channel;
+        else
+            xyc2(t,:) = [];
+            ch2data.Molecule(t) = [];
+        end
+    end
+
+    R = 150; %nm
+
+    for n = length(ch1data.Molecule):-1:1
+        mol_combine = find(pdist2(xyc1(n,1:2), xyc1(:,1:2)) < R);
+        mol_combine(end) = []; %erase n match, or else it will delete itself
+        if ~isempty(mol_combine)
+            ch1data.Molecule(mol_combine(end)).Results = [ch1data.Molecule(mol_combine(end)).Results(:,:); ch1data.Molecule(n).Results(:,:)];
+            xyc1(mol_combine(end),1:2) = median(ch1data.Molecule(mol_combine(end)).Results(3:4));
+            ch1data.Molecule(n) = []; % Delete
+            xyc1(n,:) = [];
+        end
+    end
+    for n = length(ch2data.Molecule):-1:1
+        mol_combine = find(pdist2(xyc2(n,1:2), xyc2(:,1:2)) < R);
+        mol_combine(end) = []; %erase n match, or else it will delete itself
+        if ~isempty(mol_combine)
+            ch2data.Molecule(mol_combine(end)).Results = [ch2data.Molecule(mol_combine(end)).Results(:,:); ch2data.Molecule(n).Results(:,:)];
+            xyc2(mol_combine(end),1:2) = median(ch2data.Molecule(mol_combine(end)).Results(3:4));
+            ch2data.Molecule(n) = []; % Delete
+            xyc2(n,:) = [];
+        end
+    end
+    fprintf(['xyc', num2str(length(xyc1)), '\n'])
+    fprintf(['xyc', num2str(length(xyc2)), '\n'])
+    
+
+    ch1data.Objects = {};
+    ch2data.Objects = {};
+    
+    ch1cnt = 0;
+    ch2cnt = 0;
+
+    for s = 1:length(ch1data.Molecule)
+        ch1cnt = ch1cnt + 1;
+        % ch1data.Objects{ch1cnt} = struct();
+        ch1data.Objects{1}.center_x(ch1cnt) = mean(ch1data.Molecule(s).Results(:,3));
+        ch1data.Objects{1}.center_y(ch1cnt) = mean(ch1data.Molecule(s).Results(:,4));
+    end
+
+
+    for s = 1:length(ch2data.Molecule)
+        ch2cnt = ch2cnt + 1;
+        % ch2data.Objects{1} = struct();
+        ch2data.Objects{1}.center_x(ch2cnt) = mean(ch2data.Molecule(s).Results(:,3));
+        ch2data.Objects{1}.center_y(ch2cnt) = mean(ch2data.Molecule(s).Results(:,4));
+    end
+
+    % for s = 1:length(ch1data.Molecule)
+    %     if ch1data.Molecule(s).Channel == 1
+    %         ch1cnt = ch1cnt + 1;
+    %         % ch1data.Objects{ch1cnt} = struct();
+    %         ch1data.Objects{1}.center_x(ch1cnt) = median(ch1data.Molecule(s).Results(:,3));
+    %         ch1data.Objects{1}.center_y(ch1cnt) = median(ch1data.Molecule(s).Results(:,4));
+    %     elseif ch1data.Molecule(s).Channel == 2
+    %         ch2cnt = ch2cnt + 1;
+    %         % ch2data.Objects{ch2cnt} = struct();
+    %         ch2data.Objects{1}.center_x(ch2cnt) = median(ch2data.Molecule(s).Results(:,3));
+    %         ch2data.Objects{1}.center_y(ch2cnt) = median(ch2data.Molecule(s).Results(:,4));
+    %     end
+    % 
+    % 
+    % end
+    
+    % % if they are actually different files, so then we should separate.
+    % if ch1file ~= ch2file
+    %     ch2data.Objects = {};
+    %     ch2cnt = 0;
+    %     for s = 1:length(ch2data.Molecule)
+    %         ch2cnt = ch2cnt + 1;
+    %         ch2data.Objects{ch2cnt} = struct();
+    %         ch2data.Objects{ch2cnt}.center_x = median(ch2data.Molecule(s).Results(:,3));
+    %         ch2data.Objects{ch2cnt}.center_y = median(ch2data.Molecule(s).Results(:,4));
+    %     end
+    % end
+
+    
+end
+
+
 %% Make an array to store all matches from all frames
 % We are going to make a map that takes Ch2 into Ch1
 % [Ch1 center_x, Ch1 center_y, Ch2 center_x, Ch2 center_y, xcorrect, ycorrect]
@@ -34,7 +144,8 @@ m=0;
 
 %% Calculate each frame of objects separately, but will stitch together before end
 
-for k = 1:length(ch1data.Objects)
+for k = 1:length(ch2data.Objects)
+
     frobj1 = ch1data.Objects{k};
     frobj2 = ch2data.Objects{k};
     
@@ -46,7 +157,7 @@ for k = 1:length(ch1data.Objects)
         Ch2(j,1) = frobj2.center_x(j);
         Ch2(j,2) = frobj2.center_y(j);
     end
-    
+
     %% Go through and try to pair each molecule with another
     idx_store = nan(length(frobj1.center_x),1);
     val_store = nan(length(frobj1.center_x),1);
@@ -90,16 +201,19 @@ for k = 1:length(ch1data.Objects)
     %Just in case one wants to see the percentage that didn't get matched
     % If this number is too high, valuable x,y information may be missing
     m = m + length(idx_store); 
-    mnan = find(isnan(idx_store) == 0);
+    mnan = find(~isnan(idx_store));
     
     GridPoints = [GridPoints; Ch1(mnan,1), Ch1(mnan,2), Ch2(idx_store(mnan),1), Ch2(idx_store(mnan),2), val_store(mnan).*dir_store(mnan,1), val_store(mnan).*dir_store(mnan,2)];
     
     
 end
 
+
 fprintf("Total Grid Points Matched: " + num2str(size(GridPoints,1)) + "\n")
-fprintf("Found Objects Matched: " + num2str(round(size(GridPoints,1)*100/m,2)) + "%")
+fprintf("Found Objects Matched: " + num2str(round(size(GridPoints,1)*100/m,2)) + " percent")
 fprintf("\n Domain of Matching: x [" + min(GridPoints(3,:)) + "," + max(GridPoints(3,:)) + "]  y [" + min(GridPoints(4,:)) + "," + max(GridPoints(4,:)) + "] \n")
+
+sum(isnan(GridPoints(:,5)))
 
 fprintf("Before Interpolation Correction Error: x: " + num2str(round(mean(GridPoints(:,5)),2)) + "  y: " + num2str(round(mean(GridPoints(:,6)),2)) + "\n")
 

@@ -854,7 +854,27 @@ if ~iscell(FileName)
     FileName={FileName};
 end
 
-% JS Edit 2024/03/04 to load MINFLUX data
+% % JS Edit 2024/03/04 to load MINFLUX data
+% for k = 1:length(FileName)
+%     minflux_file = fullfile(PathName,FileName{k});
+%     mfchk = load(fullfile(PathName,FileName{k}));
+%     if isfield(mfchk, "itr") %this is a MINFLUX dataset, convert to FIESTA format
+%         [~,fname1,ext] = fileparts(fullfile(PathName,FileName{k}));
+%         FileName{k} = strcat(fname1,'_fiesta',ext);
+%         % and set the directory for FIONA
+%         Config.Directory{k}=PathName;
+%         Config.StackName{k}=FileName{k};
+%         hMainGui.Directory.Stack={PathName};
+%         % and do the conversion so we can actually load!
+%         if ~isfile(fullfile(PathName, FileName{k}))
+%             fConvertMINFLUX(minflux_file, fullfile(PathName, FileName{k}))
+%         end
+%     end
+% end
+
+% End of JS Edit 2024/03/04
+
+% JS Edit 2024/11/07 to load MINFLUX data
 for k = 1:length(FileName)
     minflux_file = fullfile(PathName,FileName{k});
     mfchk = load(fullfile(PathName,FileName{k}));
@@ -865,9 +885,15 @@ for k = 1:length(FileName)
         Config.Directory{k}=PathName;
         Config.StackName{k}=FileName{k};
         hMainGui.Directory.Stack={PathName};
+        % make a stack so we can switch channels
+        % Stack = cell(1,max(mfchk.thi)+1);
+        % for c = 1:max(mfchk.thi)+1
+        %     Stack{c}(:,:,1) = zeros(10,10);
+        %     % Stack{c}(:,:,1) = zeros(max(mfchk.loc(:,2))-min(mfchk.loc(:,2)),max(mfchk.loc(:,1)));
+        % end
         % and do the conversion so we can actually load!
         if ~isfile(fullfile(PathName, FileName{k}))
-            fConvertMINFLUX(minflux_file, fullfile(PathName, FileName{k}))
+            fConvertMINFLUX_v2(minflux_file, fullfile(PathName, FileName{k}))
         end
     end
 end
@@ -883,7 +909,8 @@ if isempty(Config.Directory{1})
     end
 end
 
-% End of JS edit
+% End of JS edit 2024/11/07
+
 
 if PathName~=0
     set(hMainGui.fig,'Pointer','watch');
@@ -954,7 +981,7 @@ function ImportTracks(hMainGui)
 global Molecule;
 global Filament;
 global Objects;
-global Stack; x
+global Stack;
 fRightPanel('CheckReference',hMainGui);
 set(hMainGui.MidPanel.pNoData,'Visible','on')
 set(hMainGui.MidPanel.tNoData,'String','Loading Data...','Visible','on');

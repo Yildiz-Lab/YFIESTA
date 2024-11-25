@@ -842,6 +842,8 @@ fname = fullfile(FFolderName,PathStats(n).Name(10:end));
 % JS Edit 2022/05/29 to make FIONA
 % put in NaN for the blank spots. Shouldn't affect the fitting or any post
 % processing
+% Update: This is because we take any Nan's and interpolate for purposes of
+% the SIC using the previous 3 data points
 frames = PathStats(n).Results(:,1);
 frame1 = frames(1); framef = frames(end);
 xynew = nan(framef-frame1+1,2);
@@ -874,7 +876,8 @@ if plotNeighbors == 1
     % now we need to do something to extend the path to make it easier for
     % the neighbors to find
     % first, make an interpolation on latent variable so that it approximately goes a nm (we'll stick with 2d for now)
-    path_extend = 200; %nm
+    % path_extend = 200; %nm
+    path_extend = 10; %nm
 
     % interpolate between each data point by 1 nm
     Delta = PathStats(n).PathData(2:end,1:4)-PathStats(n).PathData(1:end-1,1:4);
@@ -928,7 +931,11 @@ if plotNeighbors == 1
         InterpPath = PathStats(n).PathData;
     end
     
-    neighbors = findNeighbors(InterpPath(:,1:2));
+    if PathStats(n).Channel > 1
+        neighbors = findNeighbors(InterpPath(:,1:2), 1);
+    else
+        neighbors = findNeighbors(InterpPath(:,1:2));
+    end
     neighbor_txy = cell(length(neighbors),1);
     neighbor_exist_thresh = 10;
     
@@ -1468,7 +1475,8 @@ end
 % Copied from fRightPanel NewScan
 nX=MolXY(:,1);
 nY=MolXY(:,2);
-ScanSize=100; % in nm, make it so that they share a point within a pixel
+% ScanSize=100; % in nm, make it so that they share a point within a pixel
+ScanSize=10; % in nm, MINFLUX we can make this a bit closer
 d=[0; cumsum(sqrt((nX(2:end)-nX(1:end-1)).^2 + (nY(2:end)-nY(1:end-1)).^2))];
 dt=max(d)/round(max(d));
 id=(0:round(max(d)))'*dt;

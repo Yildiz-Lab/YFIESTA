@@ -1,4 +1,8 @@
 function StepStatistics=SICstepFinder(x)
+
+% NOTE THAT IN FIESTA > FIONA this is unused. Instead look into parent
+% folder for same filename
+
 %% 
 %----Info------------------------------------------------------------------
 % Implementation of SIC Step-Finding Routine as published by B. Kalafut and 
