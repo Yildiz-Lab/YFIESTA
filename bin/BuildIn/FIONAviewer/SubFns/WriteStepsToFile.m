@@ -126,11 +126,20 @@ else
 end
 
 scavenge = load(fileName);
-if isfield(scavenge.data, 'trace') && ~handles.xydisplayed
-    data.trace = scavenge.data.trace;
-end
-if isfield(scavenge.data, 'trace_yx') && handles.xydisplayed
-    data.trace_yx = scavenge.data.trace_yx;
+if isfield(scavenge,'data')
+    if isfield(scavenge.data, 'trace') && ~handles.xydisplayed
+        data.trace = scavenge.data.trace;
+    end
+    if isfield(scavenge.data, 'trace_yx') && handles.xydisplayed
+        data.trace_yx = scavenge.data.trace_yx;
+    end
+elseif isfield(scavenge,'trace')
+    if isfield(scavenge, 'trace') && ~handles.xydisplayed
+        data.trace = scavenge.trace;
+    end
+    if isfield(scavenge, 'trace_yx') && handles.xydisplayed
+        data.trace_yx = scavenge.trace_yx;
+    end
 end
 
 data.neighbors = handles.neighbors;

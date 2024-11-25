@@ -27,9 +27,9 @@ avg_window = 12; %8
 minsteplength = 5; %1
 
 % good params for high temporal resolution dynein MINFLUX
-% step_thresh = 7;
-% avg_window = 30;
-% minsteplength = round(7.0/0.33);
+step_thresh = 7;
+avg_window = 30;
+minsteplength = round(7.0/0.33);
 
 % we have to set this to delete to use the prebuilt AddRmvStepManually func
 % remember the old state so we can return it when we plot later

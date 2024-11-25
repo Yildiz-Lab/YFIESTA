@@ -287,8 +287,10 @@ if ~isempty(handles.neighbors)
     colorlist = summer(round(1.2*length(handles.neighbors)+1)); %shift so that only green
     for n = 1:length(handles.neighbors)
         nb = handles.neighbors{n};
-        plot(nb(:,1), nb(:,2), 'Color', colorlist(n,:), 'tag', 'neighbors')
-        plot(nb(:,1), nb(:,3), '--', 'Color', colorlist(n,:), 'tag', 'neighbors')
+        % plot(nb(:,1), nb(:,2), 'Color', colorlist(n,:), 'tag', 'neighbors')
+        % plot(nb(:,1), nb(:,3), '--', 'Color', colorlist(n,:), 'tag', 'neighbors')
+        scatter(nb(:,1), nb(:,2), 10, 'filled', 'Color', colorlist(n,:), 'tag', 'neighbors')
+        scatter(nb(:,1), nb(:,3), 10, 'Color', colorlist(n,:), 'tag', 'neighbors')
     end
 end
 

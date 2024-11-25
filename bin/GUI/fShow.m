@@ -18,11 +18,11 @@ Drift=getappdata(hMainGui.fig,'Drift');
 if ~isempty(Stack)
     y=size(Stack{1},1);
     x=size(Stack{1},2);
-    stidx=hMainGui.Values.FrameIdx(1);
+    stidx=hMainGui.Values.FrameIdx(1); %stidx is channel
     if length(hMainGui.Values.FrameIdx)>2
         idx=hMainGui.Values.FrameIdx(stidx+1);
     else
-        idx=hMainGui.Values.FrameIdx(2);
+        idx=hMainGui.Values.FrameIdx(2); %idx is time
     end
     if all(isreal(idx)) && all(idx>0)
         if strcmp(get(hMainGui.ToolBar.ToolChannels(5),'State'),'off')&& ~(strcmp(get(hMainGui.ToolBar.ToolThreshImage,'State'),'on')&&~isempty(hMainGui.Values.PostSpecial))
