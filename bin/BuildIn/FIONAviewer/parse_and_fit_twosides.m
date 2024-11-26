@@ -56,23 +56,43 @@ for (i=2:length(usage_mask))   %gonna do some ugly matlab jujitsu here...sorry m
     end
 end
 
-%now strip out the NaNs from all the sub_traces
-for (i=1:length(sub_traces_x))
+% %now strip out the NaNs from all the sub_traces
+% for (i=1:length(sub_traces_x))
+% 
+%     for (j = 4:length(sub_traces_x{i}) )
+%         if (isnan(sub_traces_x{i}(j)))
+%             sub_traces_x{i}(j) = mean(sub_traces_x{i}(j-3:j-1));        %use average of previous three points as the fake value
+%             sub_traces_y{i}(j) = mean(sub_traces_y{i}(j-3:j-1));
+%         end
+%     end
+%     for (j = 1:3)
+%         if (isnan(sub_traces_x{i}(j)))
+%             sub_traces_x{i}(j) = sub_traces_x{i}(4);        %use average of previous three points as the fake value
+%             sub_traces_y{i}(j) = sub_traces_y{i}(4);
+%         end
+%     end
+%     disp (sum(isnan(sub_traces_x{i})));
+% end
+
+% JS Edit 2024/11/26 because wouldn't let me fit two color alternating with
+% filled nan's. Now it just omits nans which is what it was trying to do anyway.
+for i=1:length(sub_traces_x)
     
-    for (j = 4:length(sub_traces_x{i}) )
-        if (isnan(sub_traces_x{i}(j)))
-            sub_traces_x{i}(j) = mean(sub_traces_x{i}(j-3:j-1));        %use average of previous three points as the fake value
-            sub_traces_y{i}(j) = mean(sub_traces_y{i}(j-3:j-1));
+    for j = 4:length(sub_traces_x{i})
+        if isnan(sub_traces_x{i}(j))
+            sub_traces_x{i}(j) = mean(sub_traces_x{i}(j-3:j-1),'omitnan');        %use average of previous three points as the fake value
+            sub_traces_y{i}(j) = mean(sub_traces_y{i}(j-3:j-1),'omitnan');
         end
     end
-    for (j = 1:3)
-        if (isnan(sub_traces_x{i}(j)))
+    for j = 1:3
+        if isnan(sub_traces_x{i}(j))
             sub_traces_x{i}(j) = sub_traces_x{i}(4);        %use average of previous three points as the fake value
             sub_traces_y{i}(j) = sub_traces_y{i}(4);
         end
     end
     disp (sum(isnan(sub_traces_x{i})));
 end
+% End of JS Edit
 
 % fitted_trace.x = sub_traces_x;
 % fitted_trace.y = sub_traces_y;
