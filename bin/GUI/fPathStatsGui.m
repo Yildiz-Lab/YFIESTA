@@ -831,8 +831,8 @@ Molecule(minj).Color = [0 1 1];
 %     writematrix(xy(laststart:i,:)-min(xy(laststart:i,:)), strcat(Config.Directory{1},PathStats(n).Name(10:end),thealphabet(ii),'_fiona.txt'), 'Delimiter', 'tab');
 
 % Store in a separate folder for safekeeping
-Config.Directory
-Config.StackName
+% Config.Directory;
+% Config.StackName;
 FFolderName = fullfile(Config.Directory{1}, Config.StackName{1}(1:end-6));
 if ~isfolder(FFolderName)
     mkdir(FFolderName);
@@ -856,7 +856,17 @@ if plotNeighbors == 1
     % JS Edit 2023/01/31
     % we should extend the path and more accurately plot the neighbors onto the
     % x,y coordinates of the channel we have determined
+
+    % JS Edit 2024/11/27
+    if isfield(Config,'NeighborStepsOpts') %presaved options load into GUI
+        prevopts = Config.NeighborStepsOpts;
+        options = fNeighborStepOptions(prevopts);
+    else
+        options = fNeighborStepOptions();
+    end
+    options
     
+
     % first we need to find the least squares path if it isn't empty, which
     % usually is cubic which may cause problems
     if (PathStats(n).AverageDis == 0) || (PathStats(n).AverageDis == -5) 
@@ -876,10 +886,12 @@ if plotNeighbors == 1
     % now we need to do something to extend the path to make it easier for
     % the neighbors to find
     % first, make an interpolation on latent variable so that it approximately goes a nm (we'll stick with 2d for now)
-    % path_extend = 200; %nm
-    path_extend = 10; %nm
+    % path_extend = 200; %nm %now a GUI option
+    % path_extend_plus = options.XA(2);
+    % path_extend_minus = options.XB(2);
+    path_extend = max(options.XA(2), options.XB(2));
 
-    % interpolate between each data point by 1 nm
+    % interpolate between each data point by 1 nm %make GUI option
     Delta = PathStats(n).PathData(2:end,1:4)-PathStats(n).PathData(1:end-1,1:4);
     InterpResults = PathStats(n).PathData(1,1:3); % initialize with first point
     for i = 1:size(Delta,1)
@@ -932,19 +944,20 @@ if plotNeighbors == 1
     end
     
     if PathStats(n).Channel > 1
-        neighbors = findNeighbors(InterpPath(:,1:2), 1);
+        neighbors = findNeighbors(InterpPath(:,1:2), options, 1);
     else
-        neighbors = findNeighbors(InterpPath(:,1:2));
+        neighbors = findNeighbors(InterpPath(:,1:2), options);
     end
     neighbor_txy = cell(length(neighbors),1);
-    neighbor_exist_thresh = 10;
+    neighbor_exist_thresh = 10; %should make this a GUI param
     
     for m = length(neighbors):-1:1
         Res = Molecule(neighbors(m)).Results;
         if size(Res,1) < neighbor_exist_thresh
             neighbor_txy(m) = [];
         else
-        txy_reorient = nan( Res(end,1)-Res(1,1) ,3);
+        % txy_reorient = nan( Res(end,1)-Res(1,1) , 3);
+        txy_reorient = nan( Res(end,1)-Res(1,1) , 5);
         B = [PathStats(n).Results(end,3) - PathStats(n).Results(1,3), PathStats(n).Results(end,4) - PathStats(n).Results(1,4),0]; %for cross product
         for p = 1:size(Res,1)
 %             % Plot on direct path of molecule
@@ -961,10 +974,14 @@ if plotNeighbors == 1
             BXC = cross(B,C); npos = npos * sign(BXC(3));
             theta = acos(dot(B,D)/norm(B)/norm(D)); mpos = mpos * sign(cos(theta));
             
-            txy_reorient(Res(p,1)-Res(1,1)+1,:) = [Res(p,1) - frame1 + 1, mpos, npos];
+            % txy_reorient(Res(p,1)-Res(1,1)+1,:) = [Res(p,1) - frame1 + 1, mpos, npos];
+            % JS Edit 2024/11/27 to get the molecule and molecule time data
+            % saved
+            txy_reorient(Res(p,1)-Res(1,1)+1,:) = [Res(p,1) - frame1 + 1, mpos, npos, str2double(Molecule(neighbors(m)).Name(10:end)), Res(p,2)];
         end
         neighbor_txy{m,1} = txy_reorient;
         end
+        
     end
 else
     neighbor_txy = {};
@@ -1465,10 +1482,10 @@ param(end+1,:) = XYZ(end,:);
 Path = EvalCurvedPath(param,XYZ);
 
 %JS Edit 2022/09/26 for finding nearby molecules
-function nbs = findNeighbors(MolXY, CheckChannel)
+function nbs = findNeighbors(MolXY, options, CheckChannel)
 global Molecule;
 
-if nargin < 2
+if nargin < 3
     CheckChannel = 2;
 end
 
@@ -1476,7 +1493,8 @@ end
 nX=MolXY(:,1);
 nY=MolXY(:,2);
 % ScanSize=100; % in nm, make it so that they share a point within a pixel
-ScanSize=10; % in nm, MINFLUX we can make this a bit closer
+% ScanSize=10; % in nm, MINFLUX we can make this a bit closer
+ScanSize=max(options.XA(2), options.XB(2)); %JS Edit 2024/11/27
 d=[0; cumsum(sqrt((nX(2:end)-nX(1:end-1)).^2 + (nY(2:end)-nY(1:end-1)).^2))];
 dt=max(d)/round(max(d));
 id=(0:round(max(d)))'*dt;
