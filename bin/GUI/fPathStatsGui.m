@@ -887,47 +887,90 @@ if plotNeighbors == 1
     % the neighbors to find
     % first, make an interpolation on latent variable so that it approximately goes a nm (we'll stick with 2d for now)
     % path_extend = 200; %nm %now a GUI option
-    % path_extend_plus = options.XA(2);
-    % path_extend_minus = options.XB(2);
-    path_extend = max(options.XA(2), options.XB(2));
+    path_extend = [options.XB(2), options.XA(2)];
+    
+    % JS Edit 2024/11/30 sort the PathData to make it easier to interpolate
+    [~,sort_idx] = sort(PathStats(n).PathData(:,4));
+    SortedPathData = PathStats(n).PathData(sort_idx,1:4);
 
-    % interpolate between each data point by 1 nm %make GUI option
-    Delta = PathStats(n).PathData(2:end,1:4)-PathStats(n).PathData(1:end-1,1:4);
-    InterpResults = PathStats(n).PathData(1,1:3); % initialize with first point
-    for i = 1:size(Delta,1)
-        dstep = round(Delta(i,4)); % approximately 1 nm per step
-        step = Delta(i,1:3)/dstep;
-        xi = PathStats(n).PathData(i,1)*ones(1,dstep) + step(1)*(1:dstep);
-        yi = PathStats(n).PathData(i,2)*ones(1,dstep) + step(2)*(1:dstep);
-        zi = PathStats(n).PathData(i,3)*ones(1,dstep) + step(3)*(1:dstep);
+    % interpolate between each data point by pt_res nm %make GUI option
+    Delta = SortedPathData(2:end,:)-SortedPathData(1:end-1,:);
+
+    % InterpResults will store the data we will use to then find closest
+    % points for neighbors
+    InterpResults = SortedPathData(1,1:3); % initialize with first point
+    
+    pt_res = 0.5; %1.0 %distance in nm between each line point
+
+    for i = 1:size(Delta,1) % loop through each spot to linearly interpolate between each successive point.
+        dstep = Delta(i,4); % dstep makes distance in on-axis direction of each step
+
+        if dstep < pt_res
+            % dstep
+            xi = SortedPathData(i,1);
+            yi = SortedPathData(i,2);
+            zi = SortedPathData(i,3);
+        else
+            tot_pts = round(dstep/pt_res)+1; % hence the number of points to interpolate between each spot plus one
+            step = Delta(i,1:3)/tot_pts; % ds placement of each interpolation point, approximately 1 nm per step
+            % sqrt(sum(step.^2,2,'omitnan'))
+            xi = SortedPathData(i,1)*ones(1,tot_pts) + step(1)*(0:tot_pts-1); %include the original point as well
+            yi = SortedPathData(i,2)*ones(1,tot_pts) + step(2)*(0:tot_pts-1);
+            zi = SortedPathData(i,3)*ones(1,tot_pts) + step(3)*(0:tot_pts-1);
+        end
         InterpResults = [InterpResults; xi' yi' zi'];
     end
+    % sum(InterpResults(2:end,:)-InterpResults(1:end-1,:) > pt_res)
+    % View the InterpResults with just the trace if one ever wants to see the line
+    figure()
+    hold on
+    scatter(InterpResults(:,1),InterpResults(:,2))
+    
+    % Let's sort InterpResults as to not cause added confusion
+
     % Now we want to do the ends, a linear extrapolation at the end
     % this isn't as good for high curves but deals with edge cases
-    w = 1:min(size(InterpResults,1),path_extend);
-    % beginning fits
-    xbeginmdl = fit(w',InterpResults(1:length(w),1),'linear');
-    ybeginmdl = fit(w',InterpResults(1:length(w),2),'linear');
-    % ending fits
+
+    % find index that gives us an extension equivalent to our expectation
+    mval = min(abs(((InterpResults(:,1)-InterpResults(1,1)).^2 + (InterpResults(:,2)-InterpResults(1,2)).^2)-path_extend(1)^2));
+    bidx = find(abs(((InterpResults(:,1)-InterpResults(1,1)).^2 + (InterpResults(:,2)-InterpResults(1,2)).^2)-path_extend(1)^2) == mval)
+    % abs(((InterpResults(:,1)-InterpResults(end,1)).^2 + (InterpResults(:,2)-InterpResults(end,2)).^2)-path_extend^2)
+    mval = min(abs(((InterpResults(:,1)-InterpResults(end,1)).^2 + (InterpResults(:,2)-InterpResults(end,2)).^2)-path_extend(2)^2));
+    eidx = find(abs(((InterpResults(:,1)-InterpResults(end,1)).^2 + (InterpResults(:,2)-InterpResults(end,2)).^2)-path_extend(2)^2) == mval)
+
+    % determine average slope
+    % beginmdl_coef = polyfit(InterpResults(1:bidx,1), InterpResults(1:bidx,2), 1);
+    % endmdl_coef = polyfit(InterpResults(eidx:end-eidx,1), InterpResults(eidx:end-eidx,2), 1);
+    dx = mean(InterpResults(2:bidx,1) - InterpResults(1:bidx-1,1));
+    dy = mean(InterpResults(2:bidx,2) - InterpResults(1:bidx-1,2));
+    slope = mean((InterpResults(2:bidx,2) - InterpResults(1:bidx-1,2)) ./ (InterpResults(2:bidx,1) - InterpResults(1:bidx-1,1)), 'omitnan');
     
-    xendmdl = fit(w',InterpResults(end-length(w)+1:end,1),'linear');
-    yendmdl = fit(w',InterpResults(end-length(w)+1:end,2),'linear');
-    if all(~isnan(InterpResults(:,3)))
-        zbeginmdl = fit(w',InterpResults(1:length(w),3),'linear');
-        zendmdl = fit(w',InterpResults(end-length(w):end,3),'linear');
-        zb = zbeginmdl(-path_extend+1:0)';
-        ze = zendmdl(length(w)+1:length(w)+path_extend)';
-    else
-        zb = nan(length(w),1);
-        ze = nan(length(w),1);
-    end
-    tb = -path_extend+1:0;
-    te = length(w)+1:length(w)+path_extend;
+    % Now that we have the slope determined, let's make the extrapolation
+    % at the resolution we want
+
+    % For the beginning
+    %      m                            * x                               + b
+    ext_pts = round(path_extend(1)/pt_res);
+    xb = -pt_res * sign(dx)*cos(atan(slope)) * (1:ext_pts); xb = xb + InterpResults(1,1)*ones(1,ext_pts);
+    yb = -pt_res * sign(dy)*sin(atan(slope)) * (1:ext_pts); yb = yb + InterpResults(1,2)*ones(1,ext_pts);
+    zb = nan(ext_pts,1);
+    InterpResults = [xb', yb', zb; InterpResults];
     
-    % Now fill into InterpResults in proper places
-    InterpResults = [xbeginmdl(tb), ybeginmdl(tb), zb; InterpResults];
-    InterpResults = [InterpResults; xendmdl(te), yendmdl(te), ze];
+    % For the end
+    dx = mean(InterpResults(end-eidx+1:end,1) - InterpResults(end-eidx:end-1,1));
+    dy = mean(InterpResults(end-eidx+1:end,2) - InterpResults(end-eidx:end-1,2));
+    slope = mean((InterpResults(end-eidx+1:end,2) - InterpResults(end-eidx:end-1,2)) ./ (InterpResults(end-eidx+1:end,1) - InterpResults(end-eidx:end-1,1)), 'omitnan');
+
+    ext_pts = round(path_extend(2)/pt_res);
+    xe = pt_res * sign(dx)*cos(atan(slope)) * (1:ext_pts); xe = xe + InterpResults(end,1)*ones(1,ext_pts);
+    ye = pt_res * sign(dy)*sin(atan(slope)) * (1:ext_pts); ye = ye + InterpResults(end,2)*ones(1,ext_pts);
+    ze = nan(ext_pts,1);
+    InterpResults = [InterpResults; xe', ye', ze];
     
+    % Interpolated Points added, uncomment to add to figure
+    hold on
+    scatter(xb', yb', 'r')
+    scatter(xe', ye', 'k')
     
     % then, make a path with interpolation to place the neighbors
     if PathStats(n).AverageDis == -1
