@@ -888,7 +888,9 @@ if plotNeighbors == 1
     % first, make an interpolation on latent variable so that it approximately goes a nm (we'll stick with 2d for now)
     % path_extend = 200; %nm %now a GUI option
     path_extend = [options.XB(2), options.XA(2)];
-    
+    pt_res = options.InterpRes; %0.2-1.0 nm %distance in nm between each point within and extended
+    neighbor_exist_thresh = options.ExistThresh; %0.7 s %now a GUI param
+
     % JS Edit 2024/11/30 sort the PathData to make it easier to interpolate
     [~,sort_idx] = sort(PathStats(n).PathData(:,4));
     SortedPathData = PathStats(n).PathData(sort_idx,1:4);
@@ -899,8 +901,6 @@ if plotNeighbors == 1
     % InterpResults will store the data we will use to then find closest
     % points for neighbors
     InterpResults = SortedPathData(1,1:3); % initialize with first point
-    
-    pt_res = 0.5; %1.0 %distance in nm between each line point
 
     for i = 1:size(Delta,1) % loop through each spot to linearly interpolate between each successive point.
         dstep = Delta(i,4); % dstep makes distance in on-axis direction of each step
@@ -920,11 +920,13 @@ if plotNeighbors == 1
         end
         InterpResults = [InterpResults; xi' yi' zi'];
     end
-    % sum(InterpResults(2:end,:)-InterpResults(1:end-1,:) > pt_res)
-    % View the InterpResults with just the trace if one ever wants to see the line
-    figure()
-    hold on
-    scatter(InterpResults(:,1),InterpResults(:,2))
+    
+    if options.ShowPathExt
+        % View the InterpResults with just the trace if one ever wants to see the line
+        figure()
+        hold on
+        scatter(InterpResults(:,1),InterpResults(:,2))
+    end
     
     % Let's sort InterpResults as to not cause added confusion
 
@@ -933,17 +935,17 @@ if plotNeighbors == 1
 
     % find index that gives us an extension equivalent to our expectation
     mval = min(abs(((InterpResults(:,1)-InterpResults(1,1)).^2 + (InterpResults(:,2)-InterpResults(1,2)).^2)-path_extend(1)^2));
-    bidx = find(abs(((InterpResults(:,1)-InterpResults(1,1)).^2 + (InterpResults(:,2)-InterpResults(1,2)).^2)-path_extend(1)^2) == mval)
+    bidx2 = find(abs(((InterpResults(:,1)-InterpResults(1,1)).^2 + (InterpResults(:,2)-InterpResults(1,2)).^2)-path_extend(1)^2) == mval);
     % abs(((InterpResults(:,1)-InterpResults(end,1)).^2 + (InterpResults(:,2)-InterpResults(end,2)).^2)-path_extend^2)
     mval = min(abs(((InterpResults(:,1)-InterpResults(end,1)).^2 + (InterpResults(:,2)-InterpResults(end,2)).^2)-path_extend(2)^2));
-    eidx = find(abs(((InterpResults(:,1)-InterpResults(end,1)).^2 + (InterpResults(:,2)-InterpResults(end,2)).^2)-path_extend(2)^2) == mval)
+    eidx2 = find(abs(((InterpResults(:,1)-InterpResults(end,1)).^2 + (InterpResults(:,2)-InterpResults(end,2)).^2)-path_extend(2)^2) == mval);
 
     % determine average slope
     % beginmdl_coef = polyfit(InterpResults(1:bidx,1), InterpResults(1:bidx,2), 1);
     % endmdl_coef = polyfit(InterpResults(eidx:end-eidx,1), InterpResults(eidx:end-eidx,2), 1);
-    dx = mean(InterpResults(2:bidx,1) - InterpResults(1:bidx-1,1));
-    dy = mean(InterpResults(2:bidx,2) - InterpResults(1:bidx-1,2));
-    slope = mean((InterpResults(2:bidx,2) - InterpResults(1:bidx-1,2)) ./ (InterpResults(2:bidx,1) - InterpResults(1:bidx-1,1)), 'omitnan');
+    dx = mean(InterpResults(2:bidx2,1) - InterpResults(1:bidx2-1,1));
+    dy = mean(InterpResults(2:bidx2,2) - InterpResults(1:bidx2-1,2));
+    slope = mean((InterpResults(2:bidx2,2) - InterpResults(1:bidx2-1,2)) ./ (InterpResults(2:bidx2,1) - InterpResults(1:bidx2-1,1)), 'omitnan');
     
     % Now that we have the slope determined, let's make the extrapolation
     % at the resolution we want
@@ -957,9 +959,9 @@ if plotNeighbors == 1
     InterpResults = [xb', yb', zb; InterpResults];
     
     % For the end
-    dx = mean(InterpResults(end-eidx+1:end,1) - InterpResults(end-eidx:end-1,1));
-    dy = mean(InterpResults(end-eidx+1:end,2) - InterpResults(end-eidx:end-1,2));
-    slope = mean((InterpResults(end-eidx+1:end,2) - InterpResults(end-eidx:end-1,2)) ./ (InterpResults(end-eidx+1:end,1) - InterpResults(end-eidx:end-1,1)), 'omitnan');
+    dx = mean(InterpResults(end-eidx2+1:end,1) - InterpResults(end-eidx2:end-1,1));
+    dy = mean(InterpResults(end-eidx2+1:end,2) - InterpResults(end-eidx2:end-1,2));
+    slope = mean((InterpResults(end-eidx2+1:end,2) - InterpResults(end-eidx2:end-1,2)) ./ (InterpResults(end-eidx2+1:end,1) - InterpResults(end-eidx2:end-1,1)), 'omitnan');
 
     ext_pts = round(path_extend(2)/pt_res);
     xe = pt_res * sign(dx)*cos(atan(slope)) * (1:ext_pts); xe = xe + InterpResults(end,1)*ones(1,ext_pts);
@@ -968,9 +970,11 @@ if plotNeighbors == 1
     InterpResults = [InterpResults; xe', ye', ze];
     
     % Interpolated Points added, uncomment to add to figure
-    hold on
-    scatter(xb', yb', 'r')
-    scatter(xe', ye', 'k')
+    if options.ShowPathExt
+        hold on
+        scatter(xb', yb', 'r')
+        scatter(xe', ye', 'k')
+    end
     
     % then, make a path with interpolation to place the neighbors
     if PathStats(n).AverageDis == -1
@@ -992,12 +996,17 @@ if plotNeighbors == 1
         neighbors = findNeighbors(InterpPath(:,1:2), options);
     end
     neighbor_txy = cell(length(neighbors),1);
-    neighbor_exist_thresh = 10; %should make this a GUI param
     
     for m = length(neighbors):-1:1
         Res = Molecule(neighbors(m)).Results;
-        if size(Res,1) < neighbor_exist_thresh
-            neighbor_txy(m) = [];
+        neighbor_footprint = [Res(1,2) - options.eExcludeTime, Res(end,2) + options.eExcludeTime];
+        % if size(Res,1) < neighbor_exist_thresh
+        %     neighbor_txy(m) = [];
+        if Res(end,2)-Res(1,2) < neighbor_exist_thresh % time is too short
+            neighbor_txy(m) = []; %time is too short
+         %   Exclude Time       &&         (  completely before || completely after  )
+        elseif options.ExcludeTime && ( all( neighbor_footprint < Molecule(minj).Results(1,2)) ||  all( neighbor_footprint > Molecule(minj).Results(end,2)) )
+            neighbor_txy(m) = []; %our neighbor is too far before the molecule or too far after
         else
         % txy_reorient = nan( Res(end,1)-Res(1,1) , 3);
         txy_reorient = nan( Res(end,1)-Res(1,1) , 5);

@@ -24,80 +24,41 @@ c = get(hNeighborStep.fig ,'Color');
 if nargin > 0
     % load function
     fprintf("Loading Previous Saved Options... \n")
-    prevopts.UseNeighborRegions = 0;
 else %defaults
     prevopts = struct();
-    prevopts.UseNeighborRegions = 0;
-    prevopts.XB = [20]; prevopts.XA = prevopts.XB;
+    prevopts.XB = [200]; prevopts.XA = prevopts.XB;
     % prevopts.YB = [5]; prevopts.YA = prevopts.YB;
     prevopts.ExcludeTime = 0;
     prevopts.eExcludeTime = num2str('0');
-    prevopts.ExistThresh = num2str('0');
-    % prevopts.TieDwells = 0; %0 is for normal, tie with ending step. Other is for before.
-    prevopts.Merge = 0; prevopts.k1 = 1; prevopts.k2=1; prevopts.k12=0; prevopts.FwdDwells = 0;
+    prevopts.ExistThresh = num2str('0.4');
+    prevopts.InterpRes = num2str('0.25');
+    prevopts.ShowPathExt = 0;
 end
 prevopts.XB(prevopts.XB == 0) = []; prevopts.XA(prevopts.XA == 0) = [];
 % prevopts.YB(prevopts.YB == 0) = []; prevopts.YA(prevopts.YA == 0) = [];
 
 
-
-% hNeighborStep.cUseNeighborRegions = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.075 0.90 0.5 0.08],'Enable','on','FontSize',12,'Value',prevopts.UseNeighborRegions,...
-%                                           'String','Use Neighbor Regions','Style','checkbox','Tag','Neighbors','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);  
-% 
-% 
-% hNeighborStep.tRegion(1) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.2 0.825 0.12 0.08],'Enable','on','FontSize',12,...
-%                                  'String','Region 1','Style','text','Tag','tXB','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);                 
-% 
-% hNeighborStep.tRegion(2) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.35 0.825 0.12 0.08],'Enable','on','FontSize',12,...
-%                                  'String','Region 2','Style','text','Tag','tXB','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);  
-% 
-% hNeighborStep.tRegion(3) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.5 0.825 0.12 0.08],'Enable','on','FontSize',12,...
-%                                  'String','Region 3','Style','text','Tag','tXB','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);                 
-% 
-% hNeighborStep.tRegion(4) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.65 0.825 0.12 0.08],'Enable','on','FontSize',12,...
-%                                  'String','Region 4','Style','text','Tag','tXB','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);  
-% 
-% hNeighborStep.tRegion(5) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.8 0.825 0.12 0.08],'Enable','on','FontSize',12,...
-%                                  'String','Region 5','Style','text','Tag','tXB','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);  
                              
 
                              Z = prevopts.XB;
-hNeighborStep.tXB = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.06 0.75 0.12 0.08],'Enable','on','FontSize',12,...
+hNeighborStep.tXB = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.06 0.85 0.12 0.08],'Enable','on','FontSize',12,...
                                  'String','X Before','Style','text','Tag','tXB','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);                 
                             
-hNeighborStep.eXB(1) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.2 0.765 0.12 0.08],'Enable','on','FontSize',12,...
+hNeighborStep.eXB(1) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.2 0.865 0.12 0.08],'Enable','on','FontSize',12,...
                                 'String',UnpackageRegions(Z, 1),'Style','edit','Tag','eXB','HorizontalAlignment','center','BackgroundColor',c,'ForegroundColor',ctext);   
                             
 % hNeighborStep.eXB(2) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.35 0.765 0.12 0.08],'Enable','on','FontSize',12,...
 %                                 'String',UnpackageRegions(Z, 2),'Style','edit','Tag','eXB','HorizontalAlignment','center','BackgroundColor',c,'ForegroundColor',ctext);   
-% 
-% hNeighborStep.eXB(3) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.5 0.765 0.12 0.08],'Enable','on','FontSize',12,...
-%                                 'String',UnpackageRegions(Z, 3),'Style','edit','Tag','eXB','HorizontalAlignment','center','BackgroundColor',c,'ForegroundColor',ctext); 
-% 
-% hNeighborStep.eXB(4) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.65 0.765 0.12 0.08],'Enable','on','FontSize',12,...
-%                                 'String',UnpackageRegions(Z, 4),'Style','edit','Tag','eXB','HorizontalAlignment','center','BackgroundColor',c,'ForegroundColor',ctext);   
-% 
-% hNeighborStep.eXB(5) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.8 0.765 0.12 0.08],'Enable','on','FontSize',12,...
-%                                 'String',UnpackageRegions(Z, 5),'Style','edit','Tag','eXB','HorizontalAlignment','center','BackgroundColor',c,'ForegroundColor',ctext);   
 
                             Z = prevopts.XA;
-hNeighborStep.tXA = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.4 0.75 0.12 0.08],'Enable','on','FontSize',12,...
+hNeighborStep.tXA = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.4 0.85 0.12 0.08],'Enable','on','FontSize',12,...
                                  'String','X After','Style','text','Tag','tXA','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);                 
                             
-hNeighborStep.eXA(1) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.54 0.765 0.12 0.08],'Enable','on','FontSize',12,...
+hNeighborStep.eXA(1) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.54 0.865 0.12 0.08],'Enable','on','FontSize',12,...
                                 'String',UnpackageRegions(Z, 1),'Style','edit','Tag','eXA','HorizontalAlignment','center','BackgroundColor',c,'ForegroundColor',ctext);   
                             
 % hNeighborStep.eXA(2) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.35 0.64 0.12 0.08],'Enable','on','FontSize',12,...
 %                                 'String',UnpackageRegions(Z, 2),'Style','edit','Tag','eXA','HorizontalAlignment','center','BackgroundColor',c,'ForegroundColor',ctext);   
-% 
-% hNeighborStep.eXA(3) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.5 0.64 0.12 0.08],'Enable','on','FontSize',12,...
-%                                 'String',UnpackageRegions(Z, 3),'Style','edit','Tag','eXA','HorizontalAlignment','center','BackgroundColor',c,'ForegroundColor',ctext); 
-% 
-% hNeighborStep.eXA(4) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.65 0.64 0.12 0.08],'Enable','on','FontSize',12,...
-%                                 'String',UnpackageRegions(Z, 4),'Style','edit','Tag','eXA','HorizontalAlignment','center','BackgroundColor',c,'ForegroundColor',ctext);   
-% 
-% hNeighborStep.eXA(5) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.8 0.64 0.12 0.08],'Enable','on','FontSize',12,...
-%                                 'String',UnpackageRegions(Z, 5),'Style','edit','Tag','eXA','HorizontalAlignment','center','BackgroundColor',c,'ForegroundColor',ctext);   
 
 %                             Z = prevopts.YB;
 % hNeighborStep.tYB = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.06 0.505 0.12 0.08],'Enable','on','FontSize',12,...
@@ -108,15 +69,6 @@ hNeighborStep.eXA(1) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized'
                             
 % hNeighborStep.eYB(2) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.35 0.515 0.12 0.08],'Enable','on','FontSize',12,...
 %                                 'String',UnpackageRegions(Z, 2),'Style','edit','Tag','eYB','HorizontalAlignment','center','BackgroundColor',c,'ForegroundColor',ctext);   
-% 
-% hNeighborStep.eYB(3) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.5 0.515 0.12 0.08],'Enable','on','FontSize',12,...
-%                                 'String',UnpackageRegions(Z, 3),'Style','edit','Tag','eYB','HorizontalAlignment','center','BackgroundColor',c,'ForegroundColor',ctext); 
-% 
-% hNeighborStep.eYB(4) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.65 0.515 0.12 0.08],'Enable','on','FontSize',12,...
-%                                 'String',UnpackageRegions(Z, 4),'Style','edit','Tag','eYB','HorizontalAlignment','center','BackgroundColor',c,'ForegroundColor',ctext);   
-% 
-% hNeighborStep.eYB(5) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.8 0.515 0.12 0.08],'Enable','on','FontSize',12,...
-%                                 'String',UnpackageRegions(Z, 5),'Style','edit','Tag','eYB','HorizontalAlignment','center','BackgroundColor',c,'ForegroundColor',ctext);  
                             
 
 %                             Z = prevopts.YA;
@@ -128,54 +80,29 @@ hNeighborStep.eXA(1) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized'
                             
 % hNeighborStep.eYA(2) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.35 0.39 0.12 0.08],'Enable','on','FontSize',12,...
 %                                 'String',UnpackageRegions(Z, 2),'Style','edit','Tag','eYA','HorizontalAlignment','center','BackgroundColor',c,'ForegroundColor',ctext);   
-% 
-% hNeighborStep.eYA(3) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.5 0.39 0.12 0.08],'Enable','on','FontSize',12,...
-%                                 'String',UnpackageRegions(Z, 3),'Style','edit','Tag','eYA','HorizontalAlignment','center','BackgroundColor',c,'ForegroundColor',ctext); 
-% 
-% hNeighborStep.eYA(4) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.65 0.39 0.12 0.08],'Enable','on','FontSize',12,...
-%                                 'String',UnpackageRegions(Z, 4),'Style','edit','Tag','eYA','HorizontalAlignment','center','BackgroundColor',c,'ForegroundColor',ctext);   
-% 
-% hNeighborStep.eYA(5) = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.8 0.39 0.12 0.08],'Enable','on','FontSize',12,...
-%                                 'String',UnpackageRegions(Z, 5),'Style','edit','Tag','eYA','HorizontalAlignment','center','BackgroundColor',c,'ForegroundColor',ctext);  
 
                           
-                            % JS Edit 2024/05/14 giving options for fits
+                            % JS Edit 2024/11/30 giving options for step display of neighbors
 
-% hNeighborStep.tMerge = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.05 0.3 0.3 0.05],'Enable','on','FontSize',12,...
-%                                  'String','Merge on-off axis steps','Style','text','Tag','tYA','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);                  
+hNeighborStep.tInterpRes = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.1 0.765 0.45 0.05],'Enable','on','FontSize',12,...
+                                          'String','Interpolation Spacing (nm)','Style','text','Tag','Neighbors','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);  
+hNeighborStep.eInterpRes = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.5 0.75 0.12 0.08],'Enable','on','FontSize',12,'String',prevopts.InterpRes,...
+                                'Style','edit','Tag','eYA','HorizontalAlignment','center','BackgroundColor',c,'ForegroundColor',ctext);
 
-% hNeighborStep.tExcludeTime = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.4 0.335 0.4 0.05],'Enable','on','FontSize',12,...
-%                                           'String','Exclude by time','Style','text','Tag','Neighbors','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);  
 hNeighborStep.tExcludeTime = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.1 0.665 0.35 0.05],'Enable','on','FontSize',12,...
                                           'String','Neighbor Exist Thresh (s)','Style','text','Tag','Neighbors','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);  
 hNeighborStep.eExistThresh = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.5 0.65 0.12 0.08],'Enable','on','FontSize',12,'String',prevopts.ExistThresh,...
                                 'Style','edit','Tag','eYA','HorizontalAlignment','center','BackgroundColor',c,'ForegroundColor',ctext);
 
-hNeighborStep.cExcludeTime = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.1 0.515 0.35 0.05],'Enable','on','FontSize',12,'Value',prevopts.ExcludeTime,...
+hNeighborStep.cExcludeTime = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.1 0.565 0.35 0.05],'Enable','on','FontSize',12,'Value',prevopts.ExcludeTime,...
                                           'String','Exclude by time (s)','Style','checkbox','Tag','Neighbors','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);
-hNeighborStep.eExcludeTime = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.5 0.5 0.12 0.08],'Enable','on','FontSize',12,'String',prevopts.eExcludeTime,...
+hNeighborStep.eExcludeTime = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.5 0.55 0.12 0.08],'Enable','on','FontSize',12,'String',prevopts.eExcludeTime,...
                                 'Style','edit','Tag','eYA','HorizontalAlignment','center','BackgroundColor',c,'ForegroundColor',ctext);
 
 
-% Lifetime options
-% 
-% hNeighborStep.tLifetime = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.05 0.29 0.3 0.05],'Enable','on','FontSize',12,...
-%                                  'String','Rate fitting options','Style','text','Tag','tYA','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);                
-% 
-% hNeighborStep.cFwdDwells = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.1 0.24 0.3 0.05],'Enable','on','FontSize',12,'Value',prevopts.FwdDwells,...
-%                                           'String','Fit fwd dwells','Style','checkbox','Tag','Neighbors','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext); 
-% 
-% hNeighborStep.cTieDwells = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.4 0.24 0.5 0.05],'Enable','on','FontSize',12,'Value',prevopts.TieDwells,...
-%                                           'String','Tie dwells to prev step','Style','checkbox','Tag','Neighbors','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);
-% 
-% hNeighborStep.cPoissonk1 = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.1 0.18 0.3 0.05],'Enable','on','FontSize',12,'Value',prevopts.k1,...
-%                                           'String','Exp Decay','Style','checkbox','Tag','Neighbors','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);  
-% 
-% hNeighborStep.cPoissonk2 = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.7 0.18 0.3 0.05],'Enable','on','FontSize',12,'Value',prevopts.k2,...
-%                                           'String','Poisson k=2','Style','checkbox','Tag','Neighbors','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext); 
-% 
-% hNeighborStep.cDoubleExp = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.4 0.18 0.3 0.05],'Enable','on','FontSize',12,'Value',prevopts.k12,...
-%                                           'String','Double Exp','Style','checkbox','Tag','Neighbors','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext); 
+hNeighborStep.cShowPathExt = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.1 0.465 0.35 0.05],'Enable','on','FontSize',12,'Value',prevopts.ShowPathExt,...
+                                          'String','Show Path Extension','Style','checkbox','Tag','Neighbors','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);
+
 
 
                             % Buttons to proceed
@@ -202,43 +129,25 @@ end
 function SetRegions(~,~)
 global Config;
 hNeighborStep = getappdata(0,'hNeighborStepOpts');
-% opts = PackageRegions();
-% opts.XB = str2num(hNeighborStep.eXB.String);
-% opts.XA = str2num(hNeighborStep.eXA.String);
 opts = PackageRegions();
 opts.ExcludeTime = hNeighborStep.cExcludeTime.Value;
 opts.eExcludeTime = str2num(hNeighborStep.eExcludeTime.String);
 opts.ExistThresh = str2num(hNeighborStep.eExistThresh.String);
-% opts.OmitBlips = hNeighborStep.eOmitBlips.String;
-% opts.Poissonk1 = hNeighborStep.cPoissonk1.Value;
-% opts.Poissonk2 = hNeighborStep.cPoissonk2.Value;
-% opts.DoubleExp = hNeighborStep.cDoubleExp.Value;
-% opts.FwdDwells = hNeighborStep.cFwdDwells.Value;
-% opts.TieDwells = hNeighborStep.cTieDwells.Value;
-% opts.OmitBlips = hNeighborStep.eOmitBlips.String;
+opts.InterpRes = str2num(hNeighborStep.eInterpRes.String);
+opts.ShowPathExt = hNeighborStep.cShowPathExt.Value;
 Config.NeighborStepsOpts = opts;
-% opts.UseNeighborSteps = hNeighborStep.cUseNeighborRegions.Value;
 setappdata(hNeighborStep.fig,'opts',opts);
 uiresume(gcbf);
 
 
 function Okay(~,~)
 hNeighborStep = getappdata(0,'hNeighborStepOpts');
-% opts = PackageRegions();
-% opts.UseNeighborRegions = hNeighborStep.cUseNeighborRegions.Value;
-% opts.XB = str2num(hNeighborStep.eXB.String);
-% opts.XA = str2num(hNeighborStep.eXA.String);
 opts = PackageRegions();
 opts.ExcludeTime = hNeighborStep.cExcludeTime.Value;
 opts.eExcludeTime = str2num(hNeighborStep.eExcludeTime.String);
 opts.ExistThresh = str2num(hNeighborStep.eExistThresh.String);
-% opts.OmitBlips = hNeighborStep.eOmitBlips.String;
-% opts.Poissonk1 = hNeighborStep.cPoissonk1.Value;
-% opts.Poissonk2 = hNeighborStep.cPoissonk2.Value;
-% opts.DoubleExp = hNeighborStep.cDoubleExp.Value;
-% opts.FwdDwells = hNeighborStep.cFwdDwells.Value;
-% opts.TieDwells = hNeighborStep.cTieDwells.Value;
-% opts.OmitBlips = hNeighborStep.eOmitBlips.String;
+opts.InterpRes = str2num(hNeighborStep.eInterpRes.String);
+opts.ShowPathExt = hNeighborStep.cShowPathExt.Value;
 setappdata(hNeighborStep.fig,'opts',opts);
 uiresume(gcbf);
 
