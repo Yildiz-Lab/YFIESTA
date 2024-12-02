@@ -284,13 +284,15 @@ end
 
 % JS Edit 2022/09/27 add in neighbors from other channel
 if ~isempty(handles.neighbors)
-    colorlist = summer(round(1.2*length(handles.neighbors)+1)); %shift so that only green
+    % colorlist = summer(round(1.2*length(handles.neighbors)+1)); %shift so that only green
+    colorlist = gray(2*length(handles.neighbors)); % only the first half
+    colorlist_offaxis = copper(2*length(handles.neighbors)); colorlist_offaxis = flipud(colorlist_offaxis);
     for n = 1:length(handles.neighbors)
         nb = handles.neighbors{n};
         % plot(nb(:,1), nb(:,2), 'Color', colorlist(n,:), 'tag', 'neighbors')
         % plot(nb(:,1), nb(:,3), '--', 'Color', colorlist(n,:), 'tag', 'neighbors')
-        scatter(nb(:,1), nb(:,2), 10, 'filled', 'Color', colorlist(n,:), 'tag', 'neighbors')
-        scatter(nb(:,1), nb(:,3), 10, 'Color', colorlist(n,:), 'tag', 'neighbors')
+        scatter(nb(:,1), nb(:,2), 10, 'filled', 'MarkerEdgeColor', [0,0,0], 'MarkerFaceColor', colorlist(n,:), 'tag', 'neighbors')
+        scatter(nb(:,1), nb(:,3), 10, 'filled', 'MarkerEdgeColor', [0,0,0], 'MarkerFaceColor', colorlist_offaxis(n,:), 'tag', 'neighbors')
     end
 end
 

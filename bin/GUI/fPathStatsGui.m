@@ -864,7 +864,6 @@ if plotNeighbors == 1
     else
         options = fNeighborStepOptions();
     end
-    options
     
 
     % first we need to find the least squares path if it isn't empty, which
@@ -925,7 +924,7 @@ if plotNeighbors == 1
         % View the InterpResults with just the trace if one ever wants to see the line
         figure()
         hold on
-        scatter(InterpResults(:,1),InterpResults(:,2))
+        scatter(InterpResults(:,1),InterpResults(:,2),'DisplayName',"Interpolated Points")
     end
     
     % Let's sort InterpResults as to not cause added confusion
@@ -955,7 +954,7 @@ if plotNeighbors == 1
     ext_pts = round(path_extend(1)/pt_res);
     xb = -pt_res * sign(dx)*cos(atan(slope)) * (1:ext_pts); xb = xb + InterpResults(1,1)*ones(1,ext_pts);
     yb = -pt_res * sign(dy)*sin(atan(slope)) * (1:ext_pts); yb = yb + InterpResults(1,2)*ones(1,ext_pts);
-    zb = nan(ext_pts,1);
+    zb = nan(ext_pts,1); % will need to figure out z-axis later if ever
     InterpResults = [xb', yb', zb; InterpResults];
     
     % For the end
@@ -966,14 +965,15 @@ if plotNeighbors == 1
     ext_pts = round(path_extend(2)/pt_res);
     xe = pt_res * sign(dx)*cos(atan(slope)) * (1:ext_pts); xe = xe + InterpResults(end,1)*ones(1,ext_pts);
     ye = pt_res * sign(dy)*sin(atan(slope)) * (1:ext_pts); ye = ye + InterpResults(end,2)*ones(1,ext_pts);
-    ze = nan(ext_pts,1);
+    ze = nan(ext_pts,1); % will need to figure out z-axis later if ever
     InterpResults = [InterpResults; xe', ye', ze];
     
     % Interpolated Points added, uncomment to add to figure
     if options.ShowPathExt
         hold on
-        scatter(xb', yb', 'r')
-        scatter(xe', ye', 'k')
+        scatter(xb', yb', 'r','DisplayName','Beginning Extrapolated Points')
+        scatter(xe', ye', 'k','DisplayName','Ending Extrapolated Points')
+        legend()
     end
     
     % then, make a path with interpolation to place the neighbors
@@ -1032,6 +1032,11 @@ if plotNeighbors == 1
             txy_reorient(Res(p,1)-Res(1,1)+1,:) = [Res(p,1) - frame1 + 1, mpos, npos, str2double(Molecule(neighbors(m)).Name(10:end)), Res(p,2)];
         end
         neighbor_txy{m,1} = txy_reorient;
+        
+        if options.GenerateNeighbors
+            fGenerateFIONA4Neighbors(minj, neighbors(m), PathStats(n), txy_reorient, InterpPath, fname, options)
+        end
+
         end
         
     end

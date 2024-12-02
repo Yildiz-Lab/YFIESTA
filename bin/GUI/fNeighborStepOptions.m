@@ -33,6 +33,7 @@ else %defaults
     prevopts.ExistThresh = num2str('0.4');
     prevopts.InterpRes = num2str('0.25');
     prevopts.ShowPathExt = 0;
+    prevopts.GenerateNeighbors = 0;
 end
 prevopts.XB(prevopts.XB == 0) = []; prevopts.XA(prevopts.XA == 0) = [];
 % prevopts.YB(prevopts.YB == 0) = []; prevopts.YA(prevopts.YA == 0) = [];
@@ -104,6 +105,9 @@ hNeighborStep.cShowPathExt = uicontrol('Parent',hNeighborStep.fig,'Units','norma
                                           'String','Show Path Extension','Style','checkbox','Tag','Neighbors','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);
 
 
+hNeighborStep.cGenerateNeighbors = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.1 0.365 0.35 0.05],'Enable','on','FontSize',12,'Value',prevopts.GenerateNeighbors,...
+                                          'String','Generate FIONA Neighbors','Style','checkbox','Tag','Neighbors','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);
+
 
                             % Buttons to proceed
 hNeighborStep.bOkay = uicontrol('Parent',hNeighborStep.fig,'Units','normalized','Position',[0.55 0.05 0.42 0.1],'Enable','on','FontSize',14,...
@@ -135,6 +139,7 @@ opts.eExcludeTime = str2num(hNeighborStep.eExcludeTime.String);
 opts.ExistThresh = str2num(hNeighborStep.eExistThresh.String);
 opts.InterpRes = str2num(hNeighborStep.eInterpRes.String);
 opts.ShowPathExt = hNeighborStep.cShowPathExt.Value;
+opts.GenerateNeighbors = hNeighborStep.cGenerateNeighbors.Value;
 Config.NeighborStepsOpts = opts;
 setappdata(hNeighborStep.fig,'opts',opts);
 uiresume(gcbf);
@@ -148,6 +153,7 @@ opts.eExcludeTime = str2num(hNeighborStep.eExcludeTime.String);
 opts.ExistThresh = str2num(hNeighborStep.eExistThresh.String);
 opts.InterpRes = str2num(hNeighborStep.eInterpRes.String);
 opts.ShowPathExt = hNeighborStep.cShowPathExt.Value;
+opts.GenerateNeighbors = hNeighborStep.cGenerateNeighbors.Value;
 setappdata(hNeighborStep.fig,'opts',opts);
 uiresume(gcbf);
 

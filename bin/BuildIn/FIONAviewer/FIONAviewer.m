@@ -96,6 +96,7 @@ handles.currentPlotPSD_Short = 0; % Currently plotted PSD signal, short
 handles.currentPlotTrap_Long = 0; % Currently plotted trap position, long
 handles.currentPlotTrap_Short = 0; % Currently plotted trap position, short
 handles.currentXlabel='frame';
+% handles.currentXlabel='time (s)';
 handles.currentYlabel='position (nm)'; 
 
 handles.KX=0.05;    % Spring constant, x
@@ -232,6 +233,11 @@ function FrameLength_Callback(hObject, ~, handles)
 
 FrameTime = str2double(get(handles.FrameLength, 'string'))/1000; % in sec
 handles.t = 0:FrameTime:(length(handles.PSD1Data_Long)-1)*FrameTime;
+% if isfield(handles,'time')
+%     if ~isempty(handles.time)
+%         handles.t = handles.time;
+%     end
+% end
 
 keepLimits = 0; % reset Y-limits
 handles = PlotData(hObject, handles, keepLimits); % Plot the data
