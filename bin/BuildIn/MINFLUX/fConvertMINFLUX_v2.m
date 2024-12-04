@@ -50,11 +50,14 @@ Colorwheel = [0,0,1; 0,1,0; 1,0,0];
 
 % for tracking, we only care about the last index, so make sure we only
 % grab the last index
-lastitr = size(MFData.loc,2);
+% lastitr = size(MFData.loc,2);
+lastitr_label = max(MFData.itr);
+idx2 = find(MFData.itr == lastitr_label);
 
 for j = 1:length(uid)
 
     idx = find(MFData.tid == uid(j));
+    idx = intersect(idx, idx2);
 
     MFMolecule(j).Name = ['Molecule ', ' ', num2str(uid(j))];
     MFMolecule(j).File = fname;
@@ -78,7 +81,7 @@ for j = 1:length(uid)
     MFMolecule(j).Results(:,8) = sum(MFData.eco(idx),2); %this is now the eco
     MFMolecule(j).Results(:,9) = nan(length(idx),1);
     MFMolecule(j).Results(:,10) = zeros(length(idx),1);
-    length(MFMolecule(j).Results)
+    % length(MFMolecule(j).Results)
     
     % remove ending nans based on xpos, it messes up our distance calculation
     if sum(~isnan(MFMolecule(j).Results(:,3))) > 0
