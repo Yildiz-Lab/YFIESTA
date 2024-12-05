@@ -1,4 +1,4 @@
-function fitted_trace = parse_and_fit_twosides(x,y,usage,thresh,window)
+function fitted_trace = parse_and_fit_twosides_vJS(x,y,usage,thresh,window)
 
 %test function for running the step fitter
 
@@ -74,50 +74,52 @@ end
 %     disp (sum(isnan(sub_traces_x{i})));
 % end
 
-% JS Edit 2024/11/26 because wouldn't let me fit two color alternating with
+% % JS Edit 2024/11/26 because wouldn't let me fit two color alternating with
 % filled nan's. Now it just omits nans which is what it was trying to do anyway.
-for i=1:length(sub_traces_x)
-
-    for j = 4:length(sub_traces_x{i})
-        if isnan(sub_traces_x{i}(j))
-            sub_traces_x{i}(j) = mean(sub_traces_x{i}(j-3:j-1),'omitnan');        %use average of previous three points as the fake value
-            sub_traces_y{i}(j) = mean(sub_traces_y{i}(j-3:j-1),'omitnan');
-        end
-    end
-    for j = 1:3
-        if isnan(sub_traces_x{i}(j))
-            sub_traces_x{i}(j) = sub_traces_x{i}(4);        %use average of previous three points as the fake value
-            sub_traces_y{i}(j) = sub_traces_y{i}(4);
-        end
-    end
-    disp (sum(isnan(sub_traces_x{i})));
-end
-% End of JS Edit
-
-% % JS Edit 2024/12/04
-% % Okay why are we even doing the average. Why not just remove the Nans and
-% % fit with that? I'll tempt fate and ask forgiveness from the gods of
-% % Bayesian statistics...
-% 
-% % I know i can just use ~isnan, but idk what sub_traces do so I don't want
-% % to mess that up...
 % for i=1:length(sub_traces_x)
 % 
-%     for j = length(sub_traces_x{i}):-1:4
+%     for j = 4:length(sub_traces_x{i})
 %         if isnan(sub_traces_x{i}(j))
-%             sub_traces_x{i}(j) = [];        % delete the point
-%             sub_traces_y{i}(j) = [];
+%             sub_traces_x{i}(j) = mean(sub_traces_x{i}(j-3:j-1),'omitnan');        %use average of previous three points as the fake value
+%             sub_traces_y{i}(j) = mean(sub_traces_y{i}(j-3:j-1),'omitnan');
 %         end
 %     end
-%     for j = 3:-1:1
+%     for j = 1:3
 %         if isnan(sub_traces_x{i}(j))
-%             sub_traces_x{i}(j) = []; %sub_traces_x{i}(4);        %use average of previous three points as the fake value
-%             sub_traces_y{i}(j) = []; %sub_traces_y{i}(4);
+%             sub_traces_x{i}(j) = sub_traces_x{i}(4);        %use average of previous three points as the fake value
+%             sub_traces_y{i}(j) = sub_traces_y{i}(4);
 %         end
 %     end
 %     disp (sum(isnan(sub_traces_x{i})));
 % end
-% % End of JS Edit 2024/12/04
+% % End of JS Edit
+
+% JS Edit 2024/12/04
+% Okay why are we even doing the average. Why not just remove the Nans and
+% fit with that? I'll tempt fate and ask forgiveness from the gods of
+% Bayesian statistics...
+
+% I know i can just use ~isnan, but idk what sub_traces do so I don't want
+% to mess that up...
+% sub_traces_x{1}
+for i=1:length(sub_traces_x)
+    
+    for j = length(sub_traces_x{i}):-1:4
+        if isnan(sub_traces_x{i}(j))
+            sub_traces_x{i}(j) = [];        % delete the point
+            sub_traces_y{i}(j) = [];
+        end
+    end
+    for j = 3:-1:1
+        if isnan(sub_traces_x{i}(j))
+            sub_traces_x{i}(j) = []; %sub_traces_x{i}(4);        %use average of previous three points as the fake value
+            sub_traces_y{i}(j) = []; %sub_traces_y{i}(4);
+        end
+    end
+    disp (sum(isnan(sub_traces_x{i})));
+end
+% End of JS Edit 2024/12/04
+% sub_traces_x{1}
 
 % fitted_trace.x = sub_traces_x;
 % fitted_trace.y = sub_traces_y;
@@ -160,36 +162,12 @@ end
 fitted_trace = NaN(length(x),6);
 fitted_trace(1:length(x),[1 2 5 6]) = [x' y' zeros(length(x),1) usage' ];
 
-%then use the sub_traces and their indices to write out a 6-column trace
-%object
-%future versions of this function will re-structure output based on
-%FIONAviewer's handles object, right?
-for (i=1:length(sub_traces_x))
-    fitted_trace(sub_traces_ind{i},3:6) = [ fit_traces_x{i}' fit_traces_y{i}' changepoints_all{i}' usage(sub_traces_ind{i})'];
-    pre_cp_ind = sub_traces_ind{i}(1) - 1; %after each usage zone, add in a changepoint to make sure fitted values can't change once its keyed in (might ditch this some point)
-    post_cp_ind = sub_traces_ind{i}(length(sub_traces_ind{i})) + 1;
-    if (pre_cp_ind > 1)
-        fitted_trace(pre_cp_ind,5) = 1;
-    end
-    if (post_cp_ind < length(x) )
-        fitted_trace(post_cp_ind,5) = 1;
-    end
-end
-
-% % JS Edit 2024/12/04
 % %then use the sub_traces and their indices to write out a 6-column trace
 % %object
 % %future versions of this function will re-structure output based on
 % %FIONAviewer's handles object, right?
 % for (i=1:length(sub_traces_x))
-%     idx = find(~isnan(fitted_trace));
-%     idx_both = intersect(idx, sub_traces_ind{i}); %only use the ones that aren't nan
-%     % size(idx_both)
-%     % size(fit_traces_x{i})
-%     % size(fit_traces_y{i})
-%     % size(changepoints_all{i})
-%     % size(usage(sub_traces_ind{i}))
-%     fitted_trace(idx_both,3:6) = [ fit_traces_x{i}' fit_traces_y{i}' changepoints_all{i}' usage(idx_both)'];
+%     fitted_trace(sub_traces_ind{i},3:6) = [ fit_traces_x{i}' fit_traces_y{i}' changepoints_all{i}' usage(sub_traces_ind{i})'];
 %     pre_cp_ind = sub_traces_ind{i}(1) - 1; %after each usage zone, add in a changepoint to make sure fitted values can't change once its keyed in (might ditch this some point)
 %     post_cp_ind = sub_traces_ind{i}(length(sub_traces_ind{i})) + 1;
 %     if (pre_cp_ind > 1)
@@ -199,8 +177,32 @@ end
 %         fitted_trace(post_cp_ind,5) = 1;
 %     end
 % end
+
+% JS Edit 2024/12/04
+%then use the sub_traces and their indices to write out a 6-column trace
+%object
+%future versions of this function will re-structure output based on
+%FIONAviewer's handles object, right?
+for (i=1:length(sub_traces_x))
+    idx = find(~isnan(fitted_trace));
+    idx_both = intersect(idx, sub_traces_ind{i}); %only use the ones that aren't nan
+    % size(idx_both)
+    % size(fit_traces_x{i})
+    % size(fit_traces_y{i})
+    % size(changepoints_all{i})
+    % size(usage(sub_traces_ind{i}))
+    fitted_trace(idx_both,3:6) = [ fit_traces_x{i}' fit_traces_y{i}' changepoints_all{i}' usage(idx_both)'];
+    pre_cp_ind = sub_traces_ind{i}(1) - 1; %after each usage zone, add in a changepoint to make sure fitted values can't change once its keyed in (might ditch this some point)
+    post_cp_ind = sub_traces_ind{i}(length(sub_traces_ind{i})) + 1;
+    if (pre_cp_ind > 1)
+        fitted_trace(pre_cp_ind,5) = 1;
+    end
+    if (post_cp_ind < length(x) )
+        fitted_trace(post_cp_ind,5) = 1;
+    end
+end
 % fitted_trace
-% % End of JS Edit 2024/12/04
+% End of JS Edit 2024/12/04
 
 
 

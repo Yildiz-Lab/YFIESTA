@@ -997,9 +997,17 @@ if plotNeighbors == 1
     end
     neighbor_txy = cell(length(neighbors),1);
     
+    % Molecule(minj).Name
+    % Molecule(minj).Results(1,2)
+    % Molecule(minj).Results(end,2)
+
     for m = length(neighbors):-1:1
         Res = Molecule(neighbors(m)).Results;
+        % Molecule(neighbors(m)).Name
         neighbor_footprint = [Res(1,2) - options.eExcludeTime, Res(end,2) + options.eExcludeTime];
+        % log1 = all( neighbor_footprint < Molecule(minj).Results(1,2))
+        % log2 = all( neighbor_footprint > Molecule(minj).Results(end,2))
+        % log1 || log2
         % if size(Res,1) < neighbor_exist_thresh
         %     neighbor_txy(m) = [];
         if Res(end,2)-Res(1,2) < neighbor_exist_thresh % time is too short

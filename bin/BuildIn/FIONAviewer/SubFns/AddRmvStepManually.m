@@ -22,6 +22,11 @@ function handles = AddRmvStepManually(hObject, handles, clickX)
 %         hStepsShortFilt = handles.offAxisStepHandleFilt;
 % end
 
+% JS Edit 2024/12/04 to ignore Nans in stepVector
+% Before we were just interpolating. Now we are actually doing work
+
+idx = find(~isnan(handles.stepVector));
+
 scaledStepsT = [1:length(handles.stepVector)]; % in datapoints
 %scaledStepsX = get(hSteps, 'YData'); % in nanometers
 
@@ -81,9 +86,11 @@ if addStep
 
 %  MD: Make a changepoints array, = 1 if theres a step, =0 otherwise. No
 %  NaNs can be used to make a changepoint
-    limit = length(handles.stepVector);
-    changepoints = ( (handles.stepVector(2:limit) - handles.stepVector(1:limit-1)) ~= 0 ...
-        & isnan(handles.stepVector(2:limit) - handles.stepVector(1:limit-1)) == 0 );
+    % limit = length(handles.stepVector);
+    % changepoints = ( (handles.stepVector(2:limit) - handles.stepVector(1:limit-1)) ~= 0 ...
+    %     & isnan(handles.stepVector(2:limit) - handles.stepVector(1:limit-1)) == 0 )
+    limit = length(idx); % JS Edit 2024/12/04
+    changepoints = ( (handles.stepVector(idx(2:limit)) - handles.stepVector(idx(1:limit-1))) ~= 0);
     changepoints = [0 changepoints];
     changepoints(indexT) = 1;
 % MD: use the changepoints array to remake the entire on-axis fit...looks
@@ -94,11 +101,11 @@ if addStep
     last = 1;
     for (i = 1:limit)
          if (changepoints(i) == 1)
-             handles.stepVector(last:i-1) = nanmean(handles.currentPlotPSD_Long(last:i-1));
+             handles.stepVector(last:i-1) = mean(handles.currentPlotPSD_Long(last:i-1),'omitnan');
              last = i;
          end
          if (i == limit)
-             handles.stepVector(last:limit) = nanmean(handles.currentPlotPSD_Long(last:limit));
+             handles.stepVector(last:limit) = mean(handles.currentPlotPSD_Long(last:limit),'omitnan');
          end
     end
     
@@ -151,9 +158,11 @@ else % remove a step
         remove_index = nextStepIndex;
     end
     %disp (remove_index);
-    limit = length(handles.stepVector);
-    changepoints = ( (handles.stepVector(2:limit) - handles.stepVector(1:limit-1)) ~= 0 ...
-        & isnan(handles.stepVector(2:limit) - handles.stepVector(1:limit-1)) == 0 );
+    % limit = length(handles.stepVector);
+    % changepoints = ( (handles.stepVector(2:limit) - handles.stepVector(1:limit-1)) ~= 0 ...
+    %     & isnan(handles.stepVector(2:limit) - handles.stepVector(1:limit-1)) == 0 );
+    limit = length(idx); % JS Edit 2024/12/04
+    changepoints = ( (handles.stepVector(idx(2:limit)) - handles.stepVector(idx(1:limit-1))) ~= 0);
     changepoints = [0 changepoints];
     %disp(changepoints(remove_index-1:remove_index+1));
     changepoints(remove_index) = 0;
@@ -163,11 +172,11 @@ else % remove a step
     last = 1;
     for (i = 1:limit)
          if (changepoints(i) == 1)
-             handles.stepVector(last:i-1) = nanmean(handles.currentPlotPSD_Long(last:i-1));
+             handles.stepVector(last:i-1) = mean(handles.currentPlotPSD_Long(last:i-1),'omitnan');
              last = i;
          end
          if (i == limit)
-             handles.stepVector(last:limit) = nanmean(handles.currentPlotPSD_Long(last:limit));
+             handles.stepVector(last:limit) = mean(handles.currentPlotPSD_Long(last:limit),'omitnan');
          end
     end
 end
