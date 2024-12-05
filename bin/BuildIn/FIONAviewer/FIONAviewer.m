@@ -814,7 +814,8 @@ if strcmp(currSelection, 'FIT')
     % this version of the wrapper won't fit the off-axis at all, and breaks
     % the trace into subtraces according to usage. See pars_and_fit for
     % more details.
-    fitted_trace_6col = parse_and_fit_twosides(x,y,usage,1,500000);
+    % fitted_trace_6col = parse_and_fit_twosides(x,y,usage,1,500000);
+    fitted_trace_6col = parse_and_fit_twosides_vJS(x,y,usage,1,500000);
     
     % Build step vectors
     
@@ -1566,7 +1567,8 @@ disp (['setting uage from ' num2str(startTime) 'to '  num2str(endTime) ' to ' nu
     % the trace into subtraces according to usage. See parse_and_fit for
     % more details.
     
-    fitted_trace_6col = parse_and_fit_twosides(x,y,usage,1,500000);
+    % fitted_trace_6col = parse_and_fit_twosides(x,y,usage,1,500000);
+    fitted_trace_6col = parse_and_fit_twosides_vJS(x,y,usage,1,500000);
     
     % Build step vectors
     
@@ -1627,7 +1629,8 @@ disp (['fitting trace between ' num2str(startTime) 'and '  num2str(endTime) ])
     % the trace into subtraces according to usage. See parse_and_fit for
     % more details.
     
-    fitted_trace_6col = parse_and_fit_twosides(x,y,usage,1,500000);
+    % fitted_trace_6col = parse_and_fit_twosides(x,y,usage,1,500000);
+    fitted_trace_6col = parse_and_fit_twosides_vJS(x,y,usage,1,500000);
     
     % Build step vectors
     

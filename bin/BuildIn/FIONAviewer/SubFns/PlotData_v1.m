@@ -266,17 +266,17 @@ if dispLong == 1 % Display long axis
 end
 
 if dispLongFilt == 1 && handles.FilteredFlag == 1   %Display filtered long axis
-
+    
     plot(handles.currentPlotT(idx), real(handles.PSD1Data_Long_Filt(idx)+FilteredPlotOffset), ...
         handles.currentstyleXFilt)
-
+    
 end
 
 if dispShortFilt == 1 && handles.FilteredFlag == 1  %Display filtered short axis
-
+    
     plot(handles.currentPlotT(idx), real(handles.PSD1Data_Short_Filt(idx)+FilteredPlotOffset), ...
         handles.currentstyleYFilt)
-
+    
 end
 
 % End of JS Edit
@@ -334,7 +334,7 @@ if length(handles.stepVector) == length(handles.currentPlotT)
         if dispShortFilt == 1
             handles.offAxisStepHandleFilt = plot(handles.t(idx), ...
                 handles.shortStepVector(idx)+FilteredPlotOffset, '-', 'LineWidth', 2, 'Color', [0.3 0.3 0.9]);
-
+    
         end
     end
 end

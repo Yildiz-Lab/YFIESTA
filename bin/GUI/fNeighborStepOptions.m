@@ -26,14 +26,14 @@ if nargin > 0
     fprintf("Loading Previous Saved Options... \n")
 else %defaults
     prevopts = struct();
-    prevopts.XB = [200]; prevopts.XA = prevopts.XB;
+    prevopts.XB = [100]; prevopts.XA = prevopts.XB;
     % prevopts.YB = [5]; prevopts.YA = prevopts.YB;
-    prevopts.ExcludeTime = 0;
-    prevopts.eExcludeTime = num2str('0');
+    prevopts.ExcludeTime = 1;
+    prevopts.eExcludeTime = num2str('0.5');
     prevopts.ExistThresh = num2str('0.4');
     prevopts.InterpRes = num2str('0.25');
     prevopts.ShowPathExt = 0;
-    prevopts.GenerateNeighbors = 0;
+    prevopts.GenerateNeighbors = 1;
 end
 prevopts.XB(prevopts.XB == 0) = []; prevopts.XA(prevopts.XA == 0) = [];
 % prevopts.YB(prevopts.YB == 0) = []; prevopts.YA(prevopts.YA == 0) = [];
