@@ -10,8 +10,8 @@ function F = fCalcAlignCorrection(ch1file, ch2file)
 %    output will be x, y dependent translation correction for Ch2 to move
 %    to Ch1 coordinates in nm
 
-too_large_nm = 1000; %FIONA using nanohole
-% too_large_nm = 20; %sqrt(3^2 + 7^2) %MINFLUX using 2C gold beads
+% too_large_nm = 1000; %FIONA using nanohole
+too_large_nm = 20; %sqrt(3^2 + 7^2) %MINFLUX using 2C gold beads
 
 % user choose option
 if nargin < 1
