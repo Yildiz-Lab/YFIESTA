@@ -1,9 +1,14 @@
 
 function [forward,backward] = add_to_list_6col_dwells_for_back(trace,framerate)
 xsteps = trace(:,4);
-xsteps = xsteps(~isnan(xsteps));
 ysteps = trace(:,3);
-ysteps = ysteps(~isnan(ysteps));
+xnidx = find(~isnan(xsteps));
+ynidx = find(~isnan(ysteps));
+idx = intersect(xnidx, ynidx);
+xsteps = xsteps(idx);
+ysteps = ysteps(idx);
+% xsteps = xsteps(~isnan(xsteps));
+% ysteps = ysteps(~isnan(ysteps));
 stepsis = [ysteps xsteps];
 L = length(stepsis);
 
