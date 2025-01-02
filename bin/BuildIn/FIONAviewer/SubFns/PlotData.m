@@ -347,10 +347,22 @@ if ~isempty(handles.neighbors)
     colorlist_offaxis = copper(2*length(handles.neighbors)); colorlist_offaxis = flipud(colorlist_offaxis);
     for n = 1:length(handles.neighbors)
         nb = handles.neighbors{n};
-        % plot(nb(:,1), nb(:,2), 'Color', colorlist(n,:), 'tag', 'neighbors')
-        % plot(nb(:,1), nb(:,3), '--', 'Color', colorlist(n,:), 'tag', 'neighbors')
-        scatter(nb(:,1), nb(:,2), 10, 'filled', 'MarkerEdgeColor', [0,0,0], 'MarkerFaceColor', colorlist(n,:), 'MarkerFaceAlpha', 0.1, 'MarkerEdgeAlpha', 0.2, 'tag', 'neighbors')
-        scatter(nb(:,1), nb(:,3), 10, 'filled', 'MarkerEdgeColor', [0,0,0], 'MarkerFaceColor', colorlist_offaxis(n,:), 'MarkerFaceAlpha', 0.1, 'MarkerEdgeAlpha', 0.2, 'tag', 'neighbors')
+
+        % JS Edit 2025/01/01 to remove Nan's when plotting fitted lines.
+        idxt = find( ~isnan( nb(:,1) ) );
+        idxxy = find( ~isnan( nb(:,2) ) );
+        if length(idxt) > length(idxxy)
+            idxt = idxt(2:end);
+        end
+        % idxt(1:10)
+        % idxxy(1:10)
+        % idxt(end-10:end)
+        % idxxy(end-10:end)
+
+        plot(nb(idxt,1), nb(idxxy,2), 'Color', colorlist(n,:), 'tag', 'neighbors')
+        plot(nb(idxt,1), nb(idxxy,3), '--', 'Color', colorlist(n,:), 'tag', 'neighbors')
+        % scatter(nb(:,1), nb(:,2), 10, 'filled', 'MarkerEdgeColor', [0,0,0], 'MarkerFaceColor', colorlist(n,:), 'MarkerFaceAlpha', 0.1, 'MarkerEdgeAlpha', 0.2, 'tag', 'neighbors')
+        % scatter(nb(:,1), nb(:,3), 10, 'filled', 'MarkerEdgeColor', [0,0,0], 'MarkerFaceColor', colorlist_offaxis(n,:), 'MarkerFaceAlpha', 0.1, 'MarkerEdgeAlpha', 0.2, 'tag', 'neighbors')
     end
 end
 

@@ -50,7 +50,6 @@ prevStepIndex = find(diffPrev, 1, 'last') + 1;
 diffNext = handles.stepVector(indexT:end) - currX;
 nextStepIndex = find(diffNext, 1, 'first') + indexT - 1;
 
-
 % determine if a step is being added or deleted:
 addStep = strcmp(get(handles.AddDeleteStep, 'String'), 'Add');
 if addStep
@@ -84,29 +83,48 @@ if addStep
 %         mean(handles.currentPlotPSD_Long(indexT:nextStepIndex));
 
 
-%  MD: Make a changepoints array, = 1 if theres a step, =0 otherwise. No
-%  NaNs can be used to make a changepoint
-    % limit = length(handles.stepVector);
-    % changepoints = ( (handles.stepVector(2:limit) - handles.stepVector(1:limit-1)) ~= 0 ...
-    %     & isnan(handles.stepVector(2:limit) - handles.stepVector(1:limit-1)) == 0 )
-    limit = length(idx); % JS Edit 2024/12/04
-    changepoints = ( (handles.stepVector(idx(2:limit)) - handles.stepVector(idx(1:limit-1))) ~= 0);
-    changepoints = [0 changepoints];
-    changepoints(indexT) = 1;
-% MD: use the changepoints array to remake the entire on-axis fit...looks
-% like that is used right off to make the off-axis fit, so we should solve
-% the indexing problem right here. 
-% If not, add changepoints to handles, and
-% put MD's fit maker in there as well...
-    last = 1;
-    for (i = 1:limit)
-         if (changepoints(i) == 1)
-             handles.stepVector(last:i-1) = mean(handles.currentPlotPSD_Long(last:i-1),'omitnan');
-             last = i;
-         end
-         if (i == limit)
-             handles.stepVector(last:limit) = mean(handles.currentPlotPSD_Long(last:limit),'omitnan');
-         end
+% %  MD: Make a changepoints array, = 1 if theres a step, =0 otherwise. No
+% %  NaNs can be used to make a changepoint
+%     % limit = length(handles.stepVector);
+%     % changepoints = ( (handles.stepVector(2:limit) - handles.stepVector(1:limit-1)) ~= 0 ...
+%     %     & isnan(handles.stepVector(2:limit) - handles.stepVector(1:limit-1)) == 0 )
+%     limit = length(idx); % JS Edit 2024/12/04
+%     changepoints = ( (handles.stepVector(idx(2:limit)) - handles.stepVector(idx(1:limit-1))) ~= 0);
+%     changepoints = [0 changepoints];
+%     changepoints(indexT) = 1;
+% % MD: use the changepoints array to remake the entire on-axis fit...looks
+% % like that is used right off to make the off-axis fit, so we should solve
+% % the indexing problem right here. 
+% % If not, add changepoints to handles, and
+% % put MD's fit maker in there as well...
+%     last = 1;
+%     for (i = 1:limit)
+%          if (changepoints(i) == 1)
+%              handles.stepVector(last:i-1) = mean(handles.currentPlotPSD_Long(last:i-1),'omitnan');
+%              last = i;
+%          end
+%          if (i == limit)
+%              handles.stepVector(last:limit) = mean(handles.currentPlotPSD_Long(last:limit),'omitnan');
+%          end
+%     end
+
+    % JS Edit 2025/01/01 so update doesn't change the number of Nan's which
+    % throws everything off, just use idx instead
+
+    idxlimit = length(idx);
+    % changespots finds spots where idx(2:idxlimit)
+    changespots = find(handles.stepVector(idx(2:idxlimit)) - handles.stepVector(idx(1:idxlimit-1)));
+    [~, k] = min(abs(idx - indexT));
+    changespots = [changespots k];
+    changespots = sort(changespots);
+
+    changespots = [0, changespots, idxlimit]; %add beginning and end for padding
+    for i = 2:length(changespots) % go through and fill in with the average
+        % idx(changespots(i-1)+1:changespots(i))
+        % [idx(changespots(i-1)+1), idx(changespots(i))]
+        mean(handles.currentPlotPSD_Long(idx(changespots(i-1)+1:changespots(i))),'omitnan');
+        handles.stepVector(idx(changespots(i-1)+1:changespots(i))) = mean(handles.currentPlotPSD_Long(idx(changespots(i-1)+1:changespots(i))),'omitnan');
+
     end
     
     
@@ -161,23 +179,40 @@ else % remove a step
     % limit = length(handles.stepVector);
     % changepoints = ( (handles.stepVector(2:limit) - handles.stepVector(1:limit-1)) ~= 0 ...
     %     & isnan(handles.stepVector(2:limit) - handles.stepVector(1:limit-1)) == 0 );
-    limit = length(idx); % JS Edit 2024/12/04
-    changepoints = ( (handles.stepVector(idx(2:limit)) - handles.stepVector(idx(1:limit-1))) ~= 0);
-    changepoints = [0 changepoints];
-    %disp(changepoints(remove_index-1:remove_index+1));
-    changepoints(remove_index) = 0;
+    % limit = length(idx); % JS Edit 2024/12/04
+    % changepoints = ( (handles.stepVector(idx(2:limit)) - handles.stepVector(idx(1:limit-1))) ~= 0);
+    % changepoints = [0 changepoints];
+    
 % MD: use the changepoints array to remake the entire on-axis fit...looks
 % like that is used right off to make the on-axis fit, so we should solve
 % the indexing problem right here.
-    last = 1;
-    for (i = 1:limit)
-         if (changepoints(i) == 1)
-             handles.stepVector(last:i-1) = mean(handles.currentPlotPSD_Long(last:i-1),'omitnan');
-             last = i;
-         end
-         if (i == limit)
-             handles.stepVector(last:limit) = mean(handles.currentPlotPSD_Long(last:limit),'omitnan');
-         end
+    % last = 1;
+    % for (i = 1:limit)
+    %      if (changepoints(i) == 1)
+    %          handles.stepVector(last:i-1) = mean(handles.currentPlotPSD_Long(last:i-1),'omitnan');
+    %          last = i;
+    %      end
+    %      if (i == limit)
+    %          handles.stepVector(last:limit) = mean(handles.currentPlotPSD_Long(last:limit),'omitnan');
+    %      end
+    % end
+
+    % JS Edit 2025/01/01 so update doesn't change the number of Nan's which
+    % throws everything off, just use idx instead
+
+    idxlimit = length(idx);
+    % changespots finds spots where idx(2:idxlimit)
+    changespots = find(handles.stepVector(idx(2:idxlimit)) - handles.stepVector(idx(1:idxlimit-1)));
+    [~, k] = min(abs(idx(changespots+1) - remove_index));
+    changespots(k) = [];
+
+    changespots = [0, changespots, idxlimit]; %add beginning and end for padding
+    for i = 2:length(changespots) % go through and fill in with the average
+        % idx(changespots(i-1)+1:changespots(i))
+        % [idx(changespots(i-1)+1), idx(changespots(i))]
+        mean(handles.currentPlotPSD_Long(idx(changespots(i-1)+1:changespots(i))),'omitnan');
+        handles.stepVector(idx(changespots(i-1)+1:changespots(i))) = mean(handles.currentPlotPSD_Long(idx(changespots(i-1)+1:changespots(i))),'omitnan');
+
     end
 end
 
