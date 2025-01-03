@@ -65,12 +65,27 @@ for i = 1:length(fnames)
     fname(ii:jj)
     fname(1:j)
 
-    for k = 1:length(Molecule)
+    for k = length(Molecule):-1:1
+        % Have it go backwards so that it can only find the total fname.
+        % For example. if you were trying to find molecule 627, but there
+        % was also a molecule 66273, it would find the higher molecule
+        % first. But then upon crossing to 627, it would update m
+        % accordingly.
+
+        % Contrastly, if you are trying to find molecule 66273, it will not
+        % update when it reaches 627 since the str is not contained in
+        % Molecule 627 name. So you are safe. Genius move!
         if ~isempty(strfind(Molecule(k).Name,fname(ii:jj)))
+            % Molecule(k).Name
+            % length(Molecule(k).Name)
+            % strfind(Molecule(k).Name, fname(ii:jj))
             m = k;
         end
         if ~isempty(j)
         if ~isempty(strfind(Molecule(k).Name,fname(1:j)))
+            % Molecule(k).Name
+            % length(Molecule(k).Name)
+            % strfind(Molecule(k).Name, fname(1:j))
             n = k;
         end
         end
@@ -83,8 +98,8 @@ for i = 1:length(fnames)
     end
     
     fprintf('Channel 2 \n')
-    Molecule(m).Name
-    Molecule(m).Channel
+    fprintf(strcat(Molecule(m).Name, '\n'))
+    fprintf(strcat("Channel ", num2str(Molecule(m).Channel), '\n'))
     efo2 = [efo2; Molecule(m).Results(:,7)];
     eco2 = [eco2; Molecule(m).Results(:,8)];
 
@@ -225,6 +240,9 @@ for i = 1:length(fnames)
     
         fprintf(strcat("ch2 dx: ", num2str( round(st(2,1),2)), " nm \n"))
         fprintf(strcat("ch2 deltat: ", num2str( round(st(2,2),3) ), " ms \n"))
+
+        xycorrect = -[mean(Molecule(m).Results(:,3)) - mean(Molecule(n).Results(:,3)), mean(Molecule(m).Results(:,4)) - mean(Molecule(n).Results(:,4))];
+        fprintf(strcat('Mean x, y: (', num2str(round(xycorrect(1),3)) ,', ', num2str(round(xycorrect(2),3)), ')\n'))
     
     else
 

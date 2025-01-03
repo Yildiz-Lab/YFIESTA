@@ -46,6 +46,12 @@ avg_window = 12; % accounts for NaNs, helpful if a reasonable size of the step
 minsteplength = 12;
 maxnanratio = 0.75;
 
+% good params for high temporal resolution 2C kinesin MINFLUX 25/01/01
+step_thresh = 5.5;
+avg_window = 15; % accounts for NaNs, helpful if a reasonable size of the step
+minsteplength = 15;
+maxnanratio = 0.75;
+
 % we have to set this to delete to use the prebuilt AddRmvStepManually func
 % remember the old state so we can return it when we plot later
 oldstate = get(handles.AddDeleteStep,'String');

@@ -45,13 +45,17 @@ for i = 1:length(fnames)
     totdata = load(fullfile(dir,fname));
     ch2data = totdata.data;
 
+    if ~isfield(ch2data,'trace')
+        fprintf(strcat(fname,'\n'))
+    end
+
     % find neighbor file
 
     jj = strfind(fname,'_fiona')-1; %nbh or initial
     j = strfind(fname,'_nbh')-1; %if there is a neighbor
     ii = 1;
     if ~isempty(j)
-        ii = j+6;
+        ii = j+6; %for _fiona
     end
     
     % fname(ii:jj)
