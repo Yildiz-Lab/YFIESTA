@@ -12,6 +12,8 @@ switch func
         LoadCorrections(varargin{1});
     case 'SetMaskCorrections'
         SetMaskCorrections(varargin{1})
+    case 'SetLinearMaskCorrections'
+        SetLinearMaskCorrections(varargin{1});
     case 'ApplyMultiChannelCorrections'
         ApplyMultiChannelCorrections(varargin{1});
 end
@@ -109,6 +111,28 @@ set(hMainGui.Menu.mApplyMultiCorrections,'Enable','On');
 
 setappdata(0,'hMainGui',hMainGui);
 
+
+function SetLinearMaskCorrections(hMainGui)
+[dx,dy] = offset_by_raw_means_v2(); %get straight correction
+
+% Now get limits of current view for application
+interpolation_factor = 200;
+xb = hMainGui.MidPanel.aView.XLim(1):interpolation_factor:hMainGui.MidPanel.aView.XLim(2);
+yb = hMainGui.MidPanel.aView.YLim(1):interpolation_factor:hMainGui.MidPanel.aView.YLim(2);
+[x,y] = meshgrid(xb, yb);
+x = reshape(x,[],1); y = reshape(y,[],1);
+Fx = scatteredInterpolant(x, y, double(dx)*ones(numel(x),1), 'natural'); %gotta make doubles for interpolant
+Fy = scatteredInterpolant(x, y, double(dy)*ones(numel(y),1), 'natural');
+F = {Fx, Fy};
+
+setappdata(hMainGui.fig,'MaskCorrect',F);
+setappdata(hMainGui.fig,'MaskCorrectionApplied',0);
+
+set(hMainGui.Menu.mApplyMultiCorrections,'Enable','On');
+
+setappdata(0,'hMainGui',hMainGui);
+
+
 function ApplyMultiChannelCorrections(hMainGui)
 global Stack;
 global Molecule;
@@ -154,6 +178,7 @@ setappdata(hMainGui.fig,'MaskCorrectionApplied',toggle)
 
 fShow('Tracks')
 % End of JS Edit
+
 
 
 function SaveCorrections(hMainGui)
