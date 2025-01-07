@@ -18,12 +18,13 @@ function [dx, dy] = offset_by_raw_means_v2(molecule_filepath)
 % [dir, fname, ~] = fileparts('F:\MINFLUX JS\Kinesin 2C\241216\241216_03\241216-110351_minflux_655_LP7p5_bg40k_555_LP4_bg15k_fiesta_annotated');
 % fnames = {fname};
 
-decimation_factor = 1;
+decimation_factor = 10;
+std_max = 0.5;
 
 if nargin < 1
-    [fnames, dir] = uigetfile({'*.mat'},'MultiSelect','on')
+    [fnames, dir] = uigetfile({'*.mat'},'Select files to calculate linear correction','MultiSelect','on')
 else
-    [dir, fnames, ~] = fileparts(molecule_filepath);
+    [dir, fnames, ~] = fileparts(molecule_filepath)
 end
 % if only one file is selected, need to package into a cell array so that
 % the for loop will work
@@ -156,7 +157,7 @@ removed_mols = [];
 for i = size(molinfo,1):-1:1
     % use median, robust mean, instead of mean just because the noise is
     % more likely symmetric and the robust mean will be better
-    if sqrt((median(dx_all) - molinfo(i,1)).^2 + (median(dy_all) - molinfo(i,2)).^2) > sqrt(stdx.^2 + stdy.^2)
+    if sqrt((median(dx_all) - molinfo(i,1)).^2 + (median(dy_all) - molinfo(i,2)).^2) > std_max*sqrt(stdx.^2 + stdy.^2)
         dx_all(molinfo(i,3):molinfo(i,4)) = [];
         dy_all(molinfo(i,3):molinfo(i,4)) = [];
         removed_mols(size(removed_mols,1)+1,:) = molinfo(i,:);
@@ -174,11 +175,11 @@ stdy = std(dy_all);
 figure()
 subplot(1,2,1)
 histogram(dx_all)
-title('\Delta X after \pm 1\sigma outliers removed')
+title("\Delta X after \pm" + num2str(std_max) + " \sigma outliers removed")
 legend(strcat("\mu: ", num2str(round(dx,2)), ", \sigma: ", num2str(round(stdx,2))))
 subplot(1,2,2)
 histogram(dy_all)
-title('\Delta Y after \pm 1\sigma outliers removed')
+title("\Delta Y after \pm" + num2str(std_max) + " \sigma outliers removed")
 legend(strcat("\mu: ", num2str(round(dy,2)), ", \sigma: ", num2str(round(stdy,2))))
 
 
