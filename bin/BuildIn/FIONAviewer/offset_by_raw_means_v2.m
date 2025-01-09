@@ -18,7 +18,7 @@ function [dx, dy] = offset_by_raw_means_v2(molecule_filepath)
 % [dir, fname, ~] = fileparts('F:\MINFLUX JS\Kinesin 2C\241216\241216_03\241216-110351_minflux_655_LP7p5_bg40k_555_LP4_bg15k_fiesta_annotated');
 % fnames = {fname};
 
-decimation_factor = 10;
+decimation_factor = 1;
 std_max = 0.5;
 
 if nargin < 1

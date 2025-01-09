@@ -73,6 +73,7 @@ for i=1:fnum
     %JS Edit 2024/03/07 for loading MINFLUX times rather than framerate
     if isfield(trace,'time')
         framerate = trace.time; %framerate is now actually an array of times
+        framerate = framerate(~isnan(framerate)); % also ignoring Nans
     end
 
     % going to add in option to ignore steps that have too little data
@@ -95,6 +96,21 @@ for i=1:fnum
         data = trace.trace_2d;
         data_yx = trace.trace_2d;
     end
+
+    % JS Edit 2025/01/08
+    % Get changepoints back in. Should have been careful changing the
+    % changepoint code.
+    nnidx = find(~isnan(data(:,1)));
+
+    % on-axis
+    data = data(nnidx,:);
+    chp = find( abs(data(2:end,3) - data(1:end-1,3)) > 0);
+    data(chp+1,5) = 1;
+    
+    % off-axis
+    data_yx = data_yx(nnidx,:);
+    chp = find( abs(data_yx(2:end,3) - data_yx(1:end-1,3)) > 0);
+    data_yx(chp+1,5) = 1;
 
     % Steps
     [on_steps, ~] = add_to_list_6col_steps_v2(data,threshold);

@@ -26,6 +26,8 @@ if nargin < 1
     [fnames, dir] = uigetfile({'*.mat'},'MultiSelect','on');
 end
 
+decimation_factor = 1;
+
 don_all = [];
 doff_all = [];
 
@@ -125,7 +127,18 @@ for i = 1:length(fnames)
         xshort = ch2data.xy(x2on,1); yshort = ch2data.xy(x2on,2);
         xtraceshort = ch2data.trace(x2on,3); ytraceshort = ch2data.trace_yx(x2on,3);
     end
-    
+
+    % Decimation option
+    % Ch1 data
+    tshort = mean_decimate_array(tshort, decimation_factor);
+    xshort = mean_decimate_array(xshort, decimation_factor); yshort = mean_decimate_array(yshort, decimation_factor);
+    xtraceshort = mean_decimate_array(xtraceshort, decimation_factor); ytraceshort = mean_decimate_array(ytraceshort, decimation_factor);
+
+    % Ch2 data
+    tlong = mean_decimate_array(tlong, decimation_factor);
+    xlong = mean_decimate_array(xlong, decimation_factor); ylong = mean_decimate_array(ylong, decimation_factor);
+    xtracelong = mean_decimate_array(xtracelong, decimation_factor); ytracelong = mean_decimate_array(ytracelong, decimation_factor);
+
     % closest beginning
 
     ondiff = [];
@@ -185,19 +198,39 @@ histogram(doff_all)
 title('Off-axis Difference')
 legend(strcat("\mu: ", num2str(round(doff,2)), ", \sigma: ", num2str(round(stdoff,2))))
 
-
+% figure()
+% histogram(don_all-don)
+% title('On-axis Difference subtracted')
+% legend(strcat("\mu: ", num2str(round(don,2)), ", \sigma: ", num2str(round(stdon,2))))
 
 donstep = mean(don_step_all,'omitnan');
-doffstep = mean(doff_step_all);
+doffstep = mean(doff_step_all,'omitnan');
 
-stdon = std(don_all);
-stdoff = std(doff_all);
+stdonstep = std(don_step_all,'omitnan');
+stdoffstep = std(doff_step_all,'omitnan');
 
 figure()
-histogram(don_all)
-title('On-axis Difference')
-legend(strcat("\mu: ", num2str(round(donstep,2)), ", \sigma: ", num2str(round(stdon,2))))
+histogram(don_step_all - donstep)
+title('On-axis Step Difference - \mu')
+legend(strcat("\mu: ", num2str(round(donstep,2)), ", \sigma: ", num2str(round(stdonstep,2))))
 figure()
-histogram(doff_all)
-title('Off-axis Difference')
-legend(strcat("\mu: ", num2str(round(doff,2)), ", \sigma: ", num2str(round(stdoff,2))))
+histogram(doff_step_all - doffstep)
+title('Off-axis Step Difference - \mu')
+legend(strcat("\mu: ", num2str(round(doffstep,2)), ", \sigma: ", num2str(round(stdoffstep,2))))
+
+
+
+
+function B = mean_decimate_array(A, decimation_factor)
+
+% Compute the number of complete groups of decimation_factor
+numGroups = floor(length(A) / decimation_factor);
+
+% Truncate the array to only include full groups of decimation_factor
+truncatedData = A(1:(numGroups * decimation_factor));
+
+% Reshape the truncated array into 5 rows (each column corresponds to a group of decimation_factor points)
+reshapedData = reshape(truncatedData, decimation_factor, []);
+
+% Compute the mean of each column
+B = mean(reshapedData, 1);

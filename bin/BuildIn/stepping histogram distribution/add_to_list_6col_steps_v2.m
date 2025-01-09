@@ -11,6 +11,7 @@ else
     y_steps = [];
 end
 
+% Previous code
 
 limit = length(trace(:,1));
 counter = length(x_steps);
