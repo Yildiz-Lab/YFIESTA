@@ -24,15 +24,28 @@ end
 
 % data_xy_yx = trace_curr.trace; handles.xydisplayed = 1; %show xy
 % data_xy_yx = trace_curr.trace_yx; handles.xydisplayed = 0; %show yx
+
+% JS Edit 2025/01/17 to be able to load in even if not fit
+% load in initial raw coords
+handles.PSD1Data_Long = trace_curr.xy(:,1)';
+handles.PSD1Data_Short = trace_curr.xy(:,2)';
+handles.t = 1:length(trace_curr.xy(:,1));
+
+if isfield(trace_curr,'trace')
 data_xy_yx = trace_curr.trace(:,[2,1,4,3,5,6]); handles.xydisplayed = 0; %Old data format, set to yx
+handles.stepVector = data_xy_yx(:,3)';
+handles.shortStepVector = data_xy_yx(:,4)';
+handles.usageVector = data_xy_yx(:,6)';
+end
+% End of JS Edit
 
 % trace_curr = load (DataFilePath,'-mat','trace');
 
-% bring to axis
-handles.PSD1Data_Long = data_xy_yx(:,1)';
-handles.PSD1Data_Short = data_xy_yx(:,2)';
-handles.stepVector = data_xy_yx(:,3)';
-handles.shortStepVector = data_xy_yx(:,4)';
+% % bring to axis
+% handles.PSD1Data_Long = data_xy_yx(:,1)';
+% handles.PSD1Data_Short = data_xy_yx(:,2)';
+% handles.stepVector = data_xy_yx(:,3)';
+% handles.shortStepVector = data_xy_yx(:,4)';
 
 % % show yx axis
 % handles.xydisplayed = 0;
@@ -41,12 +54,12 @@ handles.shortStepVector = data_xy_yx(:,4)';
 % handles.stepVector = trace_curr.trace(:,4)';
 % handles.shortStepVector = trace_curr.trace(:,3)';
 
-%make a new handle for the usage from the mat file...so we can save it
-%right later.s
-handles.usageVector = data_xy_yx(:,6)';
+% %make a new handle for the usage from the mat file...so we can save it
+% %right later.
+% handles.usageVector = data_xy_yx(:,6)';
 
 %FrameTime = str2double(get(handles.FrameLength, 'string'))/1000; % in sec
-handles.t = 1:length(trace_curr.trace(:,1));
+% handles.t = 1:length(trace_curr.trace(:,1));
 
 % JS Edit 2024/03/18 for new mat way to save data
 if isfield(trace_curr,'neighbors')
@@ -58,7 +71,7 @@ end
 % set all the things normally set in loading a new data file
 
 if isfield(trace_curr,'time')
-handles.time = trace_curr.time;
+    handles.time = trace_curr.time;
 else
     handles.time = [];
 end

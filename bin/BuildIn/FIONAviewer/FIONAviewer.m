@@ -521,26 +521,26 @@ save(NewFilePath,'-STRUCT','StallStats')
 % --- Executes on button press in FilterData.
 function FilterData_Callback(hObject, eventdata, handles) %#ok
 
-%handles = ResetStepFitter(handles);
+handles = ResetStepFitter(handles);
 
-%DisplayType=get(handles.FilterData,'string');
+DisplayType=get(handles.FilterData,'string')
 
-%if strcmp(DisplayType,'Filter/Decimate Data') % Filter data
+if strcmp(DisplayType,'Filter/Decimate Data') % Filter data
     
 % JS Edit 2023/02/10 just to try and play around with a set filter spec
-    %handles = FilterData(hObject, handles); %uncomment if want original
+    handles = FilterData(hObject, handles); %uncomment if want original
     %FilterData code
-    handles = StepThresholdRemoval(hObject, handles);
+    % handles = StepThresholdRemoval(hObject, handles);
     % End of JS Edit 2023/02/10
 
     %set(handles.FilterData,'string','Raw Data?')
     handles.display.filtered = 1;
-%end
-% else % Display raw data
-%     
-%     set(handles.FilterData,'string','Filter/Decimate Data?')
-%     handles.display.filtered = 0;
 % end
+else % Display raw data
+
+    set(handles.FilterData,'string','Filter/Decimate Data?')
+    handles.display.filtered = 0;
+end
 
 keepLimits = 2; % Keep the old limits strictly
 handles = PlotData(hObject, handles, keepLimits); % Plot new data

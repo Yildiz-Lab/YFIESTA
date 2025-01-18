@@ -38,6 +38,7 @@ dx_all = [];
 dy_all = [];
 
 molinfo = [];
+molnum = [];
 
 for i = 1:length(fnames)
     try
@@ -120,8 +121,10 @@ for i = 1:length(fnames)
                     fprintf(strcat(Molecule(j).Name, "  &  ", Molecule(k).Name , "\n"))
                     fprintf(strcat('Mean dx, dy: (', num2str(round(mean(xdiff),3)) ,', ', num2str(round(mean(ydiff),3)), ')\n'))
                     fprintf("\n")
-
-                    molinfo(size(molinfo,1)+1,:) = [mean(xdiff), mean(ydiff), startidx, length(dx_all)];
+                    
+                    st = strfind(Molecule(j).Name, " ");
+                    molnum = [molnum; str2double(Molecule(j).Name(st(end):end))];
+                    molinfo(size(molinfo,1)+1,:) = [mean(xdiff), mean(ydiff), startidx, length(dx_all), tshort(1)];
 
                 end
 
@@ -151,6 +154,16 @@ stdy = std(dy_all);
 % title('\Delta Y before \pm 1\sigma outliers removed')
 % legend(strcat("\mu: ", num2str(round(dy,2)), ", \sigma: ", num2str(round(stdy,2))))
 
+figure()
+subplot(1,2,1)
+scatter(molinfo(:,5),molinfo(:,1), 20, 'filled')
+title("X Drift")
+% legend(strcat("\mu: ", num2str(round(dx,2)), ", \sigma: ", num2str(round(stdx,2))))
+subplot(1,2,2)
+scatter(molinfo(:,5),molinfo(:,2), 20, 'filled')
+title("Y Drift")
+% legend(strcat("\mu: ", num2str(round(dy,2)), ", \sigma: ", num2str(round(stdy,2))))
+
 % After post-process outlier removed
 
 removed_mols = [];
@@ -172,6 +185,28 @@ dy = mean(dy_all);
 stdx = std(dx_all);
 stdy = std(dy_all);
 
+
+figure()
+subplot(1,2,1)
+scatter(molinfo(:,5),molinfo(:,1), 20, 'filled')
+hold on
+for i = 1:size(molnum)
+    text(molinfo(i,5),molinfo(i,1)+0.25, num2str(molnum(i)))
+end
+scatter(removed_mols(:,5), removed_mols(:,1), 20, 'filled')
+plot([0,1.1*max(molinfo(:,5))],[dx,dx],'r--')
+title("X Drift w/ \pm" + num2str(std_max) + " \sigma outliers removed")
+subplot(1,2,2)
+scatter(molinfo(:,5),molinfo(:,2), 20, 'filled')
+hold on
+for i = 1:size(molnum)
+    text(molinfo(i,5),molinfo(i,2)+0.25, num2str(molnum(i)))
+end
+scatter(removed_mols(:,5), removed_mols(:,2), 20, 'filled')
+plot([0,1.1*max(molinfo(:,5))],[dy,dy],'r--')
+title("Y Drift w/ \pm" + num2str(std_max) + " \sigma outliers removed")
+
+
 figure()
 subplot(1,2,1)
 histogram(dx_all)
@@ -181,6 +216,7 @@ subplot(1,2,2)
 histogram(dy_all)
 title("\Delta Y after \pm" + num2str(std_max) + " \sigma outliers removed")
 legend(strcat("\mu: ", num2str(round(dy,2)), ", \sigma: ", num2str(round(stdy,2))))
+
 
 
 function B = mean_decimate_array(A, decimation_factor)
