@@ -523,9 +523,10 @@ function FilterData_Callback(hObject, eventdata, handles) %#ok
 
 handles = ResetStepFitter(handles);
 
-DisplayType=get(handles.FilterData,'string')
+DisplayType=get(handles.FilterData,'string');
 
-if strcmp(DisplayType,'Filter/Decimate Data') % Filter data
+% if strcmp(DisplayType,'Filter/Decimate Data') % Filter data
+if ~handles.display.filtered %it was at zero so switch it
     
 % JS Edit 2023/02/10 just to try and play around with a set filter spec
     handles = FilterData(hObject, handles); %uncomment if want original
@@ -533,12 +534,12 @@ if strcmp(DisplayType,'Filter/Decimate Data') % Filter data
     % handles = StepThresholdRemoval(hObject, handles);
     % End of JS Edit 2023/02/10
 
-    %set(handles.FilterData,'string','Raw Data?')
+    set(handles.FilterData,'string','Show Raw?')
     handles.display.filtered = 1;
 % end
 else % Display raw data
 
-    set(handles.FilterData,'string','Filter/Decimate Data?')
+    set(handles.FilterData,'string','Show Filtered?')
     handles.display.filtered = 0;
 end
 

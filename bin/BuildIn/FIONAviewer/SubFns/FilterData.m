@@ -10,9 +10,6 @@ tic % start timing
 
 WindowLength=str2double(get(handles.WindowLength,'string'));
 
-FrameTime = str2double(get(handles.FrameLength, 'string'));
-SR = 1000/FrameTime; % in Hz
-
 x = RemoveNaNs(handles.PSD1Data_Long); % Long axis data
 y = RemoveNaNs(handles.PSD1Data_Short); % Short axis data
 
@@ -27,6 +24,16 @@ L1PWC=get(handles.L1PWC,'Value');
 %         PrevScale=handles.Yaxis
 
 if Decimate 
+
+    if isfield(handles,'FrameLength')
+        FrameTime = str2double(get(handles.FrameLength, 'string'));
+        SR = 1000/FrameTime; % in Hz
+    elseif isfield(handles,'time')
+        SR = 1000/mean(handles.time,'omitnan'); % in Hz
+    else
+        SR = 1; %in natural units
+    end
+
     decimFactor = str2double(get(handles.DecimationFactor, 'String'));
 
     FilteredX_tmp = decimate(x, decimFactor);
@@ -42,11 +49,11 @@ if Decimate
     FilteredX = FilteredX - (mean(FilteredX) - mean(x));
     FilteredY = FilteredY - (mean(FilteredY) - mean(y));
     
-%     newSR = round(SR / decimFactor); % new sampling rate
-% 
-%     %Rebuild the time vector
-%     handles.t_Filt = (1/newSR):(1/newSR): ...
-%         (length(FilteredX)/newSR);
+    newSR = round(SR / decimFactor); % new sampling rate
+
+    %Rebuild the time vector
+    handles.t_Filt = (1/newSR):(1/newSR): ...
+        (length(FilteredX)/newSR);
 
 elseif Med %Median filtered
     FilteredX=medfilt1(x,WindowLength);

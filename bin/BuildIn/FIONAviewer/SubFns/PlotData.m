@@ -12,6 +12,8 @@ function handles = PlotData(hObject, handles, keepLimits, neighbors)
 % Last updated on 11/18/2011
 
 %JS Edit 2022/09/27 Add neighbors into plot
+% JS Edit 2025/01/17 Add overlay of filtered data from Filter/Decimate Data
+% button
 
 
 %method=1 for PS, =0 for Data display
@@ -43,16 +45,6 @@ end
 %can also not use _2 and just use filtered data right off
 
 %should go make sure times are copasetic ion filter m-file
-
-% if handles.display.filtered % Filtered or decimated trace
-% 
-%     handles.currentPlotPSD_Long_2 = handles.PSD1Data_Long_Filt;
-%     handles.currentPlotPSD_Short_2 = handles.PSD1Data_Short_Filt;
-%     
-% 
-%     %is this handle made in the filter setup 
-%     handles.currentPlotT_2 = handles.t;
-% end
     
 handles.currentPlotPSD_Long = handles.PSD1Data_Long;
 handles.currentPlotPSD_Short = handles.PSD1Data_Short;
@@ -61,6 +53,16 @@ handles.currentPlotTrap_Long = handles.trapPosLong;
 handles.currentPlotTrap_Short = handles.trapPosShort;
 
 handles.currentPlotT = handles.t;
+
+if handles.display.filtered % Filtered or decimated trace
+
+    handles.currentPlotPSD_Long_2 = handles.PSD1Data_Long_Filt;
+    handles.currentPlotPSD_Short_2 = handles.PSD1Data_Short_Filt;
+
+
+    %is this handle made in the filter setup 
+    handles.currentPlotT_2 = handles.t_Filt;
+end
 
 
 
@@ -81,14 +83,16 @@ if ~doNotCenter
 
         handles.currentPlotPSD_Short = ...
             handles.currentPlotPSD_Short - medianValueY;
-%         if handles.display.filtered        
-%             handles.currentPlotPSD_Long_2 = ...
-%                 handles.currentPlotPSD_Long_2 - medianValueX;
-% 
-%             handles.currentPlotPSD_Short_2 = ...
-%                 handles.currentPlotPSD_Short_2 - medianValueX;
-%         end
-%             
+
+        % JS uncomment 2025/11/17 for filtering
+        if handles.display.filtered        
+            handles.currentPlotPSD_Long_2 = ...
+                handles.currentPlotPSD_Long_2 - medianValueX;
+
+            handles.currentPlotPSD_Short_2 = ...
+                handles.currentPlotPSD_Short_2 - medianValueX;
+        end
+
     
     elseif (handles.display.center == 2) % user value centering
         centerValueX = str2double(get(handles.XOffset,'String'));
@@ -99,13 +103,16 @@ if ~doNotCenter
 
         handles.currentPlotPSD_Short = ...
             handles.currentPlotPSD_Short - centerValueY;
-%         if handles.display.filtered
-%             handles.currentPlotPSD_Long_2 = ...
-%                 handles.currentPlotPSD_Long_2 - centerValueX;
-% 
-%             handles.currentPlotPSD_Short_2 = ...
-%                 handles.currentPlotPSD_Short_2 - centerValueY;
-%         end
+
+        % JS uncomment 2025/11/17 for filtering
+        if handles.display.filtered
+            handles.currentPlotPSD_Long_2 = ...
+                handles.currentPlotPSD_Long_2 - centerValueX;
+
+            handles.currentPlotPSD_Short_2 = ...
+                handles.currentPlotPSD_Short_2 - centerValueY;
+        end
+        
     end
 end
 
