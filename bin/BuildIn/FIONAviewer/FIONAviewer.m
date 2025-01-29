@@ -521,27 +521,30 @@ save(NewFilePath,'-STRUCT','StallStats')
 % --- Executes on button press in FilterData.
 function FilterData_Callback(hObject, eventdata, handles) %#ok
 
-handles = ResetStepFitter(handles);
+% handles = ResetStepFitter(handles);
 
-DisplayType=get(handles.FilterData,'string');
-
-% if strcmp(DisplayType,'Filter/Decimate Data') % Filter data
-if ~handles.display.filtered %it was at zero so switch it
-    
 % JS Edit 2023/02/10 just to try and play around with a set filter spec
-    handles = FilterData(hObject, handles); %uncomment if want original
-    %FilterData code
-    % handles = StepThresholdRemoval(hObject, handles);
-    % End of JS Edit 2023/02/10
+handles = StepThresholdRemoval(hObject, handles);
+%FilterData code
+% End of JS Edit 2023/02/10
 
-    set(handles.FilterData,'string','Show Raw?')
-    handles.display.filtered = 1;
+% Uncomment to actually filter data
+% DisplayType=get(handles.FilterData,'string');
+% 
+% if strcmp(DisplayType,'Filter/Decimate Data') % Filter data
+% % if ~handles.display.filtered %it was at zero so switch it
+% 
+%     handles = FilterData(hObject, handles); %uncomment if want original
+% 
+%     % set(handles.FilterData,'string','Filter/Decimate Data')
+%     set(handles.FilterData,'string','Show Raw?')
+%     handles.display.filtered = 1;
+% % end
+% else % Display raw data
+%     % set(handles.FilterData,'string','Filter/Decimate Data')
+%     set(handles.FilterData,'string','Show Filtered?')
+%     handles.display.filtered = 0;
 % end
-else % Display raw data
-
-    set(handles.FilterData,'string','Show Filtered?')
-    handles.display.filtered = 0;
-end
 
 keepLimits = 2; % Keep the old limits strictly
 handles = PlotData(hObject, handles, keepLimits); % Plot new data
@@ -793,6 +796,23 @@ if strcmp(currSelection, 'FIT')
     
     Xlimits = get(handles.axes1, 'XLim');
     
+    if handles.display.filtered
+        startTime =  find(handles.t_Filt > Xlimits(1), 1);
+        endTime = find(handles.t_Filt > (Xlimits(2)), 1)-1;
+
+        if isempty(startTime) 
+            startTime = 1; 
+        end
+        if isempty(endTime)
+            endTime = length(handles.t_Filt);
+        end
+        
+        % make array to fit steps to:
+        x = handles.PSD1Data_Long_Filt(startTime:endTime);
+        y = handles.PSD1Data_Short_Filt(startTime:endTime);
+        usage = zeros(1,length(startTime:endTime)) + 1;
+
+    else
     %determine start and end points
     startTime =  find(handles.currentPlotT > Xlimits(1), 1);
     endTime = find(handles.currentPlotT > (Xlimits(2)), 1)-1;
@@ -808,6 +828,7 @@ if strcmp(currSelection, 'FIT')
     x = handles.currentPlotPSD_Long(startTime:endTime);
     y = handles.currentPlotPSD_Short(startTime:endTime);
     usage = zeros(1,length(startTime:endTime)) + 1;
+    end
     %Note: NaNs removed in parser script
     %x = RemoveNaNs(x);
     
@@ -1555,6 +1576,23 @@ disp (['setting uage from ' num2str(startTime) 'to '  num2str(endTime) ' to ' nu
     set(handles.text72, 'Visible', 'on');
     set(handles.AddDeleteStep, 'Visible', 'on');
     
+    if handles.display.filtered
+        startTime =  find(handles.t_Filt > Xlimits(1), 1);
+        endTime = find(handles.t_Filt > (Xlimits(2)), 1)-1;
+
+        if isempty(startTime) 
+            startTime = 1; 
+        end
+        if isempty(endTime)
+            endTime = length(handles.t_Filt);
+        end
+        
+        % make array to fit steps to:
+        x = handles.PSD1Data_Long_Filt(startTime:endTime);
+        y = handles.PSD1Data_Short_Filt(startTime:endTime);
+        usage = zeros(1,length(startTime:endTime)) + 1;
+
+    else
     
     % make array to fit steps to:
     x = handles.currentPlotPSD_Long(startTime:endTime);
@@ -1562,6 +1600,7 @@ disp (['setting uage from ' num2str(startTime) 'to '  num2str(endTime) ' to ' nu
     usage = handles.usageVector(startTime:endTime);
     %Note: NaNs removed in parser script
     %x = RemoveNaNs(x);
+    end
     
     % fit the steps using my wrapper script to the SIC fitter
     % this version of the wrapper won't fit the off-axis at all, and breaks
@@ -1616,7 +1655,24 @@ disp (['fitting trace between ' num2str(startTime) 'and '  num2str(endTime) ])
     set(handles.SaveSteps, 'Visible', 'on');
     set(handles.text72, 'Visible', 'on');
     set(handles.AddDeleteStep, 'Visible', 'on');
-  
+    
+    if handles.display.filtered
+        startTime =  find(handles.t_Filt > Xlimits(1), 1);
+        endTime = find(handles.t_Filt > (Xlimits(2)), 1)-1;
+
+        if isempty(startTime) 
+            startTime = 1; 
+        end
+        if isempty(endTime)
+            endTime = length(handles.t_Filt);
+        end
+        
+        % make array to fit steps to:
+        x = handles.PSD1Data_Long_Filt(startTime:endTime);
+        y = handles.PSD1Data_Short_Filt(startTime:endTime);
+        usage = zeros(1,length(startTime:endTime)) + 1;
+
+    else
     
     % make array to fit steps to:
     x = handles.currentPlotPSD_Long(startTime:endTime);
@@ -1624,6 +1680,7 @@ disp (['fitting trace between ' num2str(startTime) 'and '  num2str(endTime) ])
     usage = ones(1,length(x));
     %Note: NaNs removed in parser script
     %x = RemoveNaNs(x);
+    end
     
     % fit the steps using my wrapper script to the SIC fitter
     % this version of the wrapper won't fit the off-axis at all, and breaks

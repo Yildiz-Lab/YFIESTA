@@ -241,15 +241,17 @@ FilteredPlotOffset = str2double(get(handles.FiltOffsetDistance,'String'));
 % 
 % end
 % 
-% if dispLongFilt == 1 && handles.FilteredFlag == 1   %Display filtered long axis
-% 
+
+% % JS Uncomment 01/17/25
+% % if dispLongFilt == 1 && handles.FilteredFlag == 1   %Display filtered long axis
+% if handles.display.filtered && handles.FilteredFlag
 %     plot(real(handles.PSD1Data_Long_Filt+FilteredPlotOffset), ...
 %         handles.currentstyleXFilt)
 % 
 % end
 % 
-% if dispShortFilt == 1 && handles.FilteredFlag == 1  %Display filtered short axis
-% 
+% % if dispShortFilt == 1 && handles.FilteredFlag == 1  %Display filtered short axis
+% if handles.display.filtered && handles.FilteredFlag
 %     plot(real(handles.PSD1Data_Short_Filt+FilteredPlotOffset), ...
 %         handles.currentstyleYFilt)
 % 
@@ -272,15 +274,15 @@ if dispLong == 1 % Display long axis
 
 end
 
-if dispLongFilt == 1 && handles.FilteredFlag == 1   %Display filtered long axis
-
+% if dispLongFilt == 1 && handles.FilteredFlag == 1   %Display filtered long axis
+if handles.display.filtered && handles.FilteredFlag
     plot(handles.currentPlotT(idx), real(handles.PSD1Data_Long_Filt(idx)+FilteredPlotOffset), ...
         handles.currentstyleXFilt)
 
 end
 
-if dispShortFilt == 1 && handles.FilteredFlag == 1  %Display filtered short axis
-
+% if dispShortFilt == 1 && handles.FilteredFlag == 1  %Display filtered short axis
+if handles.display.filtered && handles.FilteredFlag
     plot(handles.currentPlotT(idx), real(handles.PSD1Data_Short_Filt(idx)+FilteredPlotOffset), ...
         handles.currentstyleYFilt)
 
@@ -334,11 +336,13 @@ if length(handles.stepVector) == length(handles.currentPlotT)
             handles.shortStepVector(idx), '-', 'LineWidth', 2, 'Color', [0.3 0.3 0.9]);
     end
     if handles.FilteredFlag == 1 && FilteredPlotOffset ~= 0
-        if dispLongFilt == 1
+        % if dispLongFilt == 1
+        if handles.display.filtered
             handles.stepLineHandleFilt = plot(handles.t(idx), ...
                 handles.stepVector(idx)+FilteredPlotOffset, '-', 'LineWidth', 2, 'Color', [0.3 0.3 0.9]);
         end
-        if dispShortFilt == 1
+        % if dispShortFilt == 1
+        if handles.display.filtered
             handles.offAxisStepHandleFilt = plot(handles.t(idx), ...
                 handles.shortStepVector(idx)+FilteredPlotOffset, '-', 'LineWidth', 2, 'Color', [0.3 0.3 0.9]);
 

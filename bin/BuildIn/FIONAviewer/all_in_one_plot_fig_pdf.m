@@ -34,9 +34,9 @@ if class(fnames) == 'char'
 end
 
 % option to set offsets for plots!
-[dx, dy] = offset_by_law_of_means(dir, fnames);
-% dx = 0;
-% dy = 0;
+% [dx, dy] = offset_by_law_of_means(dir, fnames);
+dx = 0;
+dy = 0;
 offset = -dx+40; %arbitrary value so that on and off axes don't overlap
 
 spatiotemporal_info = zeros(2,2,1);
@@ -245,6 +245,16 @@ for i = 1:length(fnames)
         fprintf("no associated neighbor file ... continuing with just a single channel \n")
 
         idx1 = [NaN];
+
+        figefco = figure();
+        subplot(1,2,1)
+        histogram(Molecule(m).Results(:,7))
+        title(strcat(fname(ii:jj), " efo"))
+        legend(num2str(median(Molecule(m).Results(:,7))))
+        subplot(1,2,2)
+        histogram(Molecule(m).Results(:,8))
+        title(strcat(fname(ii:jj), " cnt"))
+        legend(num2str(median(Molecule(m).Results(:,8))))
 
 
     end

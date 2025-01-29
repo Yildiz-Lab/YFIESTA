@@ -893,7 +893,8 @@ for k = 1:length(FileName)
         % end
         % and do the conversion so we can actually load!
         if ~isfile(fullfile(PathName, FileName{k}))
-            fConvertMINFLUX_v2(minflux_file, fullfile(PathName, FileName{k}))
+            fConvertMINFLUX(minflux_file, fullfile(PathName, FileName{k}))
+            % fConvertMINFLUX_v2(minflux_file, fullfile(PathName, FileName{k}))
         end
     end
 end
