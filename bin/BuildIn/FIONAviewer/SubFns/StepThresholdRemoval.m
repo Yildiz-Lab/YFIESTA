@@ -57,6 +57,7 @@ maxnanratio = 0.5;
 oldstate = get(handles.AddDeleteStep,'String');
 set(handles.AddDeleteStep,'String','Delete');
 
+% Oh Joseph, you long padded yourself with NaNs
 PSD1Data_LongPadded = horzcat(nan(1,avg_window),handles.PSD1Data_Long,nan(1,avg_window));
 
 % JS Edit 2024/12/04
@@ -135,9 +136,9 @@ for i = 2:length(idx)
             % easier just to pad with NaN for sake of this average
 %             handles.t(i-1)
 %             abs( mean(PSD1Data_LongPadded(i:i-1+avg_window),'omitnan') - mean(PSD1Data_LongPadded(i+avg_window:i-1+2*avg_window),'omitnan') )
-            
+
             % We are going to account for NaNs in the average window!!
-            
+
 
             % find mean to remove
             % fprintf(strcat(num2str(i),'\n'))
@@ -146,14 +147,27 @@ for i = 2:length(idx)
             % idx(i-1)
             % idx(i)
             % idx(min([i+avg_window,length(idx)]))
+            
+            % We've padded with Nans!! So idx(i) actually corresponds to
+            % idx(i) - avg_window
 
             % if abs( mean(PSD1Data_LongPadded(idx(i):idx(i-1+avg_window)),'omitnan') - mean(PSD1Data_LongPadded(idx(i+avg_window):idx(i-1+2*avg_window)),'omitnan') ) < step_thresh
-            if abs( mean(PSD1Data_LongPadded(idx(max([i-1-avg_window,1])):idx(i-1)),'omitnan') - mean(PSD1Data_LongPadded(idx(i):idx(min([i+avg_window,length(idx)]))),'omitnan') ) < step_thresh
+            % if abs( mean(handles.PSD1Data_Long(idx(i):idx(i-1+avg_window)),'omitnan') - mean(handles.PSD1Data_Long(idx(i+avg_window):idx(i-1+2*avg_window)),'omitnan') ) < step_thresh
+            if abs( mean(handles.PSD1Data_Long(idx(max([i-1-avg_window,1])):idx(i-1)),'omitnan') - mean(handles.PSD1Data_Long(idx(i):idx(min([i+avg_window,length(idx)]))),'omitnan') ) < step_thresh
                 % Then remove said steps
 %                 fprintf("Psych no step \n")
                 % fprintf("PHASE 2 \n")
                 % idx(i)
-                handles = AddRmvStepManually(hObject, handles, handles.t(idx(i)-1));
+                
+                if handles.t(i) > 1170 && handles.t(i) < 1230
+                    handles.t(i)
+                    idx(max([i-1-avg_window,1])):idx(i-1)
+                    handles.PSD1Data_Long(idx(max([i-1-avg_window,1])):idx(i-1))
+                    idx(i):idx(min([i+avg_window,length(idx)]))
+                    handles.PSD1Data_Long(idx(i):idx(min([i+avg_window,length(idx)])))
+                end
+
+                handles = AddRmvStepManually(hObject, handles, handles.t(idx(i-1)));
             end
 
             % if >75% of data points in the region around the step are NaN
@@ -164,7 +178,7 @@ for i = 2:length(idx)
 %                 fprintf("Psych no step \n")
                 % fprintf("PHASE 3 \n")
                 % idx(i)
-                handles = AddRmvStepManually(hObject, handles, handles.t(idx(i)-1));
+                handles = AddRmvStepManually(hObject, handles, handles.t(idx(i-1)));
             end
 
         end
@@ -200,9 +214,18 @@ end
 % %             abs( mean(PSD1Data_LongPadded(i:i-1+avg_window),'omitnan') - mean(PSD1Data_LongPadded(i+avg_window:i-1+2*avg_window),'omitnan') )
 % 
 %             % find mean to remove
-%             if abs( mean(PSD1Data_LongPadded(i:i-1+avg_window),'omitnan') - mean(PSD1Data_LongPadded(i+avg_window:i-1+2*avg_window),'omitnan') ) < step_thresh
+%             % if abs( mean(PSD1Data_LongPadded(i:i-1+avg_window),'omitnan') - mean(PSD1Data_LongPadded(i+avg_window:i-1+2*avg_window),'omitnan') ) < step_thresh
+%             if abs( mean(PSD1Data_LongPadded(max([i-1-avg_window,1]):i-1),'omitnan') - mean(PSD1Data_LongPadded(i:min([i+avg_window,length(handles.stepVector)])),'omitnan') ) < step_thresh
 %                 % Then remove said steps
 % %                 fprintf("Psych no step \n")
+%                 if handles.t(i) > 2220 && handles.t(i) < 2320
+%                     handles.t(i)
+%                     i-1-avg_window:i-1
+%                     i:i+avg_window
+%                     idx(max([i-1-avg_window,1])):idx(i-1)
+%                     idx(i):idx(min([i+avg_window,length(idx)]))
+%                 end
+% 
 %                 handles = AddRmvStepManually(hObject, handles, handles.t(i-1));
 %             end
 % 

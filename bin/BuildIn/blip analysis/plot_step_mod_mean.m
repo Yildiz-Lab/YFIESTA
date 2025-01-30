@@ -13,13 +13,13 @@ bwd_extracted = cell(0,2);
 for j = 1:length(fwd_mod_mean)
     trace_steps = fwd_mod_mean{j};
     m = length(fwd_extracted);
-    for i = 1:length(trace_steps)
+    for i = 1:size(trace_steps,1)
         fwd_extracted{m+i,1} = trace_steps{i,1};
         fwd_extracted{m+i,2} = trace_steps{i,2};
     end
     trace_steps = bwd_mod_mean{j};
     m = length(bwd_extracted);
-    for i = 1:length(trace_steps)
+    for i = 1:size(trace_steps,1)
         bwd_extracted{m+i,1} = trace_steps{i,1};
         bwd_extracted{m+i,2} = trace_steps{i,2};
     end

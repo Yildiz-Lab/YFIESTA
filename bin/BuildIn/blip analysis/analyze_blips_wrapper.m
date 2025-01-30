@@ -55,6 +55,26 @@ for i=1:fnum
     end
     
     if isfield(steptrace,'data')
+
+        % % JS Edit 2025/01/29
+        % % Get changepoints back in. Should have been careful changing the
+        % % changepoint code.
+        % nnidx = find(~isnan(steptrace.data.trace(:,1)));
+        % 
+        % % on-axis
+        % steptrace.data.trace = steptrace.data.trace(nnidx,:);
+        % chp = find( abs(steptrace.data.trace(2:end,3) - steptrace.data.trace(1:end-1,3)) > 0);
+        % steptrace.data.trace(chp+1,5) = 1;
+        % 
+        % % off-axis
+        % steptrace.data.trace_yx = steptrace.data.trace_yx(nnidx,:);
+        % chp = find( abs(steptrace.data.trace_yx(2:end,3) - steptrace.data.trace_yx(1:end-1,3)) > 0);
+        % steptrace.data.trace_yx(chp+1,5) = 1;
+        % % End of JS Edit
+
+        % sum(steptrace.data.trace(:,5))
+        % fname
+
     [dtprime, dxprime, stepprime] = analyze_blips(steptrace.data);
     dt = [dt, dtprime]; dx = [dx, dxprime]; step = [step, stepprime];
     
@@ -71,7 +91,6 @@ for i=1:fnum
     
     m = length(fwd_mean_modded);
     [fwd_mean_modded{m+1}, bwd_mean_modded{m+1}] = align_to_step_mod_mean(steptrace.data,min_step_length);
-    
     
     if mean(blipout) < -30
         fprintf(fname)
