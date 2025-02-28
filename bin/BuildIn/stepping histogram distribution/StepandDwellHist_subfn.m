@@ -200,6 +200,7 @@ for i=1:fnum
         totdata = load(fullfile(directory,fname1));
         ch1trace = totdata.data;
         
+        ch1trace = filterSteps(ch1trace, framerate, remove_dips_time);
         
         % Now that we have both, let's send the trace data into
         % two_color_statistics
