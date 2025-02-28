@@ -19,7 +19,7 @@ function [dx, dy] = offset_by_raw_means_v2(molecule_filepath)
 % fnames = {fname};
 
 decimation_factor = 10;
-std_max_factor = 0.5;
+std_max_factor = 1.0;
 std_max = 25; % pure nm, set to something high if want to use std_max_factor since it takes the minimum
 
 if nargin < 1
@@ -95,38 +95,40 @@ for i = 1:length(fnames)
                     end
 
                         % closest beginning
+                    
+                    if ~isempty(tshort)
 
-                    xdiff = [];
-                    ydiff = [];
-                    for a = 1:length(tshort)
-                        [~,closestIndex] = min(abs(tlong-tshort(a)));
-                
-                        % switch whether short is 1 or 2
-                        if mod(short,2)
-                            xdiff = [xdiff, xlong(closestIndex) - xshort(a)]; % x2-x1
-                            ydiff = [ydiff, ylong(closestIndex) - yshort(a)]; % x2-x1
-                
-                        else
-                            xdiff = [xdiff, -xlong(closestIndex) + xshort(a)]; % x1-x2
-                            ydiff = [ydiff, -ylong(closestIndex) + yshort(a)]; % x1-x2
-                
+                        xdiff = [];
+                        ydiff = [];
+                        for a = 1:length(tshort)
+                            [~,closestIndex] = min(abs(tlong-tshort(a)));
+                    
+                            % switch whether short is 1 or 2
+                            if mod(short,2)
+                                xdiff = [xdiff, xlong(closestIndex) - xshort(a)]; % x2-x1
+                                ydiff = [ydiff, ylong(closestIndex) - yshort(a)]; % x2-x1
+                    
+                            else
+                                xdiff = [xdiff, -xlong(closestIndex) + xshort(a)]; % x1-x2
+                                ydiff = [ydiff, -ylong(closestIndex) + yshort(a)]; % x1-x2
+                    
+                            end
                         end
-                    end
-                    
-                    startidx = length(dx_all)+1;
-                    dx_all = [dx_all, xdiff];
-                    dy_all = [dy_all, ydiff];
-
-                    % Print a report so that we can look through them for
-                    % outliers. Maybe remove automatically in the future.
-                    fprintf(strcat(Molecule(j).Name, "  &  ", Molecule(k).Name , "\n"))
-                    fprintf(strcat('Mean dx, dy: (', num2str(round(mean(xdiff),3)) ,', ', num2str(round(mean(ydiff),3)), ')\n'))
-                    fprintf("\n")
-                    
-                    st = strfind(Molecule(j).Name, " ");
-                    molnum = [molnum; str2double(Molecule(j).Name(st(end):end))];
-                    molinfo(size(molinfo,1)+1,:) = [mean(xdiff), mean(ydiff), startidx, length(dx_all), tshort(1)];
-
+                        
+                        startidx = length(dx_all)+1;
+                        dx_all = [dx_all, xdiff];
+                        dy_all = [dy_all, ydiff];
+    
+                        % Print a report so that we can look through them for
+                        % outliers. Maybe remove automatically in the future.
+                        fprintf(strcat(Molecule(j).Name, "  &  ", Molecule(k).Name , "\n"))
+                        fprintf(strcat('Mean dx, dy: (', num2str(round(mean(xdiff,'omitnan'),3)) ,', ', num2str(round(mean(ydiff,'omitnan'),3)), ')\n'))
+                        fprintf("\n")
+                        
+                        st = strfind(Molecule(j).Name, " ");
+                        molnum = [molnum; str2double(Molecule(j).Name(st(end):end))];
+                        molinfo(size(molinfo,1)+1,:) = [mean(xdiff,'omitnan'), mean(ydiff,'omitnan'), startidx, length(dx_all), tshort(1)];
+                   end
                 end
 
             end
@@ -197,7 +199,9 @@ hold on
 for i = 1:size(molnum)
     text(molinfo(i,5),molinfo(i,1)+0.25, num2str(molnum(i)))
 end
+if ~isempty(removed_mols)
 scatter(removed_mols(:,5), removed_mols(:,1), 20, 'filled')
+end
 plot([0,1.1*max(molinfo(:,5))],[dx,dx],'r--')
 title("X Drift w/ \pm" + num2str(std_max_factor) + " \sigma outliers removed")
 subplot(1,2,2)
@@ -206,7 +210,9 @@ hold on
 for i = 1:size(molnum)
     text(molinfo(i,5),molinfo(i,2)+0.25, num2str(molnum(i)))
 end
+if ~isempty(removed_mols)
 scatter(removed_mols(:,5), removed_mols(:,2), 20, 'filled')
+end
 plot([0,1.1*max(molinfo(:,5))],[dy,dy],'r--')
 title("Y Drift w/ \pm" + num2str(std_max_factor) + " \sigma outliers removed")
 

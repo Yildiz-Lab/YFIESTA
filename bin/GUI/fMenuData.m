@@ -893,7 +893,7 @@ for k = 1:length(FileName)
         % end
         % and do the conversion so we can actually load!
         if ~isfile(fullfile(PathName, FileName{k}))
-            if isfield(itr,'itr') % old format has itr substructure (TRUE) 
+            if isfield(mfchk.itr,'itr') % old format has itr substructure (TRUE) 
                 fConvertMINFLUX(minflux_file, fullfile(PathName, FileName{k}))
             else %new format has itr as just an array (FALSE)
                 fConvertMINFLUX_v2(minflux_file, fullfile(PathName, FileName{k}))

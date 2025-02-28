@@ -14,17 +14,24 @@ else
     fnum = length(f);
 end
 
+% Make blank arrays for storage of 1C ON, OFFsteps and dwells forward and
+% backward
 ONsteps = [];
 OFFsteps = [];
 dwells = [];
 dwells_for = [];
 dwells_back = [];
 
+% Also blank arrays for polar plots
+r = [];
+theta = [];
+
 if nargin < 2
     disp("Forgotten threshold or framerate")
     return
 end
 
+% Don't know if this is still necessary for MAC but doesn't hurt
 if fnum > 1 
     for i=fnum:-1:1
         if contains(f(i).name,'._') %JS Edit to ignore extra '._' that randomly show up sometimes MAC
@@ -39,16 +46,15 @@ else
     end
 end
 
-r = [];
-theta = [];
-
+% Loop through each file in the directory
 for i=1:fnum
     
-    if isfile(directory)
+    if isfile(directory) %if the directory is actually a file (i.e. only one)
         [d,f,e] = fileparts(directory);
         % if contains(f,'._') %JS Edit to delete extra ._ from an error
         % f = f(3:end);
         % end
+        fname = fullfile(d,strcat(f,e));
         steptrace = load(fullfile(d,strcat(f,e)));
     else
         fname = f(i).name;
@@ -58,60 +64,87 @@ for i=1:fnum
         steptrace = load(fullfile(cd,'/',fname));
     end
     
+    %% Processing Trace into steps
+    % Extract trace from data structure
     if isfield(steptrace,'data')
-    trace = steptrace.data;
+        trace = steptrace.data;
     elseif isfield(steptrace,'trace')
-    trace = steptrace;
+        trace = steptrace;
     end
-
+    
+    % Skip if trace does not exist
     if ~isfield(trace,'trace') || ~isfield(trace,'trace_yx')
         fnum = fnum - 1;
     else
-    data = trace.trace;
-    data_yx = trace.trace_yx;
-    
+
     %JS Edit 2024/03/07 for loading MINFLUX times rather than framerate
     if isfield(trace,'time')
         framerate = trace.time; %framerate is now actually an array of times
         framerate = framerate(~isnan(framerate)); % also ignoring Nans
     end
-
-    % going to add in option to ignore steps that have too little data
-    % points (i.e. <7 to increase accuracy);
-    % actually adjust to have it not just remove the steps but add it to
-    % the step that leads to the smallest change in position, maybe because
-    % they are just short backwards dips
-    remove_dips_time = str2double(options.OmitBlips)/1000; % convert to seconds
-    data = modify_filter_trace(data,remove_dips_time,[],framerate);
-    data_yx = modify_filter_trace(data_yx,remove_dips_time,[],framerate);
-    trace.trace = data; trace.trace_yx = data_yx;
     
-    % if want to merge_step_components in post
-    if options.Merge
-        % automatically show polar plots
-        [rprime, thetaprime] = polar_conversion(trace,0);
-        r = [r, rprime]; theta = [theta, thetaprime];
+    % % OLD FILTERING (NOW NICELY PUT INTO FUNCTIONS)
+    % data = trace.trace;
+    % data_yx = trace.trace_yx;
+    % 
+    % % going to add in option to ignore steps that have too little data
+    % % points (i.e. <7 to increase accuracy);
+    % 
+    % % actually adjust to have it not just remove the steps but add it to
+    % % the step that leads to the smallest change in position, maybe because
+    % % they are just short backwards dips
+    % remove_dips_time = str2double(options.OmitBlips)/1000; % convert to seconds
+    % data = modify_filter_trace(data,remove_dips_time,[],framerate);
+    % data_yx = modify_filter_trace(data_yx,remove_dips_time,[],framerate);
+    % trace.trace = data; trace.trace_yx = data_yx;
+    % 
+    % % JS Edit 2025/01/08
+    % % Get changepoints back in for 2C data with many Nans.
+    % % Should have been careful changing the changepoint code.
+    % nnidx = find(~isnan(data(:,1)));
+    % 
+    % % on-axis
+    % data = data(nnidx,:);
+    % chp = find( abs(data(2:end,3) - data(1:end-1,3)) > 0);
+    % data(chp+1,5) = 1;
+    % 
+    % % off-axis
+    % data_yx = data_yx(nnidx,:);
+    % chp = find( abs(data_yx(2:end,3) - data_yx(1:end-1,3)) > 0);
+    % data_yx(chp+1,5) = 1;
+    % 
+    % 
+    % % if want to merge_step_components in post
+    % if options.Merge
+    %     % automatically show polar plots
+    %     [rprime, thetaprime] = polar_conversion(trace,0);
+    %     r = [r, rprime]; theta = [theta, thetaprime];
+    % 
+    %     trace = merge_step_components(trace);
+    %     data = trace.trace_2d;
+    %     data_yx = trace.trace_2d;
+    % end
+    
+    % JS Edit 2025/02/27 just making it easier to filter in the future.
+    % More compartmentalized
 
-        trace = merge_step_components(trace);
+    % Convert trace
+    remove_dips_time = str2double(options.OmitBlips)/1000; % convert to seconds
+    trace = filterSteps(trace, framerate, remove_dips_time);
+
+    % Merge if desired, also return r, thetha
+    if options.Merge
+        trace = mergeSteps(trace);
+        r = [r, trace.r];
+        theta = [theta, trace.theta];
         data = trace.trace_2d;
         data_yx = trace.trace_2d;
+    else
+        data = trace.trace;
+        data_yx = trace.trace_yx;
     end
-
-    % JS Edit 2025/01/08
-    % Get changepoints back in. Should have been careful changing the
-    % changepoint code.
-    nnidx = find(~isnan(data(:,1)));
-
-    % on-axis
-    data = data(nnidx,:);
-    chp = find( abs(data(2:end,3) - data(1:end-1,3)) > 0);
-    data(chp+1,5) = 1;
     
-    % off-axis
-    data_yx = data_yx(nnidx,:);
-    chp = find( abs(data_yx(2:end,3) - data_yx(1:end-1,3)) > 0);
-    data_yx(chp+1,5) = 1;
-
+    %% Extract data from prepared steps
     % Steps
     [on_steps, ~] = add_to_list_6col_steps_v2(data,threshold);
     ONsteps = [ONsteps; on_steps'];
@@ -135,6 +168,58 @@ for i=1:fnum
         dwells_for = [dwells_for; forward];
         dwells_back = [dwells_back; backward];
     end
+
+    
+    % JS Edit 2025/02/27  2-Color Statistics
+    % if the file is a neighbor file, then we will look in the same
+    % directory for its associated data file. Then we will send them both
+    % to extract the 2C stepping statistics
+
+    % MOLECULE
+    % find the molecule in the data Molecule if loaded
+    jj = strfind(fname,'_fiona')-1; %nbh or initial
+    j = strfind(fname,'_nbh')-1; %if there is a neighbor
+    ii = 1;
+    if ~isempty(j)
+        ii = j+6;
+    end
+    
+    % This is a neighbor, part of a pair, called a neighbor.
+    % We should now look for our other data parent and load both datasets.
+    if ~isempty(j) 
+        
+        % We already did all the filtering for the first stage
+        fname2 = fname;
+        ch2trace = trace;
+
+        strstart = strfind(fname,'nbh');
+        strend = strfind(fname,'fiona');
+        fname1 = strcat(fname(1:strstart-1),fname(strend:end));
+    
+        % Now dissect filename connections
+        totdata = load(fullfile(directory,fname1));
+        ch1trace = totdata.data;
+        
+        
+        % Now that we have both, let's send the trace data into
+        % two_color_statistics
+        
+        % Also do we want to use merged steps? If so, I need to find out
+        % how to pass it
+        % Maybe I just change trace before I pass it
+
+        if options.Merge
+            ch1trace.trace = ch1trace.trace_2d;
+            ch1trace.trace_yx = ch1trace.trace_2d;
+            ch2trace.trace = ch2trace.trace_2d;
+            ch2trace.trace_yx = ch2trace.trace_2d;
+        end
+
+        two_color_statistics(ch1trace, ch2trace)
+
+    end
+    
+    
     
 %     % JS Edit 2024/03/07
 %     %post processing too small dwell steps (incrase accuracy)
@@ -166,3 +251,55 @@ end
 if options.Merge && ~isfile(directory)
     plot_polar_conversion(r, theta, 24)
 end
+
+
+function filtered_trace = filterSteps(trace, framerate, remove_dips_time)
+% trace: loaded struct with important fields such as time, xy, yx, trace,
+% trace_yx, and neighbors. Will add trace_2d after processing with this
+% script
+% framerate: a pass in if time is not used. In reality, for changing steps,
+% it is not really used
+% remove_dips_time: remove small steps below a user defined threshold
+
+    data = trace.trace;
+    data_yx = trace.trace_yx;
+
+    % going to add in option to ignore steps that have too little data
+    % points (i.e. <7 to increase accuracy);
+
+    % actually adjust to have it not just remove the steps but add it to
+    % the step that leads to the smallest change in position, maybe because
+    % they are just short backwards dips
+    data = modify_filter_trace(data,remove_dips_time,[],framerate);
+    data_yx = modify_filter_trace(data_yx,remove_dips_time,[],framerate);
+
+    % JS Edit 2025/01/08
+    % Get changepoints back in for 2C data with many Nans.
+    % Should have been careful changing the changepoint code.
+    nnidx = find(~isnan(data(:,1)));
+
+    % on-axis
+    data = data(nnidx,:);
+    chp = find( abs(data(2:end,3) - data(1:end-1,3)) > 0);
+    data(chp+1,5) = 1;
+    
+    % off-axis
+    data_yx = data_yx(nnidx,:);
+    chp = find( abs(data_yx(2:end,3) - data_yx(1:end-1,3)) > 0);
+    data_yx(chp+1,5) = 1;
+
+    filtered_trace = trace;
+    filtered_trace.trace = data; filtered_trace.trace_yx = data_yx;
+    
+
+
+function merged_trace = mergeSteps(trace)
+    % merge_step_components in post
+    % automatically show polar plots
+    [rprime, thetaprime] = polar_conversion(trace,0); %second is opt to plot invdividual
+    % r = [r, rprime]; theta = [theta, thetaprime];
+
+    merged_trace = trace;
+    merged_trace = merge_step_components(trace);
+    merged_trace.r = rprime;
+    merged_trace.theta = thetaprime;
