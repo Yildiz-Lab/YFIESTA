@@ -26,6 +26,10 @@ dwells_back = [];
 r = [];
 theta = [];
 
+% Blank multipurpose array for two_color_statistics
+two_color_xy_deltatxy_step = zeros(0,7);
+two_color_xydiff = zeros(0,2);
+
 if nargin < 2
     disp("Forgotten threshold or framerate")
     return
@@ -215,13 +219,18 @@ for i=1:fnum
             ch2trace.trace = ch2trace.trace_2d;
             ch2trace.trace_yx = ch2trace.trace_2d;
         end
-
-        two_color_statistics(ch1trace, ch2trace)
+        
+        % xy_deltatxy_step (array) - each containing information about a changepoint step with the following format:
+        % [channel, normalized trace time (s), x_head_separation (nm), y_head_separation (nm), deltat (s), deltax (nm), deltay (nm)];
+        two_color_data_struct = two_color_statistics(ch1trace, ch2trace);
+        two_color_xydiff = [two_color_xydiff; two_color_data_struct.xydiff];
+        two_color_xy_deltatxy_step = [two_color_xy_deltatxy_step; two_color_data_struct.xy_deltatxy_step];
 
     end
     
     
-    
+
+
 %     % JS Edit 2024/03/07
 %     %post processing too small dwell steps (incrase accuracy)
 %     % find steps below the time threshold. For MINFLUX resolving
@@ -251,6 +260,11 @@ end
 
 if options.Merge && ~isfile(directory)
     plot_polar_conversion(r, theta, 24)
+end
+
+% JS Edit 2025/03/05 add in two-color plotting option
+if ~isempty(two_color_xydiff)
+    Plot2CStepStats(two_color_xydiff, two_color_xy_deltatxy_step)
 end
 
 

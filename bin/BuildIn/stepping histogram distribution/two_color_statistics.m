@@ -1,13 +1,23 @@
-function xy_deltatxy_step = two_color_statistics(ch1data,ch2data)
+function two_color_stats_struct = two_color_statistics(ch1data,ch2data)
 % Take two color data and get statistics:
 %   interhead separation and
 %   relative rates of stepping
 %   step size on interhead separation
-%   
 
-decimation_factor = 1;
+% Parameters:
+% ch1data (struct) - containing trace, trace_yx, and optional time
+% ch2data (struct) - containing trace, trace_yx, and optional time
 
-fprintf("Now entering the dichromatic regime \n")
+% Returns:
+% two_color_stats_struct (struct) - containing subfields below:
+% xydiff (Nx2 array) - contains all data on the separation of both channels in x and y
+% xy_deltatxy_step (nx7 array) - each containing information about a changepoint step with the following format:
+%   [channel, normalized trace time (s), x_head_separation (nm), y_head_separation (nm), deltat (s), deltax (nm), deltay (nm)];
+
+
+decimation_factor = 1; % don't trust decimation factor > 1. Untested and wonky.
+
+% fprintf("Now entering the dichromatic regime \n")
 
 % Process the data
 if isfield(ch1data, 'time')
@@ -107,6 +117,7 @@ for a = 1:length(tshort)
     end
 end
 
+%% Stepping depending on prior head position
 % Now to do time, we should make a time organized list with all of the
 % information in rows. Then, we just walk through.
 
@@ -271,46 +282,22 @@ for a = 1:size(T_org,1) % could actually probably just do intersect changepoints
 
 end
 
+%% Print statements for verification
+
 % xdiff
 % ydiff
 % xy_deltatxy_step
 % debugging_matrix
 
-figure()
-% On-axis Inter-head separation
-subplot(1,2,1)
-histogram(xdiff)
-title('On-axis Separation (nm)')
+%% Individual plot options
 
-% Off-axis Inter-head separation
-subplot(1,2,2)
-histogram(ydiff)
-title('Off-axis Separation (nm)')
+Plot2CStepStats([xdiff', ydiff'], xy_deltatxy_step)
 
-figure()
-% Step size
-subplot(3,1,1)
-scatter(xy_deltatxy_step(:,3), xy_deltatxy_step(:,6), 50, 'k', 'filled')
-ylabel('\Delta x')
-title('Dependence on inter-head separation')
+% fprintf("Now leaving the dichromatic regime \n")
 
-subplot(3,1,2)
-scatter(xy_deltatxy_step(:,4), xy_deltatxy_step(:,7), 50, 'k', 'filled')
-ylabel('\Delta x')
-title('Dependence on inter-head separation')
-
-% Dwell
-subplot(3,1,3)
-scatter(xy_deltatxy_step(:,3), xy_deltatxy_step(:,5), 50, 'k', 'filled')
-ylabel('Dwell time')
-xlabel('Head Separation (nm)')
-
-steps = [];
-dwells = [];
-
-fprintf("Now leaving the dichromatic regime \n")
-
-
+two_color_stats_struct = struct();
+two_color_stats_struct.xydiff = [xdiff', ydiff'];
+two_color_stats_struct.xy_deltatxy_step = xy_deltatxy_step;
 
 
 function B = mean_decimate_array(A, decimation_factor)
