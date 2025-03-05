@@ -291,7 +291,7 @@ end
 
 %% Individual plot options
 
-Plot2CStepStats([xdiff', ydiff'], xy_deltatxy_step)
+% Plot2CStepStats([xdiff', ydiff'], xy_deltatxy_step)
 
 % fprintf("Now leaving the dichromatic regime \n")
 

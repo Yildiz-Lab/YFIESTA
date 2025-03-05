@@ -25,12 +25,12 @@ figure()
 % Step size
 subplot(3,1,1)
 scatter(xy_deltatxy_step(:,3), xy_deltatxy_step(:,6), 50, 'k', 'filled')
-ylabel('\Delta x')
+ylabel('\Delta long-axis (nm)')
 title('Dependence on inter-head separation')
 
 subplot(3,1,2)
 scatter(xy_deltatxy_step(:,4), xy_deltatxy_step(:,7), 50, 'k', 'filled')
-ylabel('\Delta x')
+ylabel('\Delta short-axis (nm)')
 title('Dependence on inter-head separation')
 
 % Dwell
