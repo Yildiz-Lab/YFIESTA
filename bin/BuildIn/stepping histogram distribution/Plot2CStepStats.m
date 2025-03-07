@@ -8,7 +8,7 @@ function Plot2CStepStats(xydiff, xy_deltatxy_step)
 % 1. Histograms of xy-trace difference in two color separation
 % 2. Scatter plots of step size and dwell time depending on interhead separation
 
-%% Individual plot options
+%% Plot options
 
 figure()
 % On-axis Inter-head separation
@@ -21,15 +21,68 @@ subplot(1,2,2)
 histogram(xydiff(:,2))
 title('Off-axis Separation (nm)')
 
+
+%% Next figure with line fits
+x = xy_deltatxy_step(:,3);
+y = xy_deltatxy_step(:,6);
+mask = ~isnan(x .* y);
+x = x(mask); y = y(mask);
+
+% Fit a linear model (y = mx + b)
+coeffs = polyfit(x, y, 1); % First-degree polynomial fit
+m = coeffs(1);  % Slope
+b = coeffs(2);  % Intercept
+
+% Generate fitted y values
+y_fit = polyval(coeffs, x);  % Evaluate polynomial at original x values
+
+% Compute R-squared value
+SS_total = sum((y - mean(y)).^2);  % Total sum of squares
+SS_residual = sum((y - y_fit).^2);  % Residual sum of squares
+R2 = 1 - (SS_residual / SS_total);  % R-squared formula
+
+x_on = [x, y]; %assign variable for later use
+
 figure()
-% Step size
+% Step size on-axis
 subplot(3,1,1)
 scatter(xy_deltatxy_step(:,3), xy_deltatxy_step(:,6), 50, 'k', 'filled')
+hold on;
+plot(x, y_fit, 'r-', 'LineWidth', 2, ...
+    'DisplayName', sprintf('Fit: y = %.2fx + %.2f\nR^2 = %.3f', m, b, R2)); % Line of best fit
+legend('Location', 'best');  % Display legend
+hold off;
 ylabel('\Delta long-axis (nm)')
 title('Dependence on inter-head separation')
 
+% Step size off-axis
+x = xy_deltatxy_step(:,4);
+y = xy_deltatxy_step(:,7);
+mask = ~isnan(x .* y);
+x = x(mask); y = y(mask);
+
+% Fit a linear model (y = mx + b)
+coeffs = polyfit(x, y, 1); % First-degree polynomial fit
+m = coeffs(1);  % Slope
+b = coeffs(2);  % Intercept
+
+% Generate fitted y values
+y_fit = polyval(coeffs, x);  % Evaluate polynomial at original x values
+
+% Compute R-squared value
+SS_total = sum((y - mean(y)).^2);  % Total sum of squares
+SS_residual = sum((y - y_fit).^2);  % Residual sum of squares
+R2 = 1 - (SS_residual / SS_total);  % R-squared formula
+
+x_off = [x, y]; %assign variable for later use
+
 subplot(3,1,2)
 scatter(xy_deltatxy_step(:,4), xy_deltatxy_step(:,7), 50, 'k', 'filled')
+hold on;
+plot(x, y_fit, 'r-', 'LineWidth', 2, ...
+    'DisplayName', sprintf('Fit: y = %.2fx + %.2f\nR^2 = %.3f', m, b, R2)); % Line of best fit
+legend('Location', 'best');  % Display legend
+hold off;
 ylabel('\Delta short-axis (nm)')
 title('Dependence on inter-head separation')
 
@@ -39,4 +92,114 @@ scatter(xy_deltatxy_step(:,3), xy_deltatxy_step(:,5), 50, 'k', 'filled')
 ylabel('Dwell time')
 xlabel('Head Separation (nm)')
 
+
+%% Other Mark DeWitt-esque plots (2012)
+
+%% Histograms split by whether head is leading or trailing / right or left
+%% Fraction of steps taken by leading vs trailing head depending on distance (binned)
+
+% 1 is that the opposite head is reference, -1 is that current head is reference, equivalent to reflection across y-axis
+% Make sure this aligns with Line 155 definition of the same variable in
+% two_color_statistics.m
+flip_reference_head = 1;
+
+% 1 means that the opposite head is reference. So positive means I am the
+% trailing head and negative means I am in the lead.
+% 1 means that the left head is positive and the right head negative
+% (opposite plot to Mark)
+
+% This changes to Mark DeWitt if switch to -1. Make sure to do it in
+% two_color_statistics.m
+
+if flip_reference_head > 0
+    trailing_idx = find(x_on(:,1) > 0);
+    leading_idx = find(x_on(:,1) < 0);
+    left_idx = find(x_off(:,1) > 0);
+    right_idx = find(x_off(:,1) < 0);
+else
+    trailing_idx = find(x_on(:,1) < 0);
+    leading_idx = find(x_on(:,1) > 0);
+    left_idx = find(x_off(:,1) < 0);
+    right_idx = find(x_off(:,1) > 0);
 end
+
+
+% Now let's plot the histograms
+
+figure()
+subplot(2,2,ceil(1-flip_reference_head/2))
+histogram(x_on(leading_idx,2))
+title('Leading head')
+
+subplot(2,2,ceil(1+flip_reference_head/2))
+histogram(x_on(trailing_idx,2))
+title('Trailing head')
+
+subplot(2,2,ceil(3-flip_reference_head/2))
+histogram(x_off(right_idx,2))
+title('Right head')
+
+subplot(2,2,ceil(3+flip_reference_head/2))
+histogram(x_off(left_idx,2))
+title('Left head')
+
+
+% And now the fraction of steps taken by each population, at least in
+% on-axis
+
+figure()
+subplot(1,2,1)
+binedges = -95:10:95; %make symmetric across 0 for ease of flipping
+
+hold on
+h_trail = histogram(x_on(trailing_idx,2),'BinEdges',binedges);
+h_lead = histogram(x_on(leading_idx,2),'BinEdges',binedges);
+hold off
+
+N_trail = h_trail.Values;
+N_lead = h_lead.Values;
+
+binidx = find(binedges > 0);
+% binedges(binidx(1:end-1)) + (binedges(binidx(2:end)) - binedges(binidx(1:end-1)))/2
+sep = binedges(binidx(1:end-1))/2 + binedges(binidx(2:end))/2;
+
+subplot(1,2,2)
+if flip_reference_head
+    N_lead = fliplr(N_lead);
+else
+    N_trail = fliplr(N_trail);
+end
+
+% N_lead = N_lead(binidx(1:end-1));
+% N_trail = N_trail(binidx(1:end-1));
+N_lead = N_lead(binidx(1:4));
+N_trail = N_trail(binidx(1:4));
+sep = sep(1:4);
+
+bcf_trail = nan(length(N_trail),3);
+bcf_lead = nan(length(N_trail),3);
+for i = 1:length(N_trail)
+    % beta_confidence(N_trail(i), N_lead(i))
+    % if N_trail(i) + N_lead(i) > 0 % to prevent emptiness problems
+        [a,b,c] = beta_confidence(N_trail(i), N_lead(i));
+        bcf_trail(i,1) = a; bcf_trail(i,2) = b; bcf_trail(i,3) = c;
+        [a,b,c] = beta_confidence(N_lead(i), N_trail(i));
+        bcf_lead(i,1) = a; bcf_lead(i,2) = b; bcf_lead(i,3) = c;
+    % end
+end
+
+hold on
+errorbar(sep, bcf_trail(:,1), bcf_trail(:,2)-bcf_trail(:,1), bcf_trail(:,3)-bcf_trail(:,1), 'Color', [0 0.4470 0.7410], 'LineWidth',2, 'DisplayName','Trailing head')
+errorbar(sep, bcf_lead(:,1), bcf_lead(:,2)-bcf_lead(:,1), bcf_lead(:,3)-bcf_lead(:,1), 'Color', [0.8500 0.3250 0.0980], 'LineWidth',2, 'DisplayName','Leading head')
+legend('Location', 'best','AutoUpdate','off');  % Display legend
+
+scatter(sep, bcf_trail(:,1), 50, [0 0.4470 0.7410], 'filled', 'DisplayName','')
+scatter(sep, bcf_lead(:,1), 50, [0.8500 0.3250 0.0980], 'filled', 'DisplayName','')
+
+xlabel('Interhead separation (nm)')
+ylabel('Percentage of steps')
+ylim([0,1])
+
+hold off
+
+

@@ -151,6 +151,9 @@ xy_deltatxy_step = zeros(0,7); %store: channel, time, sep x, sep y, step delta t
 last_ch1_idx = 1;
 last_ch2_idx = 1;
 
+% 1 is that the opposite head is reference, -1 is that current head is reference, equivalent to reflection across y-axis
+flip_reference_head = 1;
+
 for a = 1:size(T_org,1) % could actually probably just do intersect changepoints for this one if we wanted to...
     if T_org(a,6) %ch1 x-changepoint, ch1 x-step
         
@@ -164,8 +167,8 @@ for a = 1:size(T_org,1) % could actually probably just do intersect changepoints
 
         % define as conditioned on the state of the other head (i.e. final
         % - initial)
-        stepxdiff = mean(T_org(last_ch2_idx:closestIndex_m1,4),'omitnan') - mean(T_org(last_ch1_idx:am1,2), 'omitnan');
-        stepydiff = mean(T_org(last_ch2_idx:closestIndex_m1,5),'omitnan') - mean(T_org(last_ch1_idx:am1,3), 'omitnan');
+        stepxdiff = flip_reference_head*(mean(T_org(last_ch2_idx:closestIndex_m1,4),'omitnan') - mean(T_org(last_ch1_idx:am1,2), 'omitnan'));
+        stepydiff = flip_reference_head*(mean(T_org(last_ch2_idx:closestIndex_m1,5),'omitnan') - mean(T_org(last_ch1_idx:am1,3), 'omitnan'));
         
         ap1 = min(intersect(ch1xcpmask,a+1:size(T_org,1))); % to get next nearest changepoint ahead in the same channel
         ap1 = max(intersect(ch1mask,a:ap1-1));
@@ -196,8 +199,8 @@ for a = 1:size(T_org,1) % could actually probably just do intersect changepoints
 
         % define as conditioned on the state of the other head (i.e. final
         % - initial)
-        stepxdiff = mean(T_org(last_ch2_idx:closestIndex_m1,4),'omitnan') - mean(T_org(last_ch1_idx:am1,2), 'omitnan');
-        stepydiff = mean(T_org(last_ch2_idx:closestIndex_m1,5),'omitnan') - mean(T_org(last_ch1_idx:am1,3), 'omitnan');
+        stepxdiff = flip_reference_head*(mean(T_org(last_ch2_idx:closestIndex_m1,4),'omitnan') - mean(T_org(last_ch1_idx:am1,2), 'omitnan'));
+        stepydiff = flip_reference_head*(mean(T_org(last_ch2_idx:closestIndex_m1,5),'omitnan') - mean(T_org(last_ch1_idx:am1,3), 'omitnan'));
 
         ap1 = min(intersect(ch1ycpmask,a+1:size(T_org,1))); % to get next nearest changepoint ahead in the same channel
         ap1 = max(intersect(ch1mask,a:ap1-1));
@@ -228,8 +231,8 @@ for a = 1:size(T_org,1) % could actually probably just do intersect changepoints
 
         % define as conditioned on the state of the other head (i.e. final
         % - initial)
-        stepxdiff = mean(T_org(last_ch1_idx:closestIndex_m1,2),'omitnan') - mean(T_org(last_ch2_idx:am1,4), 'omitnan');
-        stepydiff = mean(T_org(last_ch1_idx:closestIndex_m1,3),'omitnan') - mean(T_org(last_ch2_idx:am1,5), 'omitnan');
+        stepxdiff = flip_reference_head*(mean(T_org(last_ch1_idx:closestIndex_m1,2),'omitnan') - mean(T_org(last_ch2_idx:am1,4), 'omitnan'));
+        stepydiff = flip_reference_head*(mean(T_org(last_ch1_idx:closestIndex_m1,3),'omitnan') - mean(T_org(last_ch2_idx:am1,5), 'omitnan'));
         
         ap1 = min(intersect(ch2xcpmask,a+1:size(T_org,1))); % to get next nearest changepoint ahead in the same channel
         ap1 = max(intersect(ch2mask,a:ap1-1));
@@ -260,8 +263,8 @@ for a = 1:size(T_org,1) % could actually probably just do intersect changepoints
 
         % define as conditioned on the state of the other head (i.e. final
         % - initial)
-        stepxdiff = mean(T_org(last_ch1_idx:closestIndex_m1,2),'omitnan') - mean(T_org(last_ch2_idx:am1,4), 'omitnan');
-        stepydiff = mean(T_org(last_ch1_idx:closestIndex_m1,3),'omitnan') - mean(T_org(last_ch2_idx:am1,5), 'omitnan');
+        stepxdiff = flip_reference_head*(mean(T_org(last_ch1_idx:closestIndex_m1,2),'omitnan') - mean(T_org(last_ch2_idx:am1,4), 'omitnan'));
+        stepydiff = flip_reference_head*(mean(T_org(last_ch1_idx:closestIndex_m1,3),'omitnan') - mean(T_org(last_ch2_idx:am1,5), 'omitnan'));
         
         ap1 = min(intersect(ch2ycpmask,a+1:size(T_org,1))); % to get next nearest changepoint ahead in the same channel
         ap1 = max(intersect(ch2mask,a:ap1-1));

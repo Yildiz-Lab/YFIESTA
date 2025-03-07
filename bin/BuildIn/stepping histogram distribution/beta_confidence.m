@@ -39,6 +39,11 @@ x = 0:(a+b-1)^(-1):1;
 m = (idx1-mod(length(x),2))/length(x);
 % idx2 = (idx2-mod(length(y),2))/length(y);
 
+if isempty(m)
+    m = NaN; c1 = NaN; c2 = NaN;
+    return
+end
+
 
 [~,c1] = min(abs(betacdf(x,a,b)-(0.5-conf/2)));
 [~,c2] = min(abs(betacdf(x,a,b)-(0.5+conf/2)));

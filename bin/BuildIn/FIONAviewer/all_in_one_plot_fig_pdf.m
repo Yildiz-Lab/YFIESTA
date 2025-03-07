@@ -65,13 +65,20 @@ for i = 1:length(fnames)
     % find the molecule in the data Molecule if loaded
     jj = strfind(fname,'_fiona')-1; %nbh or initial
     j = strfind(fname,'_nbh')-1; %if there is a neighbor
-    ii = 1;
+    ii = 1; gg = 1;
     if ~isempty(j)
         ii = j+6;
     end
+
+    if contains(fname(1:j),'_') % actually a more complicated name
+        gg = strfind(fname(1:j),'_')+1;
+        if length(gg) > 1
+        gg = gg(end);
+        end
+    end
     
-    % fname(ii:jj)
-    % fname(1:j)
+    fname(ii:jj)
+    fname(gg:j)
 
     for k = length(Molecule):-1:1
         % Have it go backwards so that it can only find the total fname.
@@ -90,7 +97,7 @@ for i = 1:length(fnames)
             m = k;
         end
         if ~isempty(j)
-        if ~isempty(strfind(Molecule(k).Name,fname(1:j)))
+        if ~isempty(strfind(Molecule(k).Name,fname(gg:j)))
             % Molecule(k).Name
             % length(Molecule(k).Name)
             % strfind(Molecule(k).Name, fname(1:j))
