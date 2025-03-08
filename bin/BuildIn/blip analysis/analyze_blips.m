@@ -2,7 +2,7 @@ function [dt, dx, step] = analyze_blips(data)
 
 % data struct from fiona and then analyzed by picking blips
 
-window = 30;
+window = 15;
 
 % extract the important information
 

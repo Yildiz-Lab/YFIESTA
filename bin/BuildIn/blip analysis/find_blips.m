@@ -2,6 +2,11 @@ function blip_idx = find_blips(fullfilename)
 %UNTITLED Summary of this function goes here
 %   Detailed explanation goes here
 
+% Beta, still needs to be done
+blip_direction = 1; %option to change direction looking for blips for control purposes
+% blips downward = 1, blips upward = -1.
+
+
 if nargin < 1
     [filename, pathname] = uigetfile('*.mat');
     fullfilename = fullfile(pathname,filename);
@@ -17,9 +22,25 @@ steptrace = load(fullfilename);
 
 data = steptrace.data;
 
-x_line = data.time;
-y_line = data.trace(:,1);
+% JS edit because 2C data doesn't seem to have changepoints for some reason
+% JS Edit 2025/03/07
+% Get changepoints back in for 2C data with many Nans.
+% Should have been careful changing the changepoint code.
+nnidx = find(~isnan(data.trace(:,1)));
 
+% on-axis
+data.trace = data.trace(nnidx,:);
+chp = find( abs(data.trace(2:end,3) - data.trace(1:end-1,3)) > 0);
+data.trace(chp+1,5) = 1;
+
+% off-axis
+data.trace_yx = data.trace_yx(nnidx,:);
+chp = find( abs(data.trace_yx(2:end,3) - data.trace_yx(1:end-1,3)) > 0);
+data.trace_yx(chp+1,5) = 1;
+% End of JS edit, please continue. The saved file will not have nan anymore
+
+x_line = data.time(~isnan(data.time));
+y_line = data.trace(:,1);
 
 % Plot the line
 f = figure('KeyPressFcn', @keyPressCallback);
@@ -48,20 +69,26 @@ else
 end
 
 % okay look at all data and find points that are >2*sigma dips
-two_sigma_mask = data.trace(:,1) < data.trace(:,3)-2*sigma;
+if blip_direction > 0
+    two_sigma_mask = data.trace(:,1) < data.trace(:,3)-2*sigma;
+else
+    two_sigma_mask = data.trace(:,1) > data.trace(:,3)+2*sigma;
+end
+
 step_idx = find(data.trace(:,5) > 0);
-x_line(step_idx)
+% x_line(step_idx)
 step_sign = sign(data.trace(step_idx,3) - data.trace(step_idx-1,3));
 
 % make a mask that goes window before a forward step and window after a
 % backward step
 window_mask = zeros(length(data.trace(:,1)),1);
 
-set_window = 30; %5 low time res; %20 7.0 power high res; %25 8.0 power high res
+set_window = 15; %5 low time res; %20 7.0 power high res; %25 8.0 power high res
 for i=1:length(step_idx)
     window = set_window;
-    % if forward
-    if step_sign(i) > 0
+    % if forward and down blip vs forward and up blip
+    % then look behind vs then look in front
+    if blip_direction*step_sign(i) > 0
         if i-1 < 1
             window = -max(1, step_idx(i)-window) + step_idx(i);
         elseif step_idx(i-1) > step_idx(i)-window
@@ -70,7 +97,7 @@ for i=1:length(step_idx)
         % size(window_mask(step_idx(i)-window:step_idx(i)-1))
         % size(ones(window,1))
         window_mask(step_idx(i)-window:step_idx(i)-1) = ones(window,1);
-    elseif step_sign(i) < 0
+    elseif blip_direction*step_sign(i) < 0 %else backward
         if i+1 > length(step_idx)
             window = min(length(step_idx), step_idx(i)+window) - step_idx(i);
         elseif step_idx(i+1)-1 < step_idx(i)+window-1
@@ -86,8 +113,10 @@ end
 % hit on both ends
 intersect_mask = and(two_sigma_mask,window_mask);
 blip_idx_raw = find(intersect_mask > 0);
-x_line(two_sigma_mask)
-x_line(window_mask > 0)
+% fprintf('Two-sigma mask \n')
+% x_line(two_sigma_mask)
+% fprintf('Window mask \n')
+% x_line(window_mask > 0)
 
 blip_idx = [];
 % finally, we remove extras in a single window spot, we only want the spot
