@@ -31,7 +31,8 @@ fwd_array = zeros(0,2);
 figure()
 hold on
 for j = 1:length(fwd_extracted)
-    plot(fwd_extracted{j,1},fwd_extracted{j,2});
+    % plot(fwd_extracted{j,1},fwd_extracted{j,2});
+    plot(fwd_extracted{j,1},fwd_extracted{j,2},'Color',0.8*ones(1,3));
     fwd_array = [fwd_array; fwd_extracted{j,1}, fwd_extracted{j,2}];
 end
 % for j = 1:length(bwd_extracted)
@@ -62,7 +63,8 @@ bwd_array = zeros(0,2);
 figure()
 hold on
 for j = 1:length(bwd_extracted)
-    plot(bwd_extracted{j,1},bwd_extracted{j,2});
+    % plot(bwd_extracted{j,1},bwd_extracted{j,2});
+    plot(bwd_extracted{j,1},bwd_extracted{j,2},'Color',0.8*ones(1,3));
     bwd_array = [bwd_array; bwd_extracted{j,1}, bwd_extracted{j,2}];
 end
 

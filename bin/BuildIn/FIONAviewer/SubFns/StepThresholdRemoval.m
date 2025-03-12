@@ -34,23 +34,29 @@ avg_window = 30;
 minsteplength = round(7.0/0.33);
 maxnanratio = 0.5;
 
+% good params for high temporal resolution dynein MINFLUX (by Leo alg)
+step_thresh = 7;
+avg_window = 24;
+minsteplength = 11;
+maxnanratio = 0.5;
+
 % % good params for high temporal resolution 2C dynein MINFLUX 12/03
 % step_thresh = 7;
 % avg_window = 15;
 % minsteplength = round(7.0/0.67);
 % maxnanratio = 0.75;
 
-% good params for high temporal resolution 2C kinesin MINFLUX 25/01/01
-step_thresh = 4;
-avg_window = 12; % accounts for NaNs, helpful if a reasonable size of the step
-minsteplength = 12;
-maxnanratio = 0.75;
-
-% good params for high temporal resolution 2C kinesin MINFLUX 25/01/01
-step_thresh = 6.5; %5.5
-avg_window = 15; % accounts for NaNs, helpful if a reasonable size of the step
-minsteplength = 15;
-maxnanratio = 0.75;
+% % good params for high temporal resolution 2C kinesin MINFLUX 25/01/01
+% step_thresh = 4;
+% avg_window = 12; % accounts for NaNs, helpful if a reasonable size of the step
+% minsteplength = 12;
+% maxnanratio = 0.75;
+% 
+% % good params for high temporal resolution 2C kinesin MINFLUX 25/01/01
+% step_thresh = 6.5; %5.5
+% avg_window = 15; % accounts for NaNs, helpful if a reasonable size of the step
+% minsteplength = 15;
+% maxnanratio = 0.75;
 
 % we have to set this to delete to use the prebuilt AddRmvStepManually func
 % remember the old state so we can return it when we plot later
