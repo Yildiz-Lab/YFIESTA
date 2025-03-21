@@ -1,4 +1,4 @@
-function all_in_one_plot_fig_pdf(Molecule, inputArg1)
+function total_table = all_in_one_plot_fig_pdf(Molecule, inputArg1)
 % Plot all stats from a selection of MATLAB traces as figures.
 % Options add the ability to make a png or pdf plot
 
@@ -49,6 +49,7 @@ efo1 = [];
 eco1 = [];
 efo2 = [];
 eco2 = [];
+total_table = zeros(0,8); %Cy5 efo (x10^3), Cy5 eco, Cy5 time res, Cy5 r res, distance, time, V
 
 % loop through each selected file, assuming they are all in the same
 % directory
@@ -316,6 +317,14 @@ for i = 1:length(fnames)
 
 
     end
+    
+    %Ch1 efo (x10^3), Ch1 eco, Ch1 time res, Ch1 r res, distance, time, V
+    % total_table = [total_table; str2double(fname(ii:jj)), round(mean(efo1)/10000)*10, mean(eco1), st(1,2), st(1,1), round(ch1data.trace(end,1)-ch1data.trace(1,1),2), round(ch1data.time(end,1)-ch1data.time(1,1),2), round( (ch1data.trace(end,1)-ch1data.trace(1,1)) / (ch1data.time(end,1)-ch1data.time(1,1)), 0)];
+    total_table = [total_table; str2double(fname(ii:jj)), round(mean(efo1)/10000)*10, mean(eco1), st(1,2), st(1,1), round(max(ch1data.trace(:,3))-min(ch1data.trace(:,3)),2), round(ch1data.time(end,1)-ch1data.time(1,1),2), round( (max(ch1data.trace(:,3))-min(ch1data.trace(:,3))) / (ch1data.time(end,1)-ch1data.time(1,1)), 0)];
+
+    fprintf(strcat("ch1 distance (nm): ", num2str( round(ch1data.trace(end,1)-ch1data.trace(1,1),2)), " nm \n"))
+    fprintf(strcat("ch1 interaction time (s): ", num2str( round(ch1data.time(end,1)-ch1data.time(1,1),2)), " s \n"))
+    fprintf(strcat("ch1 velocity (nm/s): ", num2str( round( (ch1data.trace(end,1)-ch1data.trace(1,1)) / (ch1data.time(end,1)-ch1data.time(1,1)), 0) ), " nm/s \n"))
 
     spatiotemporal_info(:,:,i) = st;
     

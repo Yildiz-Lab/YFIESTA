@@ -1,7 +1,6 @@
 function [dt, dx, step] = analyze_blips_wrapper(directory)
 
-%wrapper to convert x,y to polar coordinates and plot behavior for many
-%different traces
+% wrapper to analyze blips in 2C form
 
 if nargin < 1
     directory = uigetdir()
@@ -26,6 +25,7 @@ fnum = length(f);
 
 dt = [];
 dx = []; step = [];
+relsep2C = [];
 blipin = []; blipout = [];
 ptsin = []; ptsout = []; % this is so unnecessary, but for a ttest I have to do some stupid things
 totpts = 0; stepnum = 0;
@@ -75,8 +75,36 @@ for i=1:fnum
         % sum(steptrace.data.trace(:,5))
         % fname
 
-    [dtprime, dxprime, stepprime, ~] = analyze_blips(steptrace.data);
-    dt = [dt, dtprime]; dx = [dx, dxprime]; step = [step, stepprime];
+        % Need to find/load neighbor data if it exists
+
+        % JS Edit 2025/02/27  2-Color Statistics
+        % if the file is a neighbor file, then we will look in the same
+        % directory for its associated data file. Then we will send them both
+        % to extract the 2C stepping statistics
+    
+        % MOLECULE
+        % find the molecule in the data Molecule if loaded
+        jj = strfind(fname,'_fiona')-1; %nbh or initial
+        j = strfind(fname,'_nbh')-1; %if there is a neighbor
+        ii = 1;
+        % Basically, if isempty(j), then we should search for the file with _nbh
+        % Else, we should search for the removal of the _nbh
+        fileNames = {f.name};
+        if isempty(j)
+            %search for fname(1:jj) + '_nbh' file
+            fname1 = strcat(fname(1:jj), '_nbh');
+            matchingFiles = fileNames(contains(fileNames, fname1));
+            steptrace2 = load(fullfile(directory, matchingFiles{1}));
+        else
+            %truncate at lower and get that file
+            ii = j+6;
+            fname1 = strcat(fname(1:j), '_fiona');
+            matchingFiles = fileNames(contains(fileNames, fname1));
+            steptrace2 = load(fullfile(directory, matchingFiles{1}));
+        end
+
+    [dtprime, dxprime, stepprime, relsepprime] = analyze_blips(steptrace.data, steptrace2.data);
+    dt = [dt, dtprime]; dx = [dx, dxprime]; step = [step, stepprime]; relsep2C = [relsep2C, relsepprime];
     
 %     [bin, bout, pin, pout, pts, num] = analyze_blips_vs(steptrace.data);
 %     blipin = [blipin; bin]; blipout = [blipout; bout];
@@ -239,5 +267,49 @@ set(ax, 'FontName', 'Arial', 'FontSize', 10, 'XColor', 'k', 'YColor', 'k'); % Se
 set(findall(gca, 'Type', 'Text'), 'Color', 'k', 'FontName', 'Arial', 'FontSize', 10); % Set the color of all text objects to black
 
 set(gcf,"Position",[360,360,600,260])
+
+% sum(relsep2C > 0)
+% sum(relsep2C < 0)
+figure()
+histogram(relsep2C)
+xlabel("Head Separation at dips (nm)")
+
+% figure()
+% scatter(relsep2C, dx, 20,'k', 'filled')
+% title("Dip size vs relative head separation")
+% xlabel("\Delta head separation (nm)")
+% ylabel("Dip size (nm)")
+
+% Next figure with line fits
+x = relsep2C;
+y = dx;
+mask = ~isnan(x .* y);
+x = x(mask); y = y(mask);
+
+% Fit a linear model (y = mx + b)
+coeffs = polyfit(x, y, 1); % First-degree polynomial fit
+m = coeffs(1);  % Slope
+b = coeffs(2);  % Intercept
+
+% Generate fitted y values
+y_fit = polyval(coeffs, x);  % Evaluate polynomial at original x values
+
+% Compute R-squared value
+SS_total = sum((y - mean(y)).^2);  % Total sum of squares
+SS_residual = sum((y - y_fit).^2);  % Residual sum of squares
+R2 = 1 - (SS_residual / SS_total);  % R-squared formula
+
+x_on = [x, y]; %assign variable for later use
+
+figure()
+scatter(x, y, 25, 'k', 'filled')
+hold on;
+plot(x, y_fit, 'r-', 'LineWidth', 2, ...
+    'DisplayName', sprintf('Fit: y = %.2fx + %.2f\nR^2 = %.3f', m, b, R2)); % Line of best fit
+legend('Location', 'best');  % Display legend
+hold off;
+title("Dip size vs relative head separation")
+xlabel("\Delta head separation (nm)")
+ylabel("Dip size (nm)")
 
 end

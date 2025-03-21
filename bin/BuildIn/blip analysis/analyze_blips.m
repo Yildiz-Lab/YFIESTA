@@ -1,17 +1,19 @@
-function [dt, dx, step] = analyze_blips(data)
+function [dt, dx, step, rel_sep_2C] = analyze_blips(data, data2)
 
 % data struct from fiona and then analyzed by picking blips
+
+% Updated to deal with Nan's on 25/03/18 and also two color
 
 window = 15;
 
 % extract the important information
+% and remove NaNs if they exist for 2C (blips also assume no NaN)
+time = data.time(~isnan(data.time));
+x = data.trace(~isnan(data.trace(:,1)),1);
+xsteps = data.trace(~isnan(data.trace(:,1)),3);
+xsteps_bool = data.trace(~isnan(data.trace(:,1)),5);
 
-time = data.time;
-x = data.trace(:,1);
-xsteps = data.trace(:,3);
-xsteps_bool = data.trace(:,5);
-
-dt = []; dx = []; step = [];
+dt = []; dx = []; step = []; rel_sep_2C = [];
 
 if isfield(data,'blips')
 if ~isempty(data.blips)
@@ -24,6 +26,25 @@ xsteps_idx = [1; xsteps_idx; length(xsteps)];
 dt = nan(1,length(blip_idx));
 dx = nan(1,length(blip_idx));
 step = nan(1,length(blip_idx));
+rel_sep_2C = nan(1,length(blip_idx));
+if nargin > 1 % we have two channels, so we should account for that
+    if ~isempty(data2)
+    time2 = data2.time(~isnan(data2.time));
+    x2 = data2.trace(~isnan(data2.trace(:,1)),1);
+    xsteps2 = data2.trace(~isnan(data2.trace(:,1)),3);
+    xsteps2_bool = data2.trace(~isnan(data2.trace(:,1)),5);
+    end
+end
+
+% % Option to plot figures and their dips
+% figure()
+% hold on
+% plot(time, x)
+% plot(time, xsteps)
+% scatter(time(blip_idx), x(blip_idx), 'k', 'filled')
+% 
+% plot(time2, x2)
+% plot(time2, xsteps2)
 
 % find step nearest the blip
 numsig1 = 0;
@@ -88,12 +109,29 @@ for i = 1:length(blip_idx)
     
     % then we do it
 %     bidx:-n:next_idx
-    if ~isnan(dt(i)) %only include if dt was not negative
+    % if ~isnan(dt(i)) %only include if dt was not negative
+    if dt(i) > 0
 %         meanstep = mean(x(bidx:-n:next_idx));
 %         meanstep = xsteps(bidx); %get current step in time
         meanstep = xsteps(xidx-1); % get previous step in time
     
         dx(i) = meanblip - meanstep;
+
+        if nargin > 1 % if two channel, include the separation of the meanstep
+            if ~isempty(data2)
+            % first check that the blip occured while in the intersection
+            % of the two data points
+            if time(bidx) > min(time2) && time(bidx) < max(time2)
+                % find nearest time point in time2
+                [~,idx2] = min(abs(time2 - time(bidx)));
+                % time(bidx)
+                % meanstep
+                % time2(idx2)
+                % xsteps2(idx2)
+                rel_sep_2C(i) = xsteps2(idx2) - meanstep;
+            end
+            end
+        end
     end
     
 end
@@ -101,7 +139,6 @@ end
 
 fprintf(strcat('(', num2str(length(blip_idx)), ',' , num2str(numsig1), ') / ',num2str(sum(xsteps_bool)),'\n'))
 % fprintf(strcat(num2str(numsig2),' / ',num2str(sum(xsteps_bool)),'\n'))
-
 
 % blip_idx
 % step

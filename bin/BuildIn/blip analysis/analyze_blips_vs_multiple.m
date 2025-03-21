@@ -17,10 +17,14 @@ function [blipin, blipout, ptsin, ptsout, totpts, totsteps] = analyze_blips_vs_m
 
 % extract the important information
 
-time = data.time;
-x = data.trace(:,1);
-xsteps = data.trace(:,3);
-xsteps_bool = data.trace(:,5);
+% time = data.time;
+% x = data.trace(:,1);
+% xsteps = data.trace(:,3);
+% xsteps_bool = data.trace(:,5);
+time = data.time(~isnan(data.time));
+x = data.trace(~isnan(data.trace(:,1)),1);
+xsteps = data.trace(~isnan(data.trace(:,1)),3);
+xsteps_bool = data.trace(~isnan(data.trace(:,1)),5);
 totsteps = sum(xsteps_bool);
 
 dt = []; dx = []; step = [];
