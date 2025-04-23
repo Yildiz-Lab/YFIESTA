@@ -161,23 +161,32 @@ for i = 1:length(fnames)
     ch1trace = smooth_running_average(ch1data.trace(idx1,1), smooth_running_average_wdw);
     ch1trace_yx = smooth_running_average(ch1data.trace_yx(idx1,1), smooth_running_average_wdw);
     
-    % % magenta fit with blue data
-    % % plot(time1-time1(1), ch1data.trace(idx1,1)+offset,'Color','blue','LineWidth',1.)
-    % plot(time1-time1(1), ch1trace+offset,'Color','blue','LineWidth',1.)
-    % plot(time1-time1(1), ch1data.trace(idx1,3)+offset,'m','LineWidth',2)
+    % magenta fit with blue data
+    % plot(time1-time1(1), ch1data.trace(idx1,1)+offset,'Color','blue','LineWidth',1.)
+    plot(time1-time1(1), ch1trace+offset,'Color','blue','LineWidth',1.)
+    plot(time1-time1(1), ch1data.trace(idx1,3)+offset,'k','LineWidth',2)
+
+    % plot(time1-time1(1), ch1data.trace_yx(idx1,1),'Color',[0 0 0.7],'LineWidth',1.)
+    plot(time1-time1(1), -ch1trace_yx,'Color',[0 0 0.7],'LineWidth',1.)
+    plot(time1-time1(1), -ch1data.trace_yx(idx1,3),'k','LineWidth',2)
+
+    % % % green data with black line fit
+    % plot(time1-time1(1), ch1data.trace(idx1,1)+offset,'Color',[0 0.7 0],'LineWidth',1.)
+    % plot(time1-time1(1), ch1data.trace(idx1,3)+offset,'Color','k','LineWidth',2)
     % 
-    % % plot(time1-time1(1), ch1data.trace_yx(idx1,1),'Color',[0 0 0.7],'LineWidth',1.)
-    % plot(time1-time1(1), -ch1trace_yx,'Color',[0 0 0.7],'LineWidth',1.)
-    % plot(time1-time1(1), -ch1data.trace_yx(idx1,3),'m','LineWidth',2)
+    % % Negative for now because the scipt for finding a neighbor seems to
+    % % have a negative cross-product result. If fixed, change this sign.
+    % plot(time1-time1(1), -ch1data.trace_yx(idx1,1),'Color',[0 0.4 0],'LineWidth',1.)
+    % plot(time1-time1(1), -ch1data.trace_yx(idx1,3),'Color','k','LineWidth',2)
     
-    % green data slightly transparent with green line fit
-    plot(time1-time1(1), ch1data.trace(idx1,1)+offset,'Color',[0 0.7 0 0.45],'LineWidth',0.4)
-    plot(time1-time1(1), ch1data.trace(idx1,3)+offset,'Color',[0 0.7 0],'LineWidth',2)
-    
-    % Negative for now because the scipt for finding a neighbor seems to
-    % have a negative cross-product result. If fixed, change this sign.
-    plot(time1-time1(1), -ch1data.trace_yx(idx1,1),'Color',[0 0.4 0 0.45],'LineWidth',0.4)
-    plot(time1-time1(1), -ch1data.trace_yx(idx1,3),'Color',[0 0.4 0],'LineWidth',2)
+    % % green data slightly transparent with green line fit
+    % plot(time1-time1(1), ch1data.trace(idx1,1)+offset,'Color',[0 0.7 0 0.45],'LineWidth',0.4)
+    % plot(time1-time1(1), ch1data.trace(idx1,3)+offset,'Color',[0 0.7 0],'LineWidth',2)
+    % 
+    % % Negative for now because the scipt for finding a neighbor seems to
+    % % have a negative cross-product result. If fixed, change this sign.
+    % plot(time1-time1(1), -ch1data.trace_yx(idx1,1),'Color',[0 0.4 0 0.45],'LineWidth',0.4)
+    % plot(time1-time1(1), -ch1data.trace_yx(idx1,3),'Color',[0 0.4 0],'LineWidth',2)
 
     ax = gca;
     ax.XGrid = 'off';

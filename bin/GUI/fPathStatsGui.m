@@ -685,20 +685,26 @@ n = get(hPathsStatsGui.lAll,'Value');
 PathStats=getappdata(hPathsStatsGui.fig,'PathStats');
 % That is stored in PathStats(n).PathData
 xy = PathStats(n).PathData(:,4:5);
+eco = PathStats(n).Results(:,8); %For MINFLUX visualization to make cropping easier
 
 % put in NaN for the blank spots. Shouldn't affect the fitting or any post
 % processing
 frames = PathStats(n).Results(:,1);
 frame1 = frames(1); framef = frames(end);
-xynew = nan(framef-frame1+1,2);
+xynew = nan(framef-frame1+1,2); econew = nan(framef-frame1+1,1);
 for i = 1:size(xy,1)
     xynew(frames(i)-frame1+1,:) = xy(i,:);
+    econew(frames(i)-frame1+1,:) = eco(i,:);
 end
 
 % JS Edit 2023/01/06
 % crop option 
 
-[startpoint,endpoint] = parse_pass_v3(xynew);
+if contains(PathStats(n).Comments,'MINFLUX') %JS Edit 2025/04/23 for MINFLUX showing amplitude atop
+    [startpoint,endpoint] = parse_pass_v3(xynew, eco);
+else
+    [startpoint,endpoint] = parse_pass_v3(xynew);
+end
 if endpoint <= startpoint
     error("Select endpoint then startpoint")
 end

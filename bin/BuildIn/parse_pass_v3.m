@@ -1,4 +1,4 @@
-function [startpoint,endpoint] = parse_pass_v3(xytrace)
+function [startpoint,endpoint] = parse_pass_v3(xytrace, eco)
 
 % Based on parse_and_review_v2 from QD_analysis
 
@@ -12,11 +12,21 @@ h =  findobj('type','figure');
 n = length(h);
 figure(n+1)
 
+ax1 = subplot(nargin,1,1);
+if nargin > 1 % to plot eco if MINFLUX argument passed
+    ax2 = subplot(nargin,1,nargin);
+    scatter(1:length(xytrace), eco', 'filled');
+    linkaxes([ax1,ax2],'x')
+    ax2.YLabel.String = 'eco';
+end
+ax1 = subplot(nargin,1,1);
 title("Select [endpoint,startpoint] OR just ENTER for entire")
 scatter(1:length(xytrace), xytrace(:,1)', 'filled');
 hold on
 scatter(1:length(xytrace), xytrace(:,2)', 'filled');
+
 set(gca,'XLim',[-0.05*length(xytrace),1.05*length(xytrace)]) %give us some room to crop
+ax1.YLabel.String = 'Path xy';
 %prompt = ['Trace ' num2str(i) ': keep (k), modify(m), separate(s), or delete(d) [k]'];
 %review = input(prompt,'s');
 endpoint = length(xytrace(:,1));
