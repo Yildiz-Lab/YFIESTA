@@ -34,6 +34,8 @@ totpts = 0; stepnum = 0;
 % 
 time_mean_modded_bins = 0:0.0005:0.05;
 min_step_length = 0.05;
+% time_mean_modded_bins = 0:0.0005:0.03;
+% min_step_length = max(time_mean_modded_bins);
 % mean_modded = struct(0,2); % storage of forward and backward cells
 fwd_mean_modded = cell(0,1);
 bwd_mean_modded = cell(0,1);

@@ -35,10 +35,10 @@ minsteplength = round(7.0/0.33);
 maxnanratio = 0.5;
 
 % good params for high temporal resolution dynein MINFLUX (by Leo alg)
-step_thresh = 7;
-avg_window = 24;
-minsteplength = 11;
-maxnanratio = 0.5;
+% step_thresh = 7;
+% avg_window = 24;
+% minsteplength = 11;
+% maxnanratio = 0.5;
 
 % % good params for high temporal resolution 2C dynein MINFLUX 12/03
 % step_thresh = 7;

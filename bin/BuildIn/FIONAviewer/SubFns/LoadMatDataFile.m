@@ -32,7 +32,8 @@ handles.PSD1Data_Short = trace_curr.xy(:,2)';
 handles.t = 1:length(trace_curr.xy(:,1));
 
 if isfield(trace_curr,'trace')
-data_xy_yx = trace_curr.trace(:,[2,1,4,3,5,6]); handles.xydisplayed = 0; %Old data format, set to yx
+% data_xy_yx = trace_curr.trace(:,[2,1,4,3,5,6]); handles.xydisplayed = 0; %Old data format, set to yx
+data_xy_yx = trace_curr.trace; handles.xydisplayed = 1; %set to xy
 handles.stepVector = data_xy_yx(:,3)';
 handles.shortStepVector = data_xy_yx(:,4)';
 handles.usageVector = data_xy_yx(:,6)';
