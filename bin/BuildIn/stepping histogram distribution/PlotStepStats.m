@@ -24,7 +24,7 @@ n = length(h);
 % On-axis step histogram
 figure(n+1)
 subplot(2,3,1)
-hh = histogram(onsteps,'BinWidth',1.5);
+hh = histogram(onsteps,'BinWidth',1.5,'FaceColor', 0.3*ones(1,3), 'EdgeColor', 'k');
 axis([-40,48,0,40]);
 set(gca, 'XTick', [-80 -32 -24 -16 -8 0 8 16 24 32 40 100]);
 set(gca, 'ylim', [0 max(hh.Values)+5])
@@ -41,7 +41,7 @@ fprintf(strcat("Backwards / forward stepping ", num2str(round(m,4)), " (", num2s
 
 % Off-axis step histogram
 subplot(2,3,2)
-histogram(offsteps,'BinWidth',1.5);
+histogram(offsteps,'BinWidth',1.5,'FaceColor', 0.3*ones(1,3), 'EdgeColor', 'k');
 axis([-32,32,0,50]);
 set(gca, 'XTick', [-30 -25 -20 -15 -10 -5 0 5 10 15 20 25 30]);
 % ylim([0 70])
@@ -73,7 +73,7 @@ fprintf(strcat("Side / forward stepping ", num2str(round(m,4)), " (", num2str(ro
 % idea, but getting rid of that allows us to see the plots.
 subplot(2,3,3)
 % histogram(dwells);
-histogram(dwells, 'BinWidth', 0.01);
+histogram(dwells, 'BinWidth', 0.01,'FaceColor', 0.3*ones(1,3), 'EdgeColor', 'k');
 set(gca,'XLim',[-0.05,0.8])
 xlabel('Time (s)');
 ylabel('Counts');
@@ -82,7 +82,7 @@ title ('dwell times')
 % Forward_Dwell histogram
 subplot(2,3,4)
 % histogram(dwells_for);
-histogram(dwells_for,'BinWidth',0.01);
+histogram(dwells_for,'BinWidth',0.01,'FaceColor', 0.3*ones(1,3), 'EdgeColor', 'k');
 set(gca,'XLim',[-0.05,0.8])
 xlabel('Time (s)');
 title ('forward dwell times')
@@ -90,7 +90,7 @@ title ('forward dwell times')
 % BackwardDwell histogram
 subplot(2,3,6)
 % histogram(dwells_back);
-histogram(dwells_back,'BinWidth',0.01);
+histogram(dwells_back,'BinWidth',0.01,'FaceColor', 0.3*ones(1,3), 'EdgeColor', 'k');
 set(gca,'XLim',[-0.05,0.8])
 xlabel('Time (s)');
 title ('backward dwell times')
@@ -171,6 +171,35 @@ if options.Poissonk2
     k = fittedmdl2.k;
 plot(tt, max(children.Values)/max(k^2/2.*tt.*exp(-k.*tt))*k^2/2.*tt.*exp(-k.*tt), 'k--'); %double exponential
 end
+
+%% Nature style histogram
+
+% Get all axes handles in the figure
+all_axes = findall(gcf, 'Type', 'axes');
+
+% Apply Nature-style formatting to each one
+for ax = all_axes'
+    set(ax, ...
+        'FontName', 'Arial', ...
+        'FontSize', 10, ...
+        'TickDir', 'out', ...
+        'LineWidth', 1, ...
+        'Box', 'off', ...
+        'XColor', 'k', ...
+        'YColor', 'k');
+    
+    % Optional: Update label font/colors if needed
+    if ~isempty(get(ax, 'XLabel'))
+        set(get(ax, 'XLabel'), 'FontName', 'Arial', 'FontSize', 10, 'Color', 'k');
+    end
+    if ~isempty(get(ax, 'YLabel'))
+        set(get(ax, 'YLabel'), 'FontName', 'Arial', 'FontSize', 10, 'Color', 'k');
+    end
+end
+
+% Optional: white background
+set(gcf, 'Color', 'w');
+
 
 if ~isempty(savename)
     savefig(savename)

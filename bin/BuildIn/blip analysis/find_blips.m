@@ -8,17 +8,35 @@ blip_direction = 1; %option to change direction looking for blips for control pu
 
 
 if nargin < 1
-    [filename, pathname] = uigetfile('*.mat');
-    fullfilename = fullfile(pathname,filename);
+    [filename, pathname] = uigetfile('*.mat','MultiSelect','on');
+    % fullfilename = fullfile(pathname,filename);
+    
+    if ~isa(filename, 'cell')
+        fullfilename{1} = fullfile(pathname,filename);
+    else
+        for i = 1:length(filename)
+            fullfilename{i} = fullfile(pathname,filename{i});
+        end
+    end
+else
+    if ~isa(fullfilename, 'cell')
+        fullfilename = {fullfilename};
+    end
 end
 
-[d,n,e] = fileparts(fullfilename);
+
+
+% loop so I can do many at once
+for i = 1:length(fullfilename)
+
+
+[d,n,e] = fileparts(fullfilename{i});
 % if contains(f,'._') %JS Edit to delete extra ._ from an error
 % f = f(3:end);
 % end
 savename = fullfile(d,strcat(n,'_wblip',e));
 
-steptrace = load(fullfilename);
+steptrace = load(fullfilename{i});
 
 data = steptrace.data;
 
@@ -169,6 +187,8 @@ f.UserData.blips_percent = size(data.blips,1)/sum(data.trace(:,5));
 
 savefig(fullfile(d,strcat(n,'_blips_sigma',num2str(round(sigma,1)),'.fig')))
 close(f)
+
+end
 
 end
 
