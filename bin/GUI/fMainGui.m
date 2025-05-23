@@ -1683,6 +1683,9 @@ if ~strcmp(get(hMainGui.fig,'Pointer'),'watch')
                 hMainGui.Values.FrameIdx(2:end)=real(hMainGui.Values.FrameIdx(2:end))+idx*1i;
                 %fMenuView('View',getappdata(0,'hMainGui'),-3);
                 setappdata(0,'hMainGui',hMainGui);
+            % JS Edit 2023/03/12 to toggle between z-projection and not
+            case 100 %d
+                fShared('DeleteTracks')
         end
         Zoom=hMainGui.ZoomView;
         if xy{1}(1)<Zoom.globalXY{1}(1)

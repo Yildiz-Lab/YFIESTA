@@ -31,8 +31,8 @@ fwd_array = zeros(0,2);
 figure()
 hold on
 for j = 1:length(fwd_extracted)
-    plot(fwd_extracted{j,1},fwd_extracted{j,2});
-    % plot(fwd_extracted{j,1},fwd_extracted{j,2},'Color',0.8*ones(1,3));
+    % plot(fwd_extracted{j,1},fwd_extracted{j,2});
+    plot(fwd_extracted{j,1},fwd_extracted{j,2},'Color',0.8*ones(1,3));
     fwd_array = [fwd_array; fwd_extracted{j,1}, fwd_extracted{j,2}];
 end
 % for j = 1:length(bwd_extracted)
@@ -57,14 +57,25 @@ fill([t, fliplr(t)], [meanpos+stdpos, fliplr(meanpos-stdpos)],[0.5,0.5,0.5],'Edg
 text(-time_bins(round(end/2)),30,strcat("N = ",num2str(length(fwd_extracted))))
 ax = gca;
 ax.XLim = sort([-min(time_bins)+0.005,-max(time_bins)-0.005]);
+ax.YLim = [-40,30];
 
+% Nature-style formatting
+set(gca, ...
+    'FontName', 'Arial', ...
+    'FontSize', 10, ...
+    'TickDir', 'out', ...
+    'LineWidth', 1, ...
+    'Box', 'off', ...
+    'XColor', 'k', ...
+    'YColor', 'k');
+set(gcf, 'Color', 'w');
 
 bwd_array = zeros(0,2);
 figure()
 hold on
 for j = 1:length(bwd_extracted)
-    plot(bwd_extracted{j,1},bwd_extracted{j,2});
-    % plot(bwd_extracted{j,1},bwd_extracted{j,2},'Color',0.8*ones(1,3));
+    % plot(bwd_extracted{j,1},bwd_extracted{j,2});
+    plot(bwd_extracted{j,1},bwd_extracted{j,2},'Color',0.8*ones(1,3));
     bwd_array = [bwd_array; bwd_extracted{j,1}, bwd_extracted{j,2}];
 end
 
@@ -83,5 +94,16 @@ plot(time_bins(1:end-1)+(time_bins(2)-time_bins(1))/2,meanpos-stdpos,'k--','Line
 text(time_bins(round(end/2)),30,strcat("N = ",num2str(length(bwd_extracted))))
 ax = gca;
 ax.XLim = sort([min(time_bins)-0.005,max(time_bins)+0.005]);
+
+% Nature-style formatting
+set(gca, ...
+    'FontName', 'Arial', ...
+    'FontSize', 10, ...
+    'TickDir', 'out', ...
+    'LineWidth', 1, ...
+    'Box', 'off', ...
+    'XColor', 'k', ...
+    'YColor', 'k');
+set(gcf, 'Color', 'w');
 
 end

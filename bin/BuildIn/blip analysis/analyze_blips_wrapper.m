@@ -1,7 +1,5 @@
 function [dt, dx, step] = analyze_blips_wrapper(directory)
 
-%wrapper to convert x,y to polar coordinates and plot behavior for many
-%different traces
 
 if nargin < 1
     directory = uigetdir()
@@ -29,6 +27,10 @@ dx = []; step = [];
 blipin = []; blipout = [];
 ptsin = []; ptsout = []; % this is so unnecessary, but for a ttest I have to do some stupid things
 totpts = 0; stepnum = 0;
+
+% some quick checks
+sigma = []; blips_percent = zeros(0,2);; blips_confidence = zeros(0,2);
+total_lifetime = [];
 
 % compiled steps with modded means, define what histogram binsize you want
 % 
@@ -79,7 +81,15 @@ for i=1:fnum
 
     [dtprime, dxprime, stepprime, ~] = analyze_blips(steptrace.data);
     dt = [dt, dtprime]; dx = [dx, dxprime]; step = [step, stepprime];
+    total_lifetime = [total_lifetime, steptrace.data.time(end)-steptrace.data.time(1)];
     
+    if isfield(steptrace.data, 'sigma')
+        sigma = [sigma, steptrace.data.sigma];
+        [mu, s1, s2] = beta_confidence(length(steptrace.data.blips), sum(steptrace.data.trace(:,5)) - length(steptrace.data.blips));
+        blips_percent = [blips_percent; mu, sum(steptrace.data.trace(:,5))];
+        blips_confidence = [blips_confidence; s1, s2];
+    end
+
 %     [bin, bout, pin, pout, pts, num] = analyze_blips_vs(steptrace.data);
 %     blipin = [blipin; bin]; blipout = [blipout; bout];
 %     ptsin = [ptsin; pin]; ptsout = [ptsout; pout];
@@ -88,7 +98,8 @@ for i=1:fnum
     % [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,5,1,1);
     % [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,5,1,5);
     % [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,15,3,6);
-    [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,20,4,10);
+    [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,20,4,10); % April - May 2025
+    % [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,20,6,15);
     blipin = [blipin; bin]; blipout = [blipout; bout];
     ptsin = [ptsin; pin]; ptsout = [ptsout; pout];
     totpts = totpts + pts; stepnum = stepnum + num;
@@ -215,14 +226,15 @@ hh2 = histogram(dt(step < 0));
 hh.BinWidth = 0.001; hh2.BinWidth = hh.BinWidth;
 ax.YLim = [0,90];
 ax.XLim = [-0.002,0.012];
-ax.LineWidth = 0.75; % Set the axes linewidth
-ax.XColor = 'k'; % Set the color of x-axis
-ax.YColor = 'k'; % Set the color of y-axis
-ax.LineWidth = 0.75; % Set the axes linewidth
-ax.XColor = 'k'; % Set the color of x-axis
-ax.YColor = 'k'; % Set the color of y-axis
-set(ax, 'FontName', 'Arial', 'FontSize', 10, 'XColor', 'k', 'YColor', 'k'); % Set font size for axis labels and ticks, and set color of axes lines
-set(findall(gca, 'Type', 'Text'), 'Color', 'k', 'FontName', 'Arial', 'FontSize', 10); % Set the color of all text objects to black
+
+set(ax, ...
+        'FontName', 'Arial', ...
+        'FontSize', 10, ...
+        'TickDir', 'out', ...
+        'LineWidth', 1, ...
+        'Box', 'off', ...
+        'XColor', 'k', ...
+        'YColor', 'k');
 
 % dx steps > 0
 subplot(1,2,2)
@@ -234,12 +246,59 @@ hh.BinWidth = 2; hh2.BinWidth = hh.BinWidth;
 ax.YLim = [0,85];
 ax.XLim = [-56,2];
 legend('Location','Northwest','FontName', 'Arial', 'FontSize', 10)
-ax.LineWidth = 0.75; % Set the axes linewidth
-ax.XColor = 'k'; % Set the color of x-axis
-ax.YColor = 'k'; % Set the color of y-axis
-set(ax, 'FontName', 'Arial', 'FontSize', 10, 'XColor', 'k', 'YColor', 'k'); % Set font size for axis labels and ticks, and set color of axes lines
-set(findall(gca, 'Type', 'Text'), 'Color', 'k', 'FontName', 'Arial', 'FontSize', 10); % Set the color of all text objects to black
+
+set(ax, ...
+        'FontName', 'Arial', ...
+        'FontSize', 10, ...
+        'TickDir', 'out', ...
+        'LineWidth', 1, ...
+        'Box', 'off', ...
+        'XColor', 'k', ...
+        'YColor', 'k');
 
 set(gcf,"Position",[360,360,600,260])
+
+
+% blips_percent vs sigma and lifetime
+total_steps = blips_percent(:,2);
+blips_percent(:,2) = [];
+weighted_blip_percent = sum(blips_percent.*total_steps)/sum(total_steps)
+f7 = figure();
+subplot(1,2,1)
+hold on
+plot([min(sigma),max(sigma)], weighted_blip_percent*ones(1,2), 'r--')
+scatter(sigma, blips_percent, 50, 'k', 'filled')
+errorbar(sigma, blips_percent, blips_confidence(:,1)-blips_percent, blips_confidence(:,2)-blips_percent, 'k', 'LineStyle', 'none')
+xlabel("\sigma (nm)")
+ylabel("Dip Percent")
+
+% Nature formatting
+ax = gca;
+set(ax, ...
+        'FontName', 'Arial', ...
+        'FontSize', 10, ...
+        'TickDir', 'out', ...
+        'LineWidth', 1, ...
+        'Box', 'off', ...
+        'XColor', 'k', ...
+        'YColor', 'k');
+
+subplot(1,2,2)
+hold on
+plot([min(total_lifetime),max(total_lifetime)], weighted_blip_percent*ones(1,2), 'r--')
+scatter(total_lifetime, blips_percent, 50, 'k', 'filled')
+errorbar(total_lifetime, blips_percent, blips_confidence(:,1)-blips_percent, blips_confidence(:,2)-blips_percent, 'k', 'LineStyle', 'none')
+xlabel("Total Lifetime (s)")
+
+% Nature formatting
+ax = gca;
+set(ax, ...
+        'FontName', 'Arial', ...
+        'FontSize', 10, ...
+        'TickDir', 'out', ...
+        'LineWidth', 1, ...
+        'Box', 'off', ...
+        'XColor', 'k', ...
+        'YColor', 'k');
 
 end

@@ -153,7 +153,7 @@ for i = 1:length(step_idx)
         % now find first point that is > -1 sigma (only check one or two
         % points)
         return_sigma = 1.0;
-        step_sign(i)
+        % step_sign(i)
         if step_sign(i) > 0
             bool1 = data.trace(sidx-10:sidx,1) > data.trace(sidx-10:sidx,3)-return_sigma*sigma;
             idx1 = find(bool1 > 0);
@@ -177,6 +177,7 @@ for i = 1:length(step_idx)
 end
 
 data.blips = [blip_idx, x_line(blip_idx), y_line(blip_idx)];
+data.sigma = sigma;
 blips_percent = length(data.blips)/sum(data.trace(:,5))
 
 save(savename, 'data')

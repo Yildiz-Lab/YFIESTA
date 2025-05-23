@@ -72,6 +72,26 @@ for i = 1:length(fnames)
     xlabel("Time (s)")
     ylabel("Distance (nm)")
 
+    set(ax, ...
+        'FontName', 'Arial', ...
+        'FontSize', 10, ...
+        'TickDir', 'out', ...
+        'LineWidth', 1, ...
+        'Box', 'off', ...
+        'XColor', 'k', ...
+        'YColor', 'k');
+    
+    % Optional: Update label font/colors if needed
+    if ~isempty(get(ax, 'XLabel'))
+        set(get(ax, 'XLabel'), 'FontName', 'Arial', 'FontSize', 10, 'Color', 'k');
+    end
+    if ~isempty(get(ax, 'YLabel'))
+        set(get(ax, 'YLabel'), 'FontName', 'Arial', 'FontSize', 10, 'Color', 'k');
+    end
+
+% Optional: white background
+set(gcf, 'Color', 'w');
+
     saveas(figgs, strcat(dir,fname(1:end-4),"_plot"))
     
     if write_pdf > 0

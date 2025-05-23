@@ -85,9 +85,17 @@ Results = [];
 for i = Index
     %frame, time(s), x(nm), y(nm), z(nm), dist to origin(nm), FWHM(nm), Amplitude(cnts), Position Error(nm), Tags
     rr = Molecule(i).Results;
+    pr = Molecule(i).PathData;
+
+    if ~isempty(pr)
+        distance = max(pr(:,4)) - min(pr(:,4));
+    else
+        % (rr(end,6) - rr(1,6))/(rr(end,2) - rr(1,2));
+        distance = max(rr(:,6)) - min(rr(:,6));
+    end
     
     % filter if they are over the dthresh and fthresh
-    if rr(end,6)-rr(1,6) < options.dthresh*Config.PixSize
+    if distance < options.dthresh*Config.PixSize
         moverthresh = 0;
     else
         moverthresh = 1;
@@ -101,13 +109,21 @@ for i = Index
     
     % then add to the associated results iff they are above the passthresh
     % for moving
-    Results = [Results; nan(1,4)]; Results(end,1)=i;
+    Results = [Results; nan(1,4)];
+    
+    % Get name convert to number
+    number = strfind(Molecule(i).Name, ' '); % find space should be where the number starts - 1
+    if length(number) > 1 % if there are multiple spaces get the last one
+        number = max(number);
+    end
+    Results(end,1)= str2num(Molecule(i).Name(number+1:end));
+    
     ResultTitles = ["Molecule", "Velocity (nm/s)", "Distance (nm)", "Landing Rate (um^{-1} s^{-1})"];
     if (~options.velocity_moverstoggle || moverthresh) && molthresh
-    Results(end,2) = (rr(end,6) - rr(1,6))/(rr(end,2) - rr(1,2));
+    Results(end,2) = distance/(rr(end,2) - rr(1,2));
     end
     if (~options.runlength_moverstoggle || moverthresh) && molthresh
-    Results(end,3) = rr(end,6) - rr(1,6);
+    Results(end,3) = distance;
     end
     if (~options.landingrate_moverstoggle || moverthresh) && molthresh
     Results(end,4) = 1;
@@ -160,6 +176,9 @@ Titles = getappdata(hMotilityGui.fig,'ResultTitles');
 
 [pathname, filename, ~] = fileparts(fullfile(Config.Directory, Config.StackName));
 savefile = fullfile(pathname, strcat(filename, '.xlsx'));
+if iscell(savefile)
+    savefile = savefile{1};
+end
 % check if files already exist. If so, then append or make a new file.
 if isfile(savefile)
     olddata = readmatrix(savefile);
