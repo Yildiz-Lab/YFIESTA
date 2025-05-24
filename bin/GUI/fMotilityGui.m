@@ -109,7 +109,7 @@ for i = Index
     
     % then add to the associated results iff they are above the passthresh
     % for moving
-    Results = [Results; nan(1,4)];
+    Results = [Results; nan(1,5)];
     
     % Get name convert to number
     number = strfind(Molecule(i).Name, ' '); % find space should be where the number starts - 1
@@ -118,7 +118,7 @@ for i = Index
     end
     Results(end,1)= str2num(Molecule(i).Name(number+1:end));
     
-    ResultTitles = ["Molecule", "Velocity (nm/s)", "Distance (nm)", "Landing Rate (um^{-1} s^{-1})"];
+    ResultTitles = ["Molecule", "Velocity (nm/s)", "Distance (nm)", "Landing Rate (um^{-1} s^{-1})", "Interaction Time (s)"];
     if (~options.velocity_moverstoggle || moverthresh) && molthresh
     Results(end,2) = distance/(rr(end,2) - rr(1,2));
     end
@@ -127,6 +127,9 @@ for i = Index
     end
     if (~options.landingrate_moverstoggle || moverthresh) && molthresh
     Results(end,4) = 1;
+    end
+    if (~options.runlength_moverstoggle || moverthresh) && molthresh
+    Results(end,5) = rr(end,2) - rr(1,2);
     end
     
 end
@@ -155,13 +158,14 @@ fPlaceFig(hMotilityGui.fig,'big');
 function Draw(hMotilityGui)
 
 set(hMotilityGui.aPlot,'Visible','on');   
-Results = getappdata(hMotilityGui.fig,'CompResults')
+Results = getappdata(hMotilityGui.fig,'CompResults');
 Titles = getappdata(hMotilityGui.fig,'ResultTitles');
 
 
 %plots
 for i=2:size(Results,2)
-    subplot(1,size(Results,2)-1,i-1);
+    % subplot(1,size(Results,2)-1,i-1);
+    subplot(2,2,i-1);
     cdfplot(Results(:,i));
     title(Titles(i))
     legend("Mean: " +num2str(mean(Results(:,i),'omitnan')) + newline + "Std: " +num2str(std(Results(:,i),'omitnan')) + newline + "N : " +num2str(length(find(isnan(Results(:,i))==0)))) 
@@ -193,4 +197,12 @@ function Cancel(hMotilityGui)
 close(hMotilityGui.fig);
 
 
+function SaveFig(hMotilityGui)
+global Config;
+[pathname, filename, ~] = fileparts(fullfile(Config.Directory, Config.StackName));
+savefile = fullfile(pathname, strcat(filename, '.fig'));
+if iscell(savefile)
+    savefile = savefile{1};
+end
 
+savefig(hMotilityGui.fig, savefile)
