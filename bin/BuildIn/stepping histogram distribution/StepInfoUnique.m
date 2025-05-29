@@ -18,7 +18,23 @@ end
 f = dir(fullfile(rootfolder,'*.mat')); %JS Edit 220207
 fnum = length(f);
 
-% StatsArr
+% JS Edit 2025/05/28 so that we can still export StepInfoUnique even with
+% MAC madness
+if fnum > 1 
+    for i=fnum:-1:1
+        if contains(f(i).name,'._') %JS Edit to ignore extra '._' that randomly show up sometimes MAC
+        f(i) = [];
+        end
+    end
+    fnum = length(f);
+else
+    if contains(fname,'._') %JS Edit to ignore extra '._' that randomly show up sometimes MAC
+        fnum = 0;
+        return
+    end
+end
+
+% Generate StatsArr
 % NumOn, Mean, Std, NumBack, BackMean, BackStd, NumOff, AbsMean, AbsStd
 StatsArr = NaN(fnum, 10);
 fnames = cell(fnum,1);
