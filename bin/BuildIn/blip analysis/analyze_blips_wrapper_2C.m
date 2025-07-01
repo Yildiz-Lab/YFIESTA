@@ -56,6 +56,8 @@ for i=1:fnum
     
     if isfield(steptrace,'data')
 
+        % fname
+
         % % JS Edit 2025/01/29
         % % Get changepoints back in. Should have been careful changing the
         % % changepoint code.
@@ -120,7 +122,7 @@ for i=1:fnum
     totpts = totpts + pts; stepnum = stepnum + num;
     
     m = length(fwd_mean_modded);
-    [fwd_mean_modded{m+1}, bwd_mean_modded{m+1}] = align_to_step_mod_mean(steptrace.data,min_step_length);
+    % [fwd_mean_modded{m+1}, bwd_mean_modded{m+1}] = align_to_step_mod_mean(steptrace.data,min_step_length);
     
     if mean(blipout) < -30
         fprintf(fname)

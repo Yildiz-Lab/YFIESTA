@@ -13,7 +13,8 @@ trace = trace(nntchoice,:);
 trace_yx = trace_yx(nntchoice,:);
 
 %Then histogram (in code form) and look for pause events
-binsize = 50; %nm
+% binsize = 50; %nm
+binsize = 25;
 bins = min(ydata):binsize:max(ydata)+binsize; %+binsize to pick up stragglers in case number is >binsize
 V = zeros(1,length(bins)-1); %we fill in between values
 

@@ -51,6 +51,7 @@ numsig1 = 0;
 % numsig2 = 0;
 for i = 1:length(blip_idx)
     bidx = blip_idx(i);
+    [~,bidx_time_nadj] = min(abs(time - data.time(bidx))); % 25/06/20 realized that data.blips refers to the non-nan removed version
     [~,idx] = min(abs(xsteps_idx - bidx));
     xidx = xsteps_idx(idx);
     
@@ -122,12 +123,19 @@ for i = 1:length(blip_idx)
             % first check that the blip occured while in the intersection
             % of the two data points
             if time(bidx) > min(time2) && time(bidx) < max(time2)
-                % find nearest time point in time2
-                [~,idx2] = min(abs(time2 - time(bidx)));
-                % time(bidx)
-                % meanstep
-                % time2(idx2)
+                % find nearest time point in time2 to the initial head
+                % separation
+                if n > 0
+                    [~,idx2] = min(abs(time2 - time(bidx))); %if before, the blip is the start of the step
+                    % time(bidx)
+                    % time2(idx2)
+                else
+                    [~,idx2] = min(abs(time2 - time(xidx))); %if after, the step is the start of the step
+                    % time(xidx)
+                    % time2(idx2)
+                end
                 % xsteps2(idx2)
+                % meanstep
                 rel_sep_2C(i) = xsteps2(idx2) - meanstep;
             end
             end
@@ -136,6 +144,8 @@ for i = 1:length(blip_idx)
     
 end
 
+% time(blip_idx)
+% rel_sep_2C
 
 fprintf(strcat('(', num2str(length(blip_idx)), ',' , num2str(numsig1), ') / ',num2str(sum(xsteps_bool)),'\n'))
 % fprintf(strcat(num2str(numsig2),' / ',num2str(sum(xsteps_bool)),'\n'))

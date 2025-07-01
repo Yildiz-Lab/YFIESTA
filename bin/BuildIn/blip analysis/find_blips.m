@@ -102,6 +102,7 @@ step_sign = sign(data.trace(step_idx,3) - data.trace(step_idx-1,3));
 window_mask = zeros(length(data.trace(:,1)),1);
 
 set_window = 35; %5 low time res; %20 7.0 power high res; %25 8.0 power high res
+set_window = 15;
 for i=1:length(step_idx)
     window = set_window;
     % if forward and down blip vs forward and up blip

@@ -38,6 +38,8 @@ if isfield(data,'blips')
     f.UserData.nearestPoints = data.blips;
     % blips already started, appending
     plot(f.UserData.nearestPoints(:,2), f.UserData.nearestPoints(:,3), 'go', 'MarkerSize', 10);
+    % f.UserData.nearestPoints = [];
+    % data.blips = [];
 else
     f.UserData.nearestPoints = [];
     data.blips = [];

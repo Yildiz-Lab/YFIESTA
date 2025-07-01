@@ -119,8 +119,25 @@ hh2 = histogram(data2, numBins, 'FaceColor', 'r', 'Normalization', 'pdf', ...
           'DisplayStyle', 'bar', 'BinLimits', [min(data1), max(data1)], ...
           'BinWidth', range(data1)/numBins, 'EdgeColor', 'k', 'FaceAlpha', 0.5);
 
+% hh1 = histogram(data1, numBins, 'FaceColor', 'b', ...
+%           'DisplayStyle', 'bar', 'BinLimits', [min(data1), max(data1)], ...
+%           'BinWidth', range(data1)/numBins, 'EdgeColor', 'k', 'FaceAlpha', 0.7);
+% hh2 = histogram(data2, numBins, 'FaceColor', 'r', ...
+%           'DisplayStyle', 'bar', 'BinLimits', [min(data1), max(data1)], ...
+%           'BinWidth', range(data1)/numBins, 'EdgeColor', 'k', 'FaceAlpha', 0.5);
+
 binCenters = 0.5*hh1.BinEdges(2:end) + 0.5*hh1.BinEdges(1:end-1);
 normalized_values = hh1.Values(hh2.Values > 0) ./ hh2.Values(hh2.Values > 0);
 plot(binCenters(hh2.Values > 0), normalized_values * max(hh1.Values) / max(normalized_values), 'k-', 'LineWidth', 2)
+% first order error propagation means sigma_ratio = meanA / meanB * sqrt( (stdA / meanA)^2 + (stdB / meanB)^2 )
+% since these are counting statistics, the ratio std/mu = 1/sqrt(N)
+% This therefore simplifies to meanA/meanB * sqrt(1/meanA + 1/meanB)
+
 xlabel("Head Separation at dips (nm)")
 legend('Separation of heads at dip', 'Histogram of head separation', 'Normalized Probability of dip occuring');
+
+figure()
+uA = hh1.Values(hh2.Values > 0);
+uB = hh2.Values(hh2.Values > 0);
+sAB = uA ./ uB .* sqrt(1./uA + 1./uB);
+errorbar(binCenters(hh2.Values > 0), normalized_values * max(hh1.Values) / max(normalized_values), sAB)

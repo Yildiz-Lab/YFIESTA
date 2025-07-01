@@ -29,7 +29,7 @@ ptsin = []; ptsout = []; % this is so unnecessary, but for a ttest I have to do 
 totpts = 0; stepnum = 0;
 
 % some quick checks
-sigma = []; blips_percent = zeros(0,2);; blips_confidence = zeros(0,2);
+sigma = []; blips_percent = zeros(0,2); blips_confidence = zeros(0,2);
 total_lifetime = [];
 
 % compiled steps with modded means, define what histogram binsize you want
