@@ -41,9 +41,14 @@ maxnanratio = 0.5;
 % maxnanratio = 0.5;
 
 % % good params for high temporal resolution 2C dynein MINFLUX 12/03
-% step_thresh = 7;
-% avg_window = 15;
-% minsteplength = round(7.0/0.67);
+step_thresh = 7;
+avg_window = 15;
+minsteplength = round(7.0/0.67);
+maxnanratio = 0.75;
+% 
+% step_thresh = 5;
+% avg_window = 10;
+% minsteplength = round(7.0);
 % maxnanratio = 0.75;
 
 % % good params for high temporal resolution 2C kinesin MINFLUX 25/01/01
