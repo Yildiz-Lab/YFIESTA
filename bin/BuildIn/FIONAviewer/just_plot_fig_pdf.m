@@ -24,9 +24,41 @@ for i = 1:length(fnames)
         fprintf("Finished combining xy and yx traces. Aborting... \n")
         return
     end
+    
+    % MOLECULE
+    % find the molecule in the data Molecule if loaded
+    jj = strfind(fname,'_fiona')-1; %nbh or initial
+    j = strfind(fname,'_nbh')-1; %if there is a neighbor
+    ii = 1; gg = 1;
+    if ~isempty(j)
+        ii = j+6;
+    end
+
+    if contains(fname(1:j),'_') % actually a more complicated name
+        gg = strfind(fname(1:j),'_')+1;
+        if length(gg) > 1
+        gg = gg(end);
+        end
+    end
+    
+    % fname(ii:jj)
+    % fname(gg:j)
+
+    if ~isempty(j) %switch it
+
+        fname2 = fname;
+
+        strstart = strfind(fname,'nbh');
+        strend = strfind(fname,'fiona');
+        fname1 = strcat(fname(1:strstart-1),fname(strend:end));
+    else
+        fname1 = fname;
+    end
+    % fname1
+    % fname2
 
         % Now dissect filename connections
-    totdata = load(fullfile(dir,fname));
+    totdata = load(fullfile(dir,fname1));
     ch1data = totdata.data;
 
     if isfield(ch1data, 'time')
@@ -62,6 +94,51 @@ for i = 1:length(fnames)
     % have a negative cross-product result. If fixed, change this sign.
     plot(time1-time1(1), -ch1data.trace_yx(idx1,1),'Color',[0.2 0.2 0.2],'LineWidth',1.)
     plot(time1-time1(1), -ch1data.trace_yx(idx1,3),'Color','r','LineWidth',2)
+
+    if ~isempty(j) % now do the neighbor
+
+        totdata = load(fullfile(dir,fname2));
+        ch2data = totdata.data;
+
+        if isfield(ch2data, 'time')
+            time2 = ch2data.time;
+            time2 = ch2data.time(~isnan(ch2data.time));
+        else
+            time2 = 1:size(ch2data.xy,1);
+        end
+
+        idx2 = find(~isnan(ch2data.trace(:,1)));
+        % time1 is not a typo, want to make sure you are normalizing to the
+        % same time
+
+        % Smooth by mean window
+        ch2trace = smooth_running_average(ch2data.trace(idx2,1), smooth_running_average_wdw);
+        ch2trace_yx = smooth_running_average(ch2data.trace_yx(idx2,1), smooth_running_average_wdw);
+
+        % % green data with black line fit
+        % % plot(time2-time1(1), ch2data.trace(idx2,1)+offset+dx,'Color',[0 0.7 0],'LineWidth',1.)
+        % plot(time2-time1(1), ch2trace+offset+dx,'Color',[0 0.7 0],'LineWidth',1.)
+        % plot(time2-time1(1), ch2data.trace(idx2,3)+offset+dx,'k','LineWidth',2)
+        % 
+        % % plot(time2-time1(1), ch2data.trace_yx(idx2,1)+dy,'Color',[0 0.4 0],'LineWidth',1.)
+        % plot(time2-time1(1), ch2trace_yx+dy,'Color',[0 0.4 0],'LineWidth',1.)
+        % plot(time2-time1(1), ch2data.trace_yx(idx2,3)+dy,'k','LineWidth',2)
+
+        % % blue fit with more transparent blue data
+        % plot(time2-time1(1), ch2data.trace(idx2,1)+offset,'Color',[0 0 1 0.45],'LineWidth',0.4)
+        % plot(time2-time1(1), ch2data.trace(idx2,3)+offset,'blue','LineWidth',2)
+        % 
+        % plot(time2-time1(1), ch2data.trace_yx(idx2,1),'Color',[0 0 0.7 0.45],'LineWidth',0.4)
+        % plot(time2-time1(1), ch2data.trace_yx(idx2,3),'blue','LineWidth',2)
+
+        % blue data with yellow line fit
+        plot(time2-time1(1), ch2trace+offset,'Color','b','LineWidth',1.)
+        plot(time2-time1(1), ch2data.trace(idx2,3)+offset,'Color',[212,175,55]/255,'LineWidth',2)
+
+        plot(time2-time1(1), ch2trace_yx,'Color','b','LineWidth',1.)
+        plot(time2-time1(1), ch2data.trace_yx(idx2,3),'Color',[212,175,55]/255,'LineWidth',2)
+    end
+
 
     ax = gca;
     ax.XGrid = 'off';

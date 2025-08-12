@@ -202,4 +202,86 @@ ylim([0,1])
 
 hold off
 
+%% Dwell times binning and averaging, adapted from file to show the dwell times vs interhead separation
 
+
+% load from object associated with dependence on interhead separation
+
+% dwellspacing - XData
+% dwelltime - YData
+dwellspacing = xy_deltatxy_step(:,3)';
+dwelltime = xy_deltatxy_step(:,5)';
+
+% bins = -44:8:60;
+bins = -52:8:52;
+
+dwell_times_binned = cell(1,length(bins)-1);
+
+for j = 1:length(bins)-1
+
+    mask1 = and(dwellspacing > bins(j), dwellspacing < bins(j+1));
+    dwell_times_binned{j} = dwelltime(mask1)*1000; %convert to ms
+
+
+end
+
+
+figure()
+hold on
+
+mean_dwell_time = nan(length(bins)-1,3);
+
+for j = 1:length(bins)-1
+
+    scatter((bins(j+1)+bins(j))/2 * ones(length(dwell_times_binned{j}),1), dwell_times_binned{j}, 20, 'k', 'filled')
+    pd = fitdist(dwell_times_binned{j}', 'Exponential');
+    ci = paramci(pd);
+    mean_dwell_time(j,1) = pd.mu; mean_dwell_time(j,2:3) = ci';
+
+end
+
+scatter((bins(1:end-1)+bins(2:end))/2, mean_dwell_time(:,1), 20, 'r', 'filled')
+errorbar((bins(1:end-1)+bins(2:end))/2, mean_dwell_time(:,1), mean_dwell_time(:,1) - mean_dwell_time(:,2), -mean_dwell_time(:,1) + mean_dwell_time(:,3), 'r', 'LineStyle', 'none')
+
+
+ax = gca;
+ax.XLim = [min(bins), max(bins)];
+xlabel("Interhead separation (nm)");
+ylabel("Dwell Time (ms)");
+set(ax, ...
+        'FontName', 'Arial', ...
+        'FontSize', 10, ...
+        'TickDir', 'out', ...
+        'LineWidth', 1, ...
+        'Box', 'off', ...
+        'XColor', 'k', ...
+        'YColor', 'k');
+
+
+figure()
+hold on
+[val0, idx0] = min(abs((bins(1:end-1)+bins(2:end))/2));
+if val0 < 0
+    idx0 = idx0-1;
+end
+% Leading
+scatter(-(bins(1:idx0)+bins(2:idx0+1))/2, mean_dwell_time(1:idx0,1), 40, [0.8500 0.3250 0.0980], 'filled', 'DisplayName', '')
+errorbar(-(bins(1:idx0)+bins(2:idx0+1))/2, mean_dwell_time(1:idx0,1), mean_dwell_time(1:idx0,1) - mean_dwell_time(1:idx0,2), -mean_dwell_time(1:idx0,1) + mean_dwell_time(1:idx0,3), 'Color', [0.8500 0.3250 0.0980], 'LineStyle', 'none', 'DisplayName', 'Leading head', 'LineWidth',2)
+% Trailing
+scatter((bins(idx0+1:end-1)+bins(idx0+2:end))/2, mean_dwell_time(idx0+1:end,1), 40, [0 0.4470 0.7410], 'filled', 'DisplayName', '')
+errorbar((bins(idx0+1:end-1)+bins(idx0+2:end))/2, mean_dwell_time(idx0+1:end,1), mean_dwell_time(idx0+1:end,1) - mean_dwell_time(idx0+1:end,2), -mean_dwell_time(idx0+1:end,1) + mean_dwell_time(idx0+1:end,3), 'Color', [0 0.4470 0.7410], 'LineStyle', 'none', 'DisplayName', 'Trailing head', 'LineWidth',2)
+
+legend()
+
+ax = gca;
+ax.XLim = [val0 - (bins(2)-bins(1))/2, max(bins)];
+xlabel("Interhead separation (nm)");
+ylabel("Dwell Time (ms)");
+set(ax, ...
+        'FontName', 'Arial', ...
+        'FontSize', 10, ...
+        'TickDir', 'out', ...
+        'LineWidth', 1, ...
+        'Box', 'off', ...
+        'XColor', 'k', ...
+        'YColor', 'k');
