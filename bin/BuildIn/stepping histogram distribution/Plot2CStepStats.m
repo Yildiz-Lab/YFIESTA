@@ -217,12 +217,9 @@ bins = -52:8:52;
 
 dwell_times_binned = cell(1,length(bins)-1);
 
-for j = 1:length(bins)-1
-
+for j = 1:length(bins)-1 % bin your dwells
     mask1 = and(dwellspacing > bins(j), dwellspacing < bins(j+1));
     dwell_times_binned{j} = dwelltime(mask1)*1000; %convert to ms
-
-
 end
 
 
@@ -231,13 +228,54 @@ hold on
 
 mean_dwell_time = nan(length(bins)-1,3);
 
-for j = 1:length(bins)-1
 
-    scatter((bins(j+1)+bins(j))/2 * ones(length(dwell_times_binned{j}),1), dwell_times_binned{j}, 20, 'k', 'filled')
+for j = 1:length(bins)-1 % now fit distribution and get the tau value with confidence intervals
+    
     pd = fitdist(dwell_times_binned{j}', 'Exponential');
+    % optional, remove outliers 2025/08/13
+
+    % plot original for comparison
+    % scatter((bins(j+1)+bins(j))/2 * ones(length(dwell_times_binned{j}),1), dwell_times_binned{j}, 20, 'r', 'filled')
+
+    % Quantile cutoff
+    % cutoff = quantile(dwell_times_binned{j}, 0.9);
+    % dwell_times_binned{j} = dwell_times_binned{j}(dwell_times_binned{j} <= cutoff);
+    % pd = fitdist(dwell_times_binned{j}', 'Exponential');
+
+    % Remove based off pd estimate
+    % dwell_times_binned{j}(dwell_times_binned{j} > 5*pd.mu) = [];
+    
+    % Remove using a double exponential fit
+    % Also uncomment function at the end of file
+    % Example data (replace with dwell_times_binned{j})
+    % t = exprnd(1, 200, 1);               % fast process
+    % t = [t; exprnd(5, 50, 1)];           % plus slow process
+    % t = dwell_times_binned{j};
+    % 
+    % % Initial guesses: [A, tau1, tau2]
+    % initParams = [0.1, 20, 100];
+    % 
+    % % Likelihood function for mixture of two exponentials
+    % negLogLik = @(params) -sum( log( ...
+    %     params(1) .* (1/params(2)) .* exp(-t/params(2)) + ...
+    %     (1 - params(1)) .* (1/params(3)) .* exp(-t/params(3)) ...
+    % ) );
+    % 
+    % % Constrain A between 0 and 1, taus > 0
+    % opts = optimset('fminsearch');
+    % % opts.Display = 'iter';
+    % params_hat = fminsearch(@(p) penalizedNegLL(p, negLogLik), initParams, opts);
+    % 
+    % A_est     = params_hat(1);
+    % tau1_est  = params_hat(2);
+    % tau2_est  = params_hat(3);
+    % 
+    % fprintf('A = %.3f, tau1 = %.3f, tau2 = %.3f\n', A_est, tau1_est, tau2_est);
+    
+    scatter((bins(j+1)+bins(j))/2 * ones(length(dwell_times_binned{j}),1), dwell_times_binned{j}, 20, 'k', 'filled')
+    
     ci = paramci(pd);
     mean_dwell_time(j,1) = pd.mu; mean_dwell_time(j,2:3) = ci';
-
 end
 
 scatter((bins(1:end-1)+bins(2:end))/2, mean_dwell_time(:,1), 20, 'r', 'filled')
@@ -285,3 +323,12 @@ set(ax, ...
         'Box', 'off', ...
         'XColor', 'k', ...
         'YColor', 'k');
+
+% 
+% % --- Helper function to keep parameters in bounds ---
+% function nll = penalizedNegLL(p, nllFunc)
+%     if p(1) < 0 || p(1) > 1 || p(2) <= 0 || p(3) <= 0
+%         nll = Inf;
+%     else
+%         nll = nllFunc(p);
+%     end
