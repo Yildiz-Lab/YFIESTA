@@ -14,12 +14,12 @@ figure()
 % On-axis Inter-head separation
 subplot(1,2,1)
 histogram(xydiff(:,1))
-title('On-axis Separation (nm)')
+title('Long-axis separation (nm)')
 
 % Off-axis Inter-head separation
 subplot(1,2,2)
 histogram(xydiff(:,2))
-title('Off-axis Separation (nm)')
+title('Short-axis separation (nm)')
 
 
 %% Next figure with line fits
@@ -43,7 +43,7 @@ R2 = 1 - (SS_residual / SS_total);  % R-squared formula
 
 x_on = [x, y]; %assign variable for later use
 
-figure()
+figure('Position', [161 169 847 595])
 % Step size on-axis
 subplot(3,1,1)
 scatter(xy_deltatxy_step(:,3), xy_deltatxy_step(:,6), 50, 'k', 'filled')
@@ -53,7 +53,7 @@ plot(x, y_fit, 'r-', 'LineWidth', 2, ...
 legend('Location', 'best');  % Display legend
 hold off;
 ylabel('\Delta long-axis (nm)')
-title('Dependence on inter-head separation')
+title('Dependence on MTBD separation')
 
 % Step size off-axis
 x = xy_deltatxy_step(:,4);
@@ -76,6 +76,13 @@ R2 = 1 - (SS_residual / SS_total);  % R-squared formula
 
 x_off = [x, y]; %assign variable for later use
 
+% make nature style
+ax = gca;
+set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+
+% store y-axis limits for histogram breakdown later
+long_axis_range = ax.YLim;
+
 subplot(3,1,2)
 scatter(xy_deltatxy_step(:,4), xy_deltatxy_step(:,7), 50, 'k', 'filled')
 hold on;
@@ -84,13 +91,25 @@ plot(x, y_fit, 'r-', 'LineWidth', 2, ...
 legend('Location', 'best');  % Display legend
 hold off;
 ylabel('\Delta short-axis (nm)')
-title('Dependence on inter-head separation')
+title('Dependence on MTBD separation')
+
+% make nature style
+ax = gca;
+set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+
+% store y-axis limits for histogram breakdown later
+short_axis_range = ax.YLim;
 
 % Dwell
 subplot(3,1,3)
 scatter(xy_deltatxy_step(:,3), xy_deltatxy_step(:,5), 50, 'k', 'filled')
 ylabel('Dwell time')
-xlabel('Head Separation (nm)')
+xlabel('MTBD separation (nm)')
+
+% make nature style
+ax = gca;
+set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+
 
 
 %% Other Mark DeWitt-esque plots (2012)
@@ -128,33 +147,47 @@ end
 
 figure()
 subplot(2,2,ceil(1-flip_reference_head/2))
-histogram(x_on(leading_idx,2))
+histogram(x_on(leading_idx,2),'BinWidth',2)
 title('Leading head')
+ax=gca; set(ax,'XLim',long_axis_range);
+set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
 
 subplot(2,2,ceil(1+flip_reference_head/2))
-histogram(x_on(trailing_idx,2))
+histogram(x_on(trailing_idx,2),'BinWidth',2)
 title('Trailing head')
+ax=gca; set(ax,'XLim',long_axis_range);
+set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
 
 subplot(2,2,ceil(3-flip_reference_head/2))
-histogram(x_off(right_idx,2))
+histogram(x_off(right_idx,2),'BinWidth',2)
 title('Right head')
+ax=gca; set(ax,'XLim',short_axis_range);
+set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
 
 subplot(2,2,ceil(3+flip_reference_head/2))
-histogram(x_off(left_idx,2))
+histogram(x_off(left_idx,2),'BinWidth',2)
 title('Left head')
+ax=gca; set(ax,'XLim',short_axis_range);
+set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
 
 
 % And now the fraction of steps taken by each population, at least in
 % on-axis
 
-figure()
+figure('Position',[311 266 722 420])
 subplot(1,2,1)
-binedges = -95:10:95; %make symmetric across 0 for ease of flipping
+% binedges = -95:10:95; %make symmetric across 0 for ease of flipping
+binedges = -60:8:60; %make symmetric across 0 for ease of flipping
+last_bin_show = 5;
 
 hold on
-h_trail = histogram(x_on(trailing_idx,2),'BinEdges',binedges);
-h_lead = histogram(x_on(leading_idx,2),'BinEdges',binedges);
+h_trail = histogram(x_on(trailing_idx,2),'BinEdges',binedges,'DisplayName','Trailing');
+h_lead = histogram(x_on(leading_idx,2),'BinEdges',binedges,'DisplayName','Leading');
 hold off
+title('Population steps taken')
+legend()
+ax = gca;
+set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
 
 N_trail = h_trail.Values;
 N_lead = h_lead.Values;
@@ -172,9 +205,9 @@ end
 
 % N_lead = N_lead(binidx(1:end-1));
 % N_trail = N_trail(binidx(1:end-1));
-N_lead = N_lead(binidx(1:4));
-N_trail = N_trail(binidx(1:4));
-sep = sep(1:4);
+N_lead = N_lead(binidx(1:last_bin_show));
+N_trail = N_trail(binidx(1:last_bin_show));
+sep = sep(1:last_bin_show);
 
 bcf_trail = nan(length(N_trail),3);
 bcf_lead = nan(length(N_trail),3);
@@ -196,9 +229,15 @@ legend('Location', 'best','AutoUpdate','off');  % Display legend
 scatter(sep, bcf_trail(:,1), 50, [0 0.4470 0.7410], 'filled', 'DisplayName','')
 scatter(sep, bcf_lead(:,1), 50, [0.8500 0.3250 0.0980], 'filled', 'DisplayName','')
 
-xlabel('Interhead separation (nm)')
+xlabel('MTBD separation (nm)')
 ylabel('Percentage of steps')
 ylim([0,1])
+xlim([binedges(round(end/2)+1), binedges(round(end/2)+1+last_bin_show)]);
+%if including 0nm, include this:
+% xlim([binedges(round(end/2)), binedges(round(end/2)+last_bin_show)]); 
+xticks(sep)
+ax = gca;
+set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
 
 hold off
 
@@ -271,6 +310,9 @@ errorbar(-(bins(1:idx0)+bins(2:idx0+1))/2, mean_dwell_time(1:idx0,1), mean_dwell
 scatter((bins(idx0+1:end-1)+bins(idx0+2:end))/2, mean_dwell_time(idx0+1:end,1), 40, [0 0.4470 0.7410], 'filled', 'DisplayName', '')
 errorbar((bins(idx0+1:end-1)+bins(idx0+2:end))/2, mean_dwell_time(idx0+1:end,1), mean_dwell_time(idx0+1:end,1) - mean_dwell_time(idx0+1:end,2), -mean_dwell_time(idx0+1:end,1) + mean_dwell_time(idx0+1:end,3), 'Color', [0 0.4470 0.7410], 'LineStyle', 'none', 'DisplayName', 'Trailing head', 'LineWidth',2)
 
+xticks((bins(idx0:end-1)+bins(idx0+1:end))/2)
+yticks(5:5:25)
+
 legend()
 
 ax = gca;
@@ -285,3 +327,4 @@ set(ax, ...
         'Box', 'off', ...
         'XColor', 'k', ...
         'YColor', 'k');
+
