@@ -12,10 +12,12 @@ h =  findobj('type','figure');
 n = length(h);
 figure(n+1)
 
+idx = find(~isnan(xytrace(:,1)));
+
 ax1 = subplot(nargin,1,1);
 if nargin > 1 % to plot eco if MINFLUX argument passed
     ax2 = subplot(nargin,1,nargin);
-    scatter(1:length(xytrace), eco', 'filled');
+    scatter(idx, eco', 'filled');
     linkaxes([ax1,ax2],'x')
     ax2.YLabel.String = 'eco';
 end

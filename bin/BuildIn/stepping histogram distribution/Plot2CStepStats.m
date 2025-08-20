@@ -77,6 +77,8 @@ R2 = 1 - (SS_residual / SS_total);  % R-squared formula
 x_off = [x, y]; %assign variable for later use
 
 % make nature style
+xlim([-64,64]); xticks(-64:8:64);
+ylim([-64,64]); yticks(-64:8:64);
 ax = gca;
 set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
 
@@ -94,6 +96,8 @@ ylabel('\Delta short-axis (nm)')
 title('Dependence on MTBD separation')
 
 % make nature style
+xlim([-48,48]); xticks(-48:8:48);
+ylim([-48,48]); yticks(-48:8:48);
 ax = gca;
 set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
 
@@ -147,28 +151,36 @@ end
 
 figure()
 subplot(2,2,ceil(1-flip_reference_head/2))
-histogram(x_on(leading_idx,2),'BinWidth',2)
+h1 = histogram(x_on(leading_idx,2),'BinWidth',2);
 title('Leading head')
-ax=gca; set(ax,'XLim',long_axis_range);
-set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+ax1=gca; set(ax1,'XLim',long_axis_range);
+set(ax1, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
 
 subplot(2,2,ceil(1+flip_reference_head/2))
-histogram(x_on(trailing_idx,2),'BinWidth',2)
+h2 = histogram(x_on(trailing_idx,2),'BinWidth',2);
 title('Trailing head')
-ax=gca; set(ax,'XLim',long_axis_range);
-set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+ax2=gca; set(ax2,'XLim',long_axis_range);
+set(ax2, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+
+% set to the same amplitude for axis counts
+set(ax1, 'YLim', [0,max([h1.Values, h2.Values])+10])
+set(ax2, 'YLim', [0,max([h1.Values, h2.Values])+10])
 
 subplot(2,2,ceil(3-flip_reference_head/2))
-histogram(x_off(right_idx,2),'BinWidth',2)
+h3 = histogram(x_off(right_idx,2),'BinWidth',2);
 title('Right head')
-ax=gca; set(ax,'XLim',short_axis_range);
-set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+ax3=gca; set(ax3,'XLim',short_axis_range);
+set(ax3, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
 
 subplot(2,2,ceil(3+flip_reference_head/2))
-histogram(x_off(left_idx,2),'BinWidth',2)
+h4 = histogram(x_off(left_idx,2),'BinWidth',2);
 title('Left head')
-ax=gca; set(ax,'XLim',short_axis_range);
-set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+ax4=gca; set(ax4,'XLim',short_axis_range);
+set(ax4, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+
+% set to the same amplitude for axis counts
+set(ax3, 'YLim', [0,max([h3.Values, h4.Values])+10])
+set(ax4, 'YLim', [0,max([h3.Values, h4.Values])+10])
 
 
 % And now the fraction of steps taken by each population, at least in
