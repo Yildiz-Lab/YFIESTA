@@ -135,7 +135,7 @@ for i=1:fnum
     % Convert trace
     remove_dips_time = str2double(options.OmitBlips)/1000; % convert to seconds
     trace = filterSteps(trace, framerate, remove_dips_time);
-
+    
     % Merge if desired, also return r, thetha
     if options.Merge
         trace = mergeSteps(trace);
@@ -147,6 +147,7 @@ for i=1:fnum
         data = trace.trace;
         data_yx = trace.trace_yx;
     end
+    sum(data(:,5))
     
     %% Extract data from prepared steps
     % Steps
@@ -198,6 +199,11 @@ for i=1:fnum
 
         strstart = strfind(fname,'nbh');
         strend = strfind(fname,'fiona');
+        % JS Edit works for filename types of
+        % (mol#)_nbh_(mol#)_(whatever_whatever)_fiona.mat
+        aa = strfind(fname,'_');
+        aa = aa(aa > strstart);
+        strend = aa(2)+1; %Pull second since first is to prelude the nbh number, then following the neighbor number
         fname1 = strcat(fname(1:strstart-1),fname(strend:end));
     
         % Now dissect filename connections
@@ -292,16 +298,17 @@ function filtered_trace = filterSteps(trace, framerate, remove_dips_time)
     % Get changepoints back in for 2C data with many Nans.
     % Should have been careful changing the changepoint code.
     nnidx = find(~isnan(data(:,1)));
-
+    
+    min_delta_step = 0;
     % on-axis
     data = data(nnidx,:);
-    chp = find( abs(data(2:end,3) - data(1:end-1,3)) > 0);
-    data(chp+1,5) = 1;
+    chp = find( abs(data(2:end,3) - data(1:end-1,3)) > min_delta_step);
+    data(nnidx,5) = 0; data(chp+1,5) = 1;
     
     % off-axis
     data_yx = data_yx(nnidx,:);
-    chp = find( abs(data_yx(2:end,3) - data_yx(1:end-1,3)) > 0);
-    data_yx(chp+1,5) = 1;
+    chp = find( abs(data_yx(2:end,3) - data_yx(1:end-1,3)) > min_delta_step);
+    data_yx(nnidx,5) = 0; data_yx(chp+1,5) = 1;
 
     filtered_trace = trace;
     filtered_trace.trace = data; filtered_trace.trace_yx = data_yx;

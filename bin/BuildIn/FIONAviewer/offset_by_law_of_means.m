@@ -178,6 +178,41 @@ for i = 1:length(fnames)
     doff_step_all = [doff_step_all, offstepdiff];
 
     % get steps as well for future processing? Idk about this one just yet
+    
+    sum(isnan(ondiff))
+
+    don = mean(ondiff);
+    doff = mean(offdiff);
+    
+    stdon = std(ondiff);
+    stdoff = std(offdiff);
+
+    figure()
+    subplot(2,2,1)
+    histogram(don_all)
+    title(strcat('On-axis Difference ', fname1))
+    legend(strcat("\mu: ", num2str(round(don,2)), ", \sigma: ", num2str(round(stdon,2))))
+    subplot(2,2,2)
+    histogram(doff_all)
+    title('Off-axis Difference')
+    legend(strcat("\mu: ", num2str(round(doff,2)), ", \sigma: ", num2str(round(stdoff,2))))
+
+
+    donstep = mean(onstepdiff,'omitnan');
+    doffstep = mean(offstepdiff,'omitnan');
+    
+    stdonstep = std(onstepdiff,'omitnan');
+    stdoffstep = std(offstepdiff,'omitnan');
+
+    subplot(2,2,3)
+    histogram(donstep - don)
+    title('On-axis Step Difference - \mu')
+    legend(strcat("\mu: ", num2str(round(donstep,2)), ", \sigma: ", num2str(round(stdonstep,2))))
+    subplot(2,2,4)
+    histogram(doffstep - doff)
+    title('Off-axis Step Difference - \mu')
+    legend(strcat("\mu: ", num2str(round(doffstep,2)), ", \sigma: ", num2str(round(stdoffstep,2))))
+
 
 end
 
@@ -190,10 +225,11 @@ stdon = std(don_all);
 stdoff = std(doff_all);
 
 figure()
+subplot(1,2,1)
 histogram(don_all)
 title('On-axis Difference')
 legend(strcat("\mu: ", num2str(round(don,2)), ", \sigma: ", num2str(round(stdon,2))))
-figure()
+subplot(1,2,2)
 histogram(doff_all)
 title('Off-axis Difference')
 legend(strcat("\mu: ", num2str(round(doff,2)), ", \sigma: ", num2str(round(stdoff,2))))
@@ -209,11 +245,13 @@ doffstep = mean(doff_step_all,'omitnan');
 stdonstep = std(don_step_all,'omitnan');
 stdoffstep = std(doff_step_all,'omitnan');
 
+
 figure()
+subplot(1,2,1)
 histogram(don_step_all - donstep)
 title('On-axis Step Difference - \mu')
 legend(strcat("\mu: ", num2str(round(donstep,2)), ", \sigma: ", num2str(round(stdonstep,2))))
-figure()
+subplot(1,2,2)
 histogram(doff_step_all - doffstep)
 title('Off-axis Step Difference - \mu')
 legend(strcat("\mu: ", num2str(round(doffstep,2)), ", \sigma: ", num2str(round(stdoffstep,2))))

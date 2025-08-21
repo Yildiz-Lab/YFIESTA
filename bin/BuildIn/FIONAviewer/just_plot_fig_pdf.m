@@ -50,6 +50,11 @@ for i = 1:length(fnames)
 
         strstart = strfind(fname,'nbh');
         strend = strfind(fname,'fiona');
+        % JS Edit works for filename types of
+        % (mol#)_nbh_(mol#)_(whatever_whatever)_fiona.mat
+        aa = strfind(fname,'_');
+        aa = aa(aa > strstart);
+        strend = aa(2)+1; %Pull second since first is to prelude the nbh number, then following the neighbor number
         fname1 = strcat(fname(1:strstart-1),fname(strend:end));
     else
         fname1 = fname;
@@ -179,7 +184,11 @@ set(gcf, 'Color', 'w');
     end
     close(figgs)
 
+    % adding 2-Color separation histograms, looking for differences in sigma
+    % offset_by_raw_means_v2(fullfile(dir,fname1))
 end
+
+
 
 
 function A = smooth_running_average(A, smooth_running_average_wdw)

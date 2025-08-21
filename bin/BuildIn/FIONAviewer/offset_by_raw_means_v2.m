@@ -52,7 +52,14 @@ for i = 1:length(fnames)
     % Now dissect filename connections
 
     data = load(fullfile(dir,fname));
-    Molecule = data.Molecule;
+    % if isfield(data,'Molecule')
+        Molecule = data.Molecule;
+    % else
+    %     Molecule(1).Channel = 1;
+    %     Molecule(1).Results = nan(length(data.trace(:,1)),4);
+    % 
+    %     Molecule(1).Results(:,2) = 
+    % end
 
     for j = 1:length(Molecule)
         % check it is in Channel 1
