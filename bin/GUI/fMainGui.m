@@ -1200,7 +1200,7 @@ if strcmp(Mode,'Molecule')==1
     set(hMainGui.RightPanel.pData.sMolList,'Value',v(1));
     fRightPanel('UpdateList',hMainGui.RightPanel.pData.MolList,Molecule,hMainGui.RightPanel.pData.sMolList,hMainGui.Menu.ctListMol);
     if strcmp(get(hMainGui.RightPanel.pData.panel,'Visible'),'on')
-        fRightPanel('DataMoleculesPanel',hMainGui);            
+        fRightPanel('DataMoleculesPanel',hMainGui);
     end    
 else
     set(hMainGui.RightPanel.pData.sFilList,'Value',v(2));
