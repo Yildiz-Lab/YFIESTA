@@ -45,9 +45,9 @@ hConfigGui.fig = figure('Units','normalized','DockControls','off','IntegerHandle
 fPlaceFig(hConfigGui.fig,'big');
 
 if ispc
-    set(hDataGui.fig,'Color',[50,50,50]/255);
+    set(hConfigGui.fig,'Color',[50,50,50]/255);
 elseif ismac
-    set(hDataGui.fig,'Color',[50,50,50]/255);
+    set(hConfigGui.fig,'Color',[50,50,50]/255);
 end
 
 c = get(hConfigGui.fig,'Color');
