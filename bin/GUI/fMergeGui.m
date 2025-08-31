@@ -41,16 +41,30 @@ close(h)
 hMergeGui.fig = figure('Units','normalized','DockControls','off','IntegerHandle','off','MenuBar','none','Name','FIESTA Merge Tracks',...
                       'NumberTitle','off','HandleVisibility','callback','Tag','hMergeGui',...
                       'Visible','off','Resize','off','Color',[0.9255 0.9137 0.8471],'WindowStyle','modal');            
-                  
+    
+
 fPlaceFig(hMergeGui.fig,'big');
 
+% if ispc
+%     set(hMergeGui.fig,'Color',[236 233 216]/255);
+% end
+% 
+% c = get(hMergeGui.fig,'Color');
+
+% JS Edit 2025/08/30 Make dark theme   
 if ispc
-    set(hMergeGui.fig,'Color',[236 233 216]/255);
+    set(hMergeGui.fig,'Color',[50,50,50]/255);
+elseif ismac
+    set(hMergeGui.fig,'Color',[50,50,50]/255);
 end
 
 c = get(hMergeGui.fig,'Color');
+% Colors
+ctext = 0.9*ones(1,3);
+cbutton = [0.16,0.16,0.16];
+ctextbox = [0.12,0.12,0.12];
 
-hMergeGui.pPlotPanel = uipanel('Parent',hMergeGui.fig,'Position',[0.4 0.55 0.575 0.42],'Tag','PlotPanel','BackgroundColor','white');
+hMergeGui.pPlotPanel = uipanel('Parent',hMergeGui.fig,'Position',[0.4 0.55 0.575 0.42],'Tag','PlotPanel','BackgroundColor',c,'ForegroundColor',ctext);
 
 hMergeGui.aPlot = axes('Parent',hMergeGui.pPlotPanel,'Units','normalized','OuterPosition',[0 0 1 1],'Tag','Plot','TickDir','in');
 
@@ -59,45 +73,45 @@ columnformat = {'logical','char','numeric','bank','bank','bank'};
 columneditable = logical([ 1, 0, 0, 0, 0, 0]);
 
 hMergeGui.tTable = uitable('Parent',hMergeGui.fig,'Units','normalized','Position',[0.025 0.05 0.95 0.45],'Tag','tTable','Enable','on',...            
-                           'ColumnName', columnname,'ColumnFormat', columnformat,'ColumnEditable', columneditable,'RowName',[]);
+                           'ColumnName', columnname,'ColumnFormat', columnformat,'ColumnEditable', columneditable,'RowName',[],'BackgroundColor',c,'ForegroundColor',ctext);
 
 str=cell(length(List),1);
 for i=1:length(List)
     str{i}=Objects(List(i)).Name;
 end
 hMergeGui.lMerge = uicontrol('Parent',hMergeGui.fig,'Units','normalized','BackgroundColor',[1 1 1],'Callback','fMergeGui(''Draw'',getappdata(0,''hMergeGui''));',...
-                             'Position',[0.05 0.55 0.3 0.19],'String',str,'Style','listbox','Value',1,'Tag','lMerge');
+                             'Position',[0.05 0.55 0.3 0.19],'String',str,'Style','listbox','Value',1,'Tag','lMerge','BackgroundColor',c,'ForegroundColor',ctext);
 
 str=cell(length(Objects),1);
 for i=1:length(Objects)
     str{i}=Objects(i).Name;
 end
 hMergeGui.lAll = uicontrol('Parent',hMergeGui.fig,'Units','normalized','BackgroundColor',[1 1 1],...
-                           'Position',[0.05 0.78 0.3 0.19],'String',str,'Style','listbox','Value',1,'Tag','lAll');                         
+                           'Position',[0.05 0.78 0.3 0.19],'String',str,'Style','listbox','Value',1,'Tag','lAll','BackgroundColor',c,'ForegroundColor',ctext);                         
 
 hMergeGui.bAdd = uicontrol('Parent',hMergeGui.fig,'Units','normalized','Callback','fMergeGui(''Add'',getappdata(0,''hMergeGui''));',...
-                           'Position',[0.05 0.75 0.145 0.025],'String','Add','Tag','bAdd');
+                           'Position',[0.05 0.75 0.145 0.025],'String','Add','Tag','bAdd','BackgroundColor',cbutton,'ForegroundColor',ctext);
 
 hMergeGui.bDelete = uicontrol('Parent',hMergeGui.fig,'Units','normalized','Callback','fMergeGui(''Delete'',getappdata(0,''hMergeGui''));',...
-                              'Position',[0.205 0.75 0.145 0.025],'String','Delete','Tag','bDelete');
+                              'Position',[0.205 0.75 0.145 0.025],'String','Delete','Tag','bDelete','BackgroundColor',cbutton,'ForegroundColor',ctext);
                           
 hMergeGui.bDelEntry = uicontrol('Parent',hMergeGui.fig,'Units','normalized','Callback','fMergeGui(''DelEntry'',getappdata(0,''hMergeGui''));',...
-                               'Position',[0.025 0.51 0.075 0.025],'String','Delete','Tag','bDelEntry');
+                               'Position',[0.025 0.51 0.075 0.025],'String','Delete','Tag','bDelEntry','BackgroundColor',cbutton,'ForegroundColor',ctext);
 
 hMergeGui.bOK = uicontrol('Parent',hMergeGui.fig,'Units','normalized','Callback','fMergeGui(''OK'',getappdata(0,''hMergeGui''));',...
-                          'Position',[0.575 0.01 0.175 0.03],'String','OK','Tag','bOK');
+                          'Position',[0.575 0.01 0.175 0.03],'String','OK','Tag','bOK','BackgroundColor',cbutton,'ForegroundColor',ctext);
 
 hMergeGui.bCancel = uicontrol('Parent',hMergeGui.fig,'Units','normalized','Callback','close(gcf);',...
-                              'Position',[0.8 0.01 0.175 0.03],'String','Cancel','Tag','bCancel');
+                              'Position',[0.8 0.01 0.175 0.03],'String','Cancel','Tag','bCancel','BackgroundColor',cbutton,'ForegroundColor',ctext);
                           
-hMergeGui.tWarning = uicontrol('Parent',hMergeGui.fig,'Units','normalized','FontSize',10,'FontWeight','bold','ForegroundColor',[1 0 0],...
+hMergeGui.tWarning = uicontrol('Parent',hMergeGui.fig,'Units','normalized','FontSize',10,'FontWeight','bold','BackgroundColor',c,'ForegroundColor',[1 0 0],...
                                'Position',[0.11 0.51 0.3 0.02],'String','Warning: Overlaying frames detected !!!','Style','text','Tag','tWarning','Visible','off');
             
 hMergeGui.tFrame = uicontrol('Parent',hMergeGui.fig,'Units','normalized','FontSize',10,'HorizontalAlignment','left',...
-                         'Position',[0.85 0.97 0.05 0.02],'String','Frame:','Style','text','Tag','tFrame','BackgroundColor',c);
+                         'Position',[0.85 0.97 0.05 0.02],'String','Frame:','Style','text','Tag','tFrame','BackgroundColor',c,'ForegroundColor',ctext);
 
 hMergeGui.tFrameValue = uicontrol('Parent',hMergeGui.fig,'Units','normalized','FontSize',10,'HorizontalAlignment','right',...
-                              'Position',[0.9 0.97 0.05 0.02],'String','','Style','text','Tag','tFrameValue','BackgroundColor',c);
+                              'Position',[0.9 0.97 0.05 0.02],'String','','Style','text','Tag','tFrameValue','BackgroundColor',c,'ForegroundColor',ctext);
 
 set(hMergeGui.fig, 'WindowButtonMotionFcn', @UpdateCursor);
 set(hMergeGui.fig, 'WindowButtonDownFcn',@ButtonDown);
@@ -171,6 +185,7 @@ Draw(hMergeGui);
 
 function Draw(hMergeGui)
 set(0,'CurrentFigure',hMergeGui.fig);    
+cbc = get(hMergeGui.fig,'Color');
 cla(hMergeGui.aPlot);
 Data = getappdata(hMergeGui.fig,'Data');
 Check = getappdata(hMergeGui.fig,'Check');
@@ -195,11 +210,13 @@ if ~isempty(k)
 end
 k = find(Data(:,6)==1);
 if ~isempty(k)
-    line(hMergeGui.aPlot,XPlot(k)/xscale,YPlot(k)/yscale,'Color','red','LineStyle','none','Marker','o');
+    % line(hMergeGui.aPlot,XPlot(k)/xscale,YPlot(k)/yscale,'Color','red','LineStyle','none','Marker','o');
+    line(hMergeGui.aPlot,XPlot(k)/xscale,YPlot(k)/yscale,'Color','yellow','LineStyle','none','Marker','o');
 end
 k = find(Check==1);
 if ~isempty(k)
-    line(hMergeGui.aPlot,XPlot(k)/xscale,YPlot(k)/yscale,'Color','green','LineStyle','none','Marker','o');
+    % line(hMergeGui.aPlot,XPlot(k)/xscale,YPlot(k)/yscale,'Color','green','LineStyle','none','Marker','o');
+    line(hMergeGui.aPlot,XPlot(k)/xscale,YPlot(k)/yscale,'Color','red','LineStyle','none','Marker','o');
 end
 if isempty(hMergeGui.Zoom.currentXY)
     SetAxis(hMergeGui.aPlot,XPlot/xscale,YPlot/yscale);
@@ -211,6 +228,8 @@ else
 end
 xlabel(hMergeGui.aPlot,['X-Position  ' units]);
 ylabel(hMergeGui.aPlot,['Y-Position  ' units]);
+set(hMergeGui.aPlot,'XColor','white'); set(hMergeGui.aPlot,'YColor','white');
+set(hMergeGui.aPlot,'Color',cbc);
 setappdata(0,'hMergeGui',hMergeGui);
 
 function SetAxis(a,X,Y)
