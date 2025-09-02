@@ -147,7 +147,6 @@ for i=1:fnum
         data = trace.trace;
         data_yx = trace.trace_yx;
     end
-    sum(data(:,5))
     
     %% Extract data from prepared steps
     % Steps
@@ -220,6 +219,7 @@ for i=1:fnum
         % Maybe I just change trace before I pass it
 
         if options.Merge
+            ch1trace = mergeSteps(ch1trace);
             ch1trace.trace = ch1trace.trace_2d;
             ch1trace.trace_yx = ch1trace.trace_2d;
             ch2trace.trace = ch2trace.trace_2d;
@@ -233,8 +233,6 @@ for i=1:fnum
         two_color_xy_deltatxy_step = [two_color_xy_deltatxy_step; two_color_data_struct.xy_deltatxy_step];
 
     end
-    
-    
 
 
 %     % JS Edit 2024/03/07

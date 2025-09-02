@@ -249,7 +249,7 @@ if isempty(h)
                                 'FontSize',8,'Position',[0.05 0.01 0.9 0.08],'String','(for printing use export to PDF)','Tag','tPrint');
     
     hDataGui.bSelectAll = uicontrol('Parent',hDataGui.fig,'Units','normalized','Callback','fDataGui(''SelectAll'',getappdata(0,''hDataGui''));',...
-                             'Position',[0.025 0.51 0.1 0.025],'String','Select all','Tag','bSelectAll','UserData',1,'BackgroundColor',cbutton,'ForegroundColor',ctext);                    
+                             'Position',[0.025 0.51 0.1 0.025],'String','Select all...','Tag','bSelectAll','UserData',1,'BackgroundColor',cbutton,'ForegroundColor',ctext);                    
                          
     hDataGui.bClear = uicontrol('Parent',hDataGui.fig,'Units','normalized','Callback','fDataGui(''SelectAll'',getappdata(0,''hDataGui''));',...
                              'Position',[0.13 0.51 0.1 0.025],'String','Clear selection','Tag','bClear','UserData',0,'BackgroundColor',cbutton,'ForegroundColor',ctext);                         
@@ -1210,13 +1210,32 @@ Draw(hDataGui,-1);
 ReturnFocus([],[]);
 
 function SelectAll(hDataGui)
+% JS Edit 2025/08/31 to allow for users to use select all to select before
+% or after a point
+% choice = menu('Choose an option:', 'Select all', 'Select all before', 'Select all after')
 data = get(hDataGui.tTable,'Data');
 if get(gcbo,'UserData')==1
-    Check = true(size(data,1),1);
+    Check = getappdata(hDataGui.fig,'Check');
+    if sum(Check) > 0
+        choice = fSelectAllOptions;
+        if choice==1 && sum(Check) > 0 %only give option if there is a selection
+            [idx,~] = find(Check == 1); eidx = idx(end);
+            Check(1:eidx) = true(eidx, 1);
+        elseif choice==2 && sum(Check) > 0 %only give option if there is a selection
+            Check = getappdata(hDataGui.fig,'Check');
+            [idx,~] = find(Check == 1); bidx = idx(1);
+            Check(bidx:end) = true(size(data,1)-bidx+1, 1);
+        else 
+            Check = true(size(data,1),1);
+        end
+    else
+        Check = true(size(data,1),1);
+    end
+    % End of JS Edit 2025/08/31
 else
     Check = false(size(data,1),1);
 end
-data(:,1) = num2cell(Check);
+data(:,1) = num2cell(Check); %This is where we put the checks in.
 CreateTable(hDataGui,data);
 setappdata(hDataGui.fig,'Check',Check);
 Draw(hDataGui,-1);

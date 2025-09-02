@@ -274,10 +274,14 @@ for j = 1:length(bins)-1 % bin your dwells
 end
 
 
+
+try
+
 figure()
 hold on
 
 mean_dwell_time = nan(length(bins)-1,3);
+
 
 
 for j = 1:length(bins)-1 % now fit distribution and get the tau value with confidence intervals
@@ -345,7 +349,9 @@ set(ax, ...
         'Box', 'off', ...
         'XColor', 'k', ...
         'YColor', 'k');
-
+catch
+    fprintf('Skipping rate plotting due to insufficient data (Check Line 278-354 in Plot2CStepStats.m \n')
+end
 
 figure()
 hold on
@@ -378,6 +384,99 @@ set(ax, ...
         'XColor', 'k', ...
         'YColor', 'k');
 
+
+%% Determine if there is one head that takes more steps (has higher overlal stepping rate)
+% Is there a directional dependence on this.
+
+% Want a correlation plot where we ask: If I am the left or right head, am I
+% trailing or leading and vice versa. Maybe just a heat map. Rather than
+% quadrants, will do nonants to set a threshold for distances.
+
+boxsize = 10; %nm
+correlation_array = zeros(4,4);
+
+
+% need to use the original data
+mask = ~isnan(xy_deltatxy_step(:,3) .* xy_deltatxy_step(:,4));
+xy_deltatxy_step_filtered = xy_deltatxy_step(mask,:); % just get rid of any steps with nan's
+idx_onsteps = ~isnan(xy_deltatxy_step_filtered(:,6));
+idx_offsteps = ~isnan(xy_deltatxy_step_filtered(:,7));
+
+figure()
+s = sqrt(xy_deltatxy_step_filtered(:,3).^2 + xy_deltatxy_step_filtered(:,4).^2);
+histogram(s, 'DisplayName', sprintf('mu = %.2f \n sigma = %.2f', mean(s), std(s)))
+legend()
+
+ax = gca;
+% ax.XLim = [val0 - (bins(2)-bins(1))/2, max(bins)];
+xlabel("Interhead separation (nm)");
+ylabel("Dwell Time (ms)");
+set(ax, ...
+        'FontName', 'Arial', ...
+        'FontSize', 10, ...
+        'TickDir', 'out', ...
+        'LineWidth', 1, ...
+        'Box', 'off', ...
+        'XColor', 'k', ...
+        'YColor', 'k');
+
+
+
+if flip_reference_head > 0
+    trailing_idx = find(xy_deltatxy_step_filtered(:,3) > boxsize);
+    leading_idx = find(xy_deltatxy_step_filtered(:,3) < -boxsize);
+    trail_within_box_idx = find(and(xy_deltatxy_step_filtered(:,3) > 0, xy_deltatxy_step_filtered(:,3) < boxsize));
+    lead_within_box_idx = find(and(xy_deltatxy_step_filtered(:,3) > -boxsize, xy_deltatxy_step_filtered(:,3) < 0));
+    left_idx = find(xy_deltatxy_step_filtered(:,4) > boxsize);
+    right_idx = find(xy_deltatxy_step_filtered(:,4) < -boxsize);
+    left_within_box_idx = find(and(xy_deltatxy_step_filtered(:,4) > 0, xy_deltatxy_step_filtered(:,4) < boxsize));
+    right_within_box_idx = find(and(xy_deltatxy_step_filtered(:,4) > -boxsize, xy_deltatxy_step_filtered(:,4) < 0));
+else
+    trailing_idx = find(xy_deltatxy_step_filtered(:,3) < boxsize);
+    leading_idx = find(xy_deltatxy_step_filtered(:,3) > -boxsize);
+    lead_within_box_idx = find(and(xy_deltatxy_step_filtered(:,3) > 0, xy_deltatxy_step_filtered(:,3) < boxsize));
+    trail_within_box_idx = find(and(xy_deltatxy_step_filtered(:,3) > -boxsize, xy_deltatxy_step_filtered(:,3) < 0));
+    left_idx = find(xy_deltatxy_step_filtered(:,4) < boxsize);
+    right_idx = find(xy_deltatxy_step_filtered(:,4) > -boxsize);
+    right_within_box_idx = find(and(xy_deltatxy_step_filtered(:,4) > 0, xy_deltatxy_step_filtered(:,4) < boxsize));
+    left_within_box_idx = find(and(xy_deltatxy_step_filtered(:,4) > -boxsize, xy_deltatxy_step_filtered(:,4) < 0));
+end
+% on_within_box_idx = find(and(xy_deltatxy_step_filtered(:,3) > -boxsize, xy_deltatxy_step_filtered(:,3) < boxsize));
+% off_within_box_idx = find(and(xy_deltatxy_step_filtered(:,4) > -boxsize, xy_deltatxy_step_filtered(:,4) < boxsize));
+
+% maybe want to separate whether the steps are on or off axis... but for
+% now eh whatever.
+
+% correlation array goes from leading left to right and so on
+correlation_array(1,1) = length(intersect(leading_idx, left_idx));
+correlation_array(1,4) = length(intersect(leading_idx, right_idx));
+correlation_array(4,1) = length(intersect(trailing_idx, left_idx));
+correlation_array(4,4) = length(intersect(trailing_idx, right_idx));
+
+% Now within the near box
+% correlation_array(1,2) = length(intersect(leading_idx, off_within_box_idx));
+% correlation_array(2,1) = length(intersect(on_within_box_idx, left_idx));
+% correlation_array(2,4) = length(intersect(on_within_box_idx, right_idx));
+% correlation_array(3,2) = length(intersect(trailing_idx, off_within_box_idx));
+% and completely unsure
+% correlation_array(2,2) = length(intersect(on_within_box_idx, off_within_box_idx));
+
+correlation_array(1,2) = length(intersect(leading_idx, left_within_box_idx));
+correlation_array(1,3) = length(intersect(leading_idx, right_within_box_idx));
+correlation_array(4,2) = length(intersect(trailing_idx, left_within_box_idx));
+correlation_array(4,3) = length(intersect(trailing_idx, right_within_box_idx));
+
+correlation_array(2,1) = length(intersect(lead_within_box_idx, left_idx));
+correlation_array(3,1) = length(intersect(trail_within_box_idx, left_idx));
+correlation_array(2,4) = length(intersect(lead_within_box_idx, right_idx));
+correlation_array(3,4) = length(intersect(trail_within_box_idx, right_idx));
+
+correlation_array(2,2) = length(intersect(lead_within_box_idx, left_within_box_idx));
+correlation_array(2,3) = length(intersect(lead_within_box_idx, right_within_box_idx));
+correlation_array(3,2) = length(intersect(trail_within_box_idx, left_within_box_idx));
+correlation_array(3,3) = length(intersect(trail_within_box_idx, right_within_box_idx));
+
+correlation_array
 % 
 % % --- Helper function to keep parameters in bounds ---
 % function nll = penalizedNegLL(p, nllFunc)
