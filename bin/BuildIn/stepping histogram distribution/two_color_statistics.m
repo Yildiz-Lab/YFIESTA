@@ -160,7 +160,7 @@ last_ch2_idx = 1;
 
 % 1 is that the opposite head is reference, -1 is that current head is reference, equivalent to reflection across y-axis
 flip_reference_head = 1;
-
+am1 = 1; % initialize am1 to avoid errors in setting am1x = am1 (will be overwritten immediately so no harm)
 for a = 1:size(T_org,1) % could actually probably just do intersect changepoints for this one if we wanted to...
     if T_org(a,6) %ch1 x-changepoint, ch1 x-step
         
@@ -182,7 +182,11 @@ for a = 1:size(T_org,1) % could actually probably just do intersect changepoints
 
         deltat = T_org(a,1) - T_org(last_ch1_idx,1);
         deltax = mean(T_org(a:ap1,2), 'omitnan') - mean(T_org(last_ch1_idx:am1,2), 'omitnan');
+        % if isfield(ch1data,'trace_2d') %if we merged the channels, then we should do all of this at once
+        %     deltay = mean(T_org(a:ap1,3), 'omitnan') - mean(T_org(last_ch1_idx:am1,3), 'omitnan');
+        % else
         deltay = NaN; %mean(T_org(a:ap1,3), 'omitnan') - mean(T_org(last_ch1_idx:am1,3), 'omitnan');
+        % end
         
         % debugging_matrix = [debugging_matrix; 1, last_ch1_idx, am1, a, last_ch2_idx, closestIndex_m1, closestIndex];
 
@@ -190,40 +194,50 @@ for a = 1:size(T_org,1) % could actually probably just do intersect changepoints
         new_row = [1, T_org(a,1)-trace_start_time, stepxdiff, stepydiff, deltat, deltax, deltay];
         xy_deltatxy_step = [xy_deltatxy_step; new_row];
         % and reset the clock
+        lastx2_ch1_idx = last_ch1_idx; %store just in case y has the same changepoint
         last_ch1_idx = a;
         last_ch2_idx = closestIndex;
     end
 
     if T_org(a,7) %ch1 y-changepoint, ch1 y-step
-
+        am1x = am1;
         am1 = max(intersect(ch1mask,1:a-1)); % to get nearest point one behind in the same channel
+        % but only if we haven't merged channels otherwise it is all
+        % encoded in the above step
+        if am1x == am1 % if these were the same, then either channels merged or they are simultaneous on- and off-axis steps, and they should be combined in one
+            deltay = mean(T_org(a:ap1,3), 'omitnan') - mean(T_org(lastx2_ch1_idx:am1x,3), 'omitnan');
+            new_row = [1, T_org(a,1)-trace_start_time, stepxdiff, stepydiff, deltat, deltax, deltay];
+            xy_deltatxy_step(end,:) = []; %erase just x step and replace with total
+            xy_deltatxy_step = [xy_deltatxy_step; new_row]; %then add new row
+        else
 
-        [~,closestIndex] = min(abs(T_org(ch2mask,1) - T_org(a,1))); % find nearest in ch2 (honestly, we could just search the neighborhood. Later)
-        closestIndex = ch2mask(closestIndex); %convert to the actual index rather than mask index
-
-        [~,closestIndex_m1] = min(abs(T_org(ch2mask,1) - T_org(am1,1))); % find nearest in ch2 one point behind
-        closestIndex_m1 = ch2mask(closestIndex_m1); %convert to the actual index rather than mask index
-
-        % define as conditioned on the state of the other head (i.e. final
-        % - initial)
-        stepxdiff = flip_reference_head*(mean(T_org(last_ch2_idx:closestIndex_m1,4),'omitnan') - mean(T_org(last_ch1_idx:am1,2), 'omitnan'));
-        stepydiff = flip_reference_head*(mean(T_org(last_ch2_idx:closestIndex_m1,5),'omitnan') - mean(T_org(last_ch1_idx:am1,3), 'omitnan'));
-
-        ap1 = min(intersect(ch1ycpmask,a+1:size(T_org,1))); % to get next nearest changepoint ahead in the same channel
-        ap1 = max(intersect(ch1mask,a:ap1-1));
-
-        deltat = T_org(a,1) - T_org(last_ch1_idx,1);
-        deltax = NaN; %mean(T_org(a:ap1,2), 'omitnan') - mean(T_org(last_ch1_idx:am1,2), 'omitnan');
-        deltay = mean(T_org(a:ap1,3), 'omitnan') - mean(T_org(last_ch1_idx:am1,3), 'omitnan');
-
-        % debugging_matrix = [debugging_matrix; 1, last_ch1_idx, am1, a, last_ch2_idx, closestIndex_m1, closestIndex];
-
-        % Update storage
-        new_row = [1, T_org(a,1)-trace_start_time, stepxdiff, stepydiff, deltat, deltax, deltay];
-        xy_deltatxy_step = [xy_deltatxy_step; new_row];
-        % and reset the clock
-        last_ch1_idx = a;
-        last_ch2_idx = closestIndex;
+            [~,closestIndex] = min(abs(T_org(ch2mask,1) - T_org(a,1))); % find nearest in ch2 (honestly, we could just search the neighborhood. Later)
+            closestIndex = ch2mask(closestIndex); %convert to the actual index rather than mask index
+    
+            [~,closestIndex_m1] = min(abs(T_org(ch2mask,1) - T_org(am1,1))); % find nearest in ch2 one point behind
+            closestIndex_m1 = ch2mask(closestIndex_m1); %convert to the actual index rather than mask index
+    
+            % define as conditioned on the state of the other head (i.e. final
+            % - initial)
+            stepxdiff = flip_reference_head*(mean(T_org(last_ch2_idx:closestIndex_m1,4),'omitnan') - mean(T_org(last_ch1_idx:am1,2), 'omitnan'));
+            stepydiff = flip_reference_head*(mean(T_org(last_ch2_idx:closestIndex_m1,5),'omitnan') - mean(T_org(last_ch1_idx:am1,3), 'omitnan'));
+    
+            ap1 = min(intersect(ch1ycpmask,a+1:size(T_org,1))); % to get next nearest changepoint ahead in the same channel
+            ap1 = max(intersect(ch1mask,a:ap1-1));
+    
+            deltat = T_org(a,1) - T_org(last_ch1_idx,1);
+            deltax = NaN; %mean(T_org(a:ap1,2), 'omitnan') - mean(T_org(last_ch1_idx:am1,2), 'omitnan');
+            deltay = mean(T_org(a:ap1,3), 'omitnan') - mean(T_org(last_ch1_idx:am1,3), 'omitnan');
+    
+            % debugging_matrix = [debugging_matrix; 1, last_ch1_idx, am1, a, last_ch2_idx, closestIndex_m1, closestIndex];
+    
+            % Update storage
+            new_row = [1, T_org(a,1)-trace_start_time, stepxdiff, stepydiff, deltat, deltax, deltay];
+            xy_deltatxy_step = [xy_deltatxy_step; new_row];
+            % and reset the clock
+            last_ch1_idx = a;
+            last_ch2_idx = closestIndex;
+        end
     end
 
     if T_org(a,8) %ch2 x-changepoint, ch2 x-step
@@ -254,13 +268,24 @@ for a = 1:size(T_org,1) % could actually probably just do intersect changepoints
         new_row = [2, T_org(a,1)-trace_start_time, stepxdiff, stepydiff, deltat, deltax, deltay];
         xy_deltatxy_step = [xy_deltatxy_step; new_row];
         % and reset the clock
+        lastx2_ch2_idx = last_ch2_idx; %store just in case y has the same changepoint
         last_ch1_idx = closestIndex;
         last_ch2_idx = a;
     end
 
     if T_org(a,9) %ch2 y-changepoint, ch2 y-step
         
+        am1x = am1;
         am1 = max(intersect(ch2mask,1:a-1)); % to get nearest point one behind in the same channel
+        % but only if we haven't merged channels otherwise it is all
+        % encoded in the above step
+        if am1x == am1 % if these were the same, then either channels merged or they are simultaneous on- and off-axis steps, and they should be combined in one
+            deltay = mean(T_org(a:ap1,5), 'omitnan') - mean(T_org(lastx2_ch2_idx:am1x,5), 'omitnan');
+            new_row = [2, T_org(a,1)-trace_start_time, stepxdiff, stepydiff, deltat, deltax, deltay];
+            xy_deltatxy_step(end,:) = []; %erase just x step and replace with total
+            xy_deltatxy_step = [xy_deltatxy_step; new_row]; %then add new row
+        else
+        
         
         [~,closestIndex] = min(abs(T_org(ch1mask,1) - T_org(a,1))); % find nearest in ch2 (honestly, we could just search the neighborhood. Later)
         closestIndex = ch1mask(closestIndex); %convert to the actual index rather than mask index
@@ -288,6 +313,7 @@ for a = 1:size(T_org,1) % could actually probably just do intersect changepoints
         % and reset the clock
         last_ch1_idx = closestIndex;
         last_ch2_idx = a;
+        end
     end
 
 end

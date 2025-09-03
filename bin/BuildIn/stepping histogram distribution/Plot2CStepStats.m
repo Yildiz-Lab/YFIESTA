@@ -183,8 +183,7 @@ set(ax3, 'YLim', [0,max([h3.Values, h4.Values])+10])
 set(ax4, 'YLim', [0,max([h3.Values, h4.Values])+10])
 
 
-% And now the fraction of steps taken by each population, at least in
-% on-axis
+%% And now the fraction of steps taken by each population, at least in on-axis
 
 figure('Position',[311 266 722 420])
 subplot(1,2,1)
