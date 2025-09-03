@@ -23,8 +23,8 @@ title('Short-axis separation (nm)')
 
 
 %% Next figure with line fits
-x = xy_deltatxy_step(:,3);
-y = xy_deltatxy_step(:,6);
+x = xy_deltatxy_step(:,3); %x-head separation
+y = xy_deltatxy_step(:,6); %x-step
 mask = ~isnan(x .* y);
 x = x(mask); y = y(mask);
 
@@ -192,8 +192,10 @@ binedges = -60:8:60; %make symmetric across 0 for ease of flipping
 last_bin_show = 5;
 
 hold on
-h_trail = histogram(x_on(trailing_idx,2),'BinEdges',binedges,'DisplayName','Trailing');
-h_lead = histogram(x_on(leading_idx,2),'BinEdges',binedges,'DisplayName','Leading');
+h_trail = histogram(x_on(trailing_idx,1),'BinEdges',binedges,'DisplayName','Trailing');
+h_lead = histogram(x_on(leading_idx,1),'BinEdges',binedges,'DisplayName','Leading');
+% h_trail = histogram(x_on(trailing_idx,2),'BinEdges',binedges,'DisplayName','Trailing');
+% h_lead = histogram(x_on(leading_idx,2),'BinEdges',binedges,'DisplayName','Leading');
 hold off
 title('Population steps taken')
 legend()
@@ -383,6 +385,78 @@ set(ax, ...
         'XColor', 'k', ...
         'YColor', 'k');
 
+
+%% And now the fraction of steps taken by each population in off-axis
+
+figure('Position',[311 266 722 420])
+subplot(1,2,1)
+% binedges = -95:10:95; %make symmetric across 0 for ease of flipping
+binedges = -60:8:60; %make symmetric across 0 for ease of flipping
+last_bin_show = 6;
+
+hold on
+% h_trail = histogram(x_off(left_idx,2),'BinEdges',binedges,'DisplayName','Left');
+% h_lead = histogram(x_off(right_idx,2),'BinEdges',binedges,'DisplayName','Right');
+h_trail = histogram(x_off(left_idx,1),'BinEdges',binedges,'DisplayName','Left');
+h_lead = histogram(x_off(right_idx,1),'BinEdges',binedges,'DisplayName','Right');
+
+hold off
+title('Population steps taken')
+legend()
+ax = gca;
+set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+
+N_trail = h_trail.Values;
+N_lead = h_lead.Values;
+
+binidx = find(binedges > -8);
+% binedges(binidx(1:end-1)) + (binedges(binidx(2:end)) - binedges(binidx(1:end-1)))/2
+sep = binedges(binidx(1:end-1))/2 + binedges(binidx(2:end))/2;
+
+subplot(1,2,2)
+if flip_reference_head
+    N_lead = fliplr(N_lead);
+else
+    N_trail = fliplr(N_trail);
+end
+
+% N_lead = N_lead(binidx(1:end-1));
+% N_trail = N_trail(binidx(1:end-1));
+N_lead = N_lead(binidx(1:last_bin_show));
+N_trail = N_trail(binidx(1:last_bin_show));
+sep = sep(1:last_bin_show);
+
+bcf_trail = nan(length(N_trail),3);
+bcf_lead = nan(length(N_trail),3);
+for i = 1:length(N_trail)
+    % beta_confidence(N_trail(i), N_lead(i))
+    % if N_trail(i) + N_lead(i) > 0 % to prevent emptiness problems
+        [a,b,c] = beta_confidence(N_trail(i), N_lead(i));
+        bcf_trail(i,1) = a; bcf_trail(i,2) = b; bcf_trail(i,3) = c;
+        [a,b,c] = beta_confidence(N_lead(i), N_trail(i));
+        bcf_lead(i,1) = a; bcf_lead(i,2) = b; bcf_lead(i,3) = c;
+    % end
+end
+
+hold on
+errorbar(sep, bcf_trail(:,1), bcf_trail(:,2)-bcf_trail(:,1), bcf_trail(:,3)-bcf_trail(:,1), 'Color', [0 0.4470 0.7410], 'LineWidth',2, 'DisplayName','Left MTBD')
+errorbar(sep, bcf_lead(:,1), bcf_lead(:,2)-bcf_lead(:,1), bcf_lead(:,3)-bcf_lead(:,1), 'Color', [0.8500 0.3250 0.0980], 'LineWidth',2, 'DisplayName','Right MTBD')
+legend('Location', 'best','AutoUpdate','off');  % Display legend
+
+scatter(sep, bcf_trail(:,1), 50, [0 0.4470 0.7410], 'filled', 'DisplayName','')
+scatter(sep, bcf_lead(:,1), 50, [0.8500 0.3250 0.0980], 'filled', 'DisplayName','')
+
+xlabel('MTBD separation (nm)')
+ylabel('Percentage of steps')
+ylim([0,1])
+% xlim([binedges(round(end/2)+1), binedges(round(end/2)+1+last_bin_show)]);
+%if including 0nm, include this:
+xlim([binedges(round(end/2)), binedges(round(end/2)+last_bin_show)]); 
+xticks(sep)
+ax = gca;
+set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+
+hold off
 
 %% Determine if there is one head that takes more steps (has higher overlal stepping rate)
 % Is there a directional dependence on this.
