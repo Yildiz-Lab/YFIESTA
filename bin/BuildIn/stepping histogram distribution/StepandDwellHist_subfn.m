@@ -228,7 +228,11 @@ for i=1:fnum
         
         % xy_deltatxy_step (array) - each containing information about a changepoint step with the following format:
         % [channel, normalized trace time (s), x_head_separation (nm), y_head_separation (nm), deltat (s), deltax (nm), deltay (nm)];
+        % ch1trace.trace(1:1000,:)
+        % ch2trace.trace(1:1000,:)
         two_color_data_struct = two_color_statistics(ch1trace, ch2trace);
+        % two_color_data_struct.xydiff(1:1000)
+        % two_color_data_struct.xy_deltatxy_step
         two_color_xydiff = [two_color_xydiff; two_color_data_struct.xydiff];
         two_color_xy_deltatxy_step = [two_color_xy_deltatxy_step; two_color_data_struct.xy_deltatxy_step];
 

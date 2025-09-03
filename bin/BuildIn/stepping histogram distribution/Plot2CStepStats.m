@@ -409,8 +409,9 @@ legend()
 
 ax = gca;
 % ax.XLim = [val0 - (bins(2)-bins(1))/2, max(bins)];
-xlabel("Interhead separation (nm)");
-ylabel("Dwell Time (ms)");
+xlabel("MTBD separation (nm)");
+ylabel("Counts");
+title("MTBD Separation")
 set(ax, ...
         'FontName', 'Arial', ...
         'FontSize', 10, ...

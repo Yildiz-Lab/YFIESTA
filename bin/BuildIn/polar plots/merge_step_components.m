@@ -30,6 +30,7 @@ function data =  merge_step_components(data)
 % direction.
 
 merge_window = 4; % if step occurs within this span, consider it the same step.
+merge_window = 12; % if step occurs within this span, consider it the same step.
 
 % Find steps from data.trace and data.trace_yx
 onaxis_idx = find(data.trace(:,5));

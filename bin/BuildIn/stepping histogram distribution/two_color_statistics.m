@@ -14,7 +14,6 @@ function two_color_stats_struct = two_color_statistics(ch1data,ch2data)
 % xy_deltatxy_step (nx7 array) - each containing information about a changepoint step with the following format:
 %   [channel, normalized trace time (s), x_head_separation (nm), y_head_separation (nm), deltat (s), deltax (nm), deltay (nm)];
 
-
 decimation_factor = 1; % don't trust decimation factor > 1. Untested and wonky.
 
 % fprintf("Now entering the dichromatic regime \n")
@@ -64,7 +63,11 @@ time2 = time2(begin_idx_arr(2):end_idx_arr(2));
 
 % Ch1 data %x=on-axis  %y=off-axis
 x1 = mean_decimate_array(ch1data.trace(idx1,3), decimation_factor);
-y1 = mean_decimate_array(ch1data.trace_yx(idx1,3), decimation_factor);
+if isfield(ch1data,'trace_2d') %if we merged the channels, y-data is in column 4
+    y1 = mean_decimate_array(ch1data.trace_yx(idx1,4), decimation_factor);
+else %otherwise, it is in trace_yx
+    y1 = mean_decimate_array(ch1data.trace_yx(idx1,3), decimation_factor);
+end
 % And cut off at the appropriate time points
 x1 = x1(begin_idx_arr(1):end_idx_arr(1)); y1 = y1(begin_idx_arr(1):end_idx_arr(1));
 y1 = -y1; %Need to switch to negative due to wrong cross sign for some reason
@@ -76,7 +79,11 @@ x1cp = x1cp(begin_idx_arr(1):end_idx_arr(1)); y1cp = y1cp(begin_idx_arr(1):end_i
 
 % Ch2 data  %x=on-axis  %y=off-axis
 x2 = mean_decimate_array(ch2data.trace(idx2,3), decimation_factor);
-y2 = mean_decimate_array(ch2data.trace_yx(idx2,3), decimation_factor);
+if isfield(ch2data,'trace_2d') %if we merged the channels, y-data is in column 4
+    y2 = mean_decimate_array(ch2data.trace_yx(idx2,4), decimation_factor);
+else %otherwise, it is in trace_yx
+    y2 = mean_decimate_array(ch2data.trace_yx(idx2,3), decimation_factor);
+end
 x2 = x2(begin_idx_arr(2):end_idx_arr(2)); y2 = y2(begin_idx_arr(2):end_idx_arr(2));
 
 % Ch2 data changepoints adapted
