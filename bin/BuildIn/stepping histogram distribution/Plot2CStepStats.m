@@ -391,8 +391,8 @@ set(ax, ...
 figure('Position',[311 266 722 420])
 subplot(1,2,1)
 % binedges = -95:10:95; %make symmetric across 0 for ease of flipping
-binedges = -60:8:60; %make symmetric across 0 for ease of flipping
-last_bin_show = 6;
+binedges = -32.5:5:32.5; %make symmetric across 0 for ease of flipping
+last_bin_show = 7;
 
 hold on
 % h_trail = histogram(x_off(left_idx,2),'BinEdges',binedges,'DisplayName','Left');
@@ -409,7 +409,7 @@ set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, '
 N_trail = h_trail.Values;
 N_lead = h_lead.Values;
 
-binidx = find(binedges > -8);
+binidx = find(binedges > -3);
 % binedges(binidx(1:end-1)) + (binedges(binidx(2:end)) - binedges(binidx(1:end-1)))/2
 sep = binedges(binidx(1:end-1))/2 + binedges(binidx(2:end))/2;
 
@@ -458,6 +458,135 @@ set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, '
 
 hold off
 
+
+%% Dwell times binning and averaging, adapted from file to show the dwell times vs interhead separation
+
+
+% load from object associated with dependence on interhead separation
+
+% dwellspacing - XData
+% dwelltime - YData
+dwellspacing = xy_deltatxy_step(:,4)';
+dwelltime = xy_deltatxy_step(:,5)';
+
+% bins = -44:8:60;
+bins = -32.5:5:32.5;
+
+dwell_times_binned = cell(1,length(bins)-1);
+
+for j = 1:length(bins)-1 % bin your dwells
+    mask1 = and(dwellspacing > bins(j), dwellspacing < bins(j+1));
+    dwell_times_binned{j} = dwelltime(mask1)*1000; %convert to ms
+end
+
+figure()
+
+try
+
+    subplot(2,1,1)
+    hold on
+mean_dwell_time = nan(length(bins)-1,3);
+
+for j = 1:length(bins)-1 % now fit distribution and get the tau value with confidence intervals
+    
+    pd = fitdist(dwell_times_binned{j}', 'Exponential');
+    % optional, remove outliers 2025/08/13
+
+    % plot original for comparison
+    % scatter((bins(j+1)+bins(j))/2 * ones(length(dwell_times_binned{j}),1), dwell_times_binned{j}, 20, 'r', 'filled')
+
+    % Quantile cutoff
+    % cutoff = quantile(dwell_times_binned{j}, 0.9);
+    % dwell_times_binned{j} = dwell_times_binned{j}(dwell_times_binned{j} <= cutoff);
+    % pd = fitdist(dwell_times_binned{j}', 'Exponential');
+
+    % Remove based off pd estimate
+    % dwell_times_binned{j}(dwell_times_binned{j} > 5*pd.mu) = [];
+    
+    % Remove using a double exponential fit
+    % Also uncomment function at the end of file
+    % Example data (replace with dwell_times_binned{j})
+    % t = exprnd(1, 200, 1);               % fast process
+    % t = [t; exprnd(5, 50, 1)];           % plus slow process
+    % t = dwell_times_binned{j};
+    % 
+    % % Initial guesses: [A, tau1, tau2]
+    % initParams = [0.1, 20, 100];
+    % 
+    % % Likelihood function for mixture of two exponentials
+    % negLogLik = @(params) -sum( log( ...
+    %     params(1) .* (1/params(2)) .* exp(-t/params(2)) + ...
+    %     (1 - params(1)) .* (1/params(3)) .* exp(-t/params(3)) ...
+    % ) );
+    % 
+    % % Constrain A between 0 and 1, taus > 0
+    % opts = optimset('fminsearch');
+    % % opts.Display = 'iter';
+    % params_hat = fminsearch(@(p) penalizedNegLL(p, negLogLik), initParams, opts);
+    % 
+    % A_est     = params_hat(1);
+    % tau1_est  = params_hat(2);
+    % tau2_est  = params_hat(3);
+    % 
+    % fprintf('A = %.3f, tau1 = %.3f, tau2 = %.3f\n', A_est, tau1_est, tau2_est);
+    
+    scatter((bins(j+1)+bins(j))/2 * ones(length(dwell_times_binned{j}),1), dwell_times_binned{j}, 20, 'k', 'filled')
+    
+    ci = paramci(pd);
+    mean_dwell_time(j,1) = pd.mu; mean_dwell_time(j,2:3) = ci';
+end
+
+scatter((bins(1:end-1)+bins(2:end))/2, mean_dwell_time(:,1), 20, 'r', 'filled')
+errorbar((bins(1:end-1)+bins(2:end))/2, mean_dwell_time(:,1), mean_dwell_time(:,1) - mean_dwell_time(:,2), -mean_dwell_time(:,1) + mean_dwell_time(:,3), 'r', 'LineStyle', 'none')
+
+
+ax = gca;
+ax.XLim = [min(bins), max(bins)];
+xlabel("Interhead separation (nm)");
+ylabel("Dwell Time (ms)");
+set(ax, ...
+        'FontName', 'Arial', ...
+        'FontSize', 10, ...
+        'TickDir', 'out', ...
+        'LineWidth', 1, ...
+        'Box', 'off', ...
+        'XColor', 'k', ...
+        'YColor', 'k');
+catch
+    fprintf('Skipping rate plotting due to insufficient data (Check Line 278-354 in Plot2CStepStats.m \n')
+end
+
+subplot(2,1,2)
+hold on
+[val0, idx0] = min(abs((bins(1:end-1)+bins(2:end))/2));
+if val0 < 0
+    idx0 = idx0-1;
+end
+% Right
+scatter(-(bins(1:idx0)+bins(2:idx0+1))/2, mean_dwell_time(1:idx0,1), 40, [0.8500 0.3250 0.0980], 'filled', 'DisplayName', '')
+errorbar(-(bins(1:idx0)+bins(2:idx0+1))/2, mean_dwell_time(1:idx0,1), mean_dwell_time(1:idx0,1) - mean_dwell_time(1:idx0,2), -mean_dwell_time(1:idx0,1) + mean_dwell_time(1:idx0,3), 'Color', [0.8500 0.3250 0.0980], 'LineStyle', 'none', 'DisplayName', 'Right head', 'LineWidth',2)
+% Left
+scatter((bins(idx0+1:end-1)+bins(idx0+2:end))/2, mean_dwell_time(idx0+1:end,1), 40, [0 0.4470 0.7410], 'filled', 'DisplayName', '')
+errorbar((bins(idx0+1:end-1)+bins(idx0+2:end))/2, mean_dwell_time(idx0+1:end,1), mean_dwell_time(idx0+1:end,1) - mean_dwell_time(idx0+1:end,2), -mean_dwell_time(idx0+1:end,1) + mean_dwell_time(idx0+1:end,3), 'Color', [0 0.4470 0.7410], 'LineStyle', 'none', 'DisplayName', 'Left head', 'LineWidth',2)
+
+xticks((bins(idx0:end-1)+bins(idx0+1:end))/2)
+yticks(5:5:25)
+
+legend()
+
+ax = gca;
+ax.XLim = [val0 - (bins(2)-bins(1))/2, max(bins)];
+xlabel("Interhead separation (nm)");
+ylabel("Dwell Time (ms)");
+set(ax, ...
+        'FontName', 'Arial', ...
+        'FontSize', 10, ...
+        'TickDir', 'out', ...
+        'LineWidth', 1, ...
+        'Box', 'off', ...
+        'XColor', 'k', ...
+        'YColor', 'k');
+
 %% Determine if there is one head that takes more steps (has higher overlal stepping rate)
 % Is there a directional dependence on this.
 
@@ -465,8 +594,8 @@ hold off
 % trailing or leading and vice versa. Maybe just a heat map. Rather than
 % quadrants, will do nonants to set a threshold for distances.
 
-boxsize = 10; %nm
-correlation_array = zeros(4,4);
+boxsize = 12.5; %nm
+correlation_array = zeros(4,4,2); %First row percentage, second row mean rate
 
 
 % need to use the original data
@@ -522,35 +651,140 @@ end
 % now eh whatever.
 
 % correlation array goes from leading left to right and so on
-correlation_array(1,1) = length(intersect(leading_idx, left_idx));
-correlation_array(1,4) = length(intersect(leading_idx, right_idx));
-correlation_array(4,1) = length(intersect(trailing_idx, left_idx));
-correlation_array(4,4) = length(intersect(trailing_idx, right_idx));
+correlation_array(1,1,1) = length(intersect(leading_idx, left_idx));
+correlation_array(1,4,1) = length(intersect(leading_idx, right_idx));
+correlation_array(4,1,1) = length(intersect(trailing_idx, left_idx));
+correlation_array(4,4,1) = length(intersect(trailing_idx, right_idx));
 
 % Now within the near box
-% correlation_array(1,2) = length(intersect(leading_idx, off_within_box_idx));
-% correlation_array(2,1) = length(intersect(on_within_box_idx, left_idx));
-% correlation_array(2,4) = length(intersect(on_within_box_idx, right_idx));
-% correlation_array(3,2) = length(intersect(trailing_idx, off_within_box_idx));
+% correlation_array(1,2,1) = length(intersect(leading_idx, off_within_box_idx));
+% correlation_array(2,1,1) = length(intersect(on_within_box_idx, left_idx));
+% correlation_array(2,4,1) = length(intersect(on_within_box_idx, right_idx));
+% correlation_array(3,2,1) = length(intersect(trailing_idx, off_within_box_idx));
 % and completely unsure
-% correlation_array(2,2) = length(intersect(on_within_box_idx, off_within_box_idx));
+% correlation_array(2,2,1) = length(intersect(on_within_box_idx, off_within_box_idx));
 
-correlation_array(1,2) = length(intersect(leading_idx, left_within_box_idx));
-correlation_array(1,3) = length(intersect(leading_idx, right_within_box_idx));
-correlation_array(4,2) = length(intersect(trailing_idx, left_within_box_idx));
-correlation_array(4,3) = length(intersect(trailing_idx, right_within_box_idx));
+correlation_array(1,2,1) = length(intersect(leading_idx, left_within_box_idx));
+correlation_array(1,3,1) = length(intersect(leading_idx, right_within_box_idx));
+correlation_array(4,2,1) = length(intersect(trailing_idx, left_within_box_idx));
+correlation_array(4,3,1) = length(intersect(trailing_idx, right_within_box_idx));
 
-correlation_array(2,1) = length(intersect(lead_within_box_idx, left_idx));
-correlation_array(3,1) = length(intersect(trail_within_box_idx, left_idx));
-correlation_array(2,4) = length(intersect(lead_within_box_idx, right_idx));
-correlation_array(3,4) = length(intersect(trail_within_box_idx, right_idx));
+correlation_array(2,1,1) = length(intersect(lead_within_box_idx, left_idx));
+correlation_array(3,1,1) = length(intersect(trail_within_box_idx, left_idx));
+correlation_array(2,4,1) = length(intersect(lead_within_box_idx, right_idx));
+correlation_array(3,4,1) = length(intersect(trail_within_box_idx, right_idx));
 
-correlation_array(2,2) = length(intersect(lead_within_box_idx, left_within_box_idx));
-correlation_array(2,3) = length(intersect(lead_within_box_idx, right_within_box_idx));
-correlation_array(3,2) = length(intersect(trail_within_box_idx, left_within_box_idx));
-correlation_array(3,3) = length(intersect(trail_within_box_idx, right_within_box_idx));
+correlation_array(2,2,1) = length(intersect(lead_within_box_idx, left_within_box_idx));
+correlation_array(2,3,1) = length(intersect(lead_within_box_idx, right_within_box_idx));
+correlation_array(3,2,1) = length(intersect(trail_within_box_idx, left_within_box_idx));
+correlation_array(3,3,1) = length(intersect(trail_within_box_idx, right_within_box_idx));
+
+% Now for the rates (for now just do mean, we can do actual exp decay if we see
+% a difference)
+correlation_array(1,1,2) = mean(xy_deltatxy_step_filtered(intersect(leading_idx, left_idx),5));
+correlation_array(1,4,2) = mean(xy_deltatxy_step_filtered(intersect(leading_idx, right_idx),5));
+correlation_array(4,1,2) = mean(xy_deltatxy_step_filtered(intersect(trailing_idx, left_idx),5));
+correlation_array(4,4,2) = mean(xy_deltatxy_step_filtered(intersect(trailing_idx, right_idx),5));
+
+% Now within the near box
+% correlation_array(1,2,2) = mean(xy_deltatxy_step_filtered(intersect(leading_idx, off_within_box_idx),5));
+% correlation_array(2,1,2) = mean(xy_deltatxy_step_filtered(intersect(on_within_box_idx, left_idx),5));
+% correlation_array(2,4,2) = mean(xy_deltatxy_step_filtered(intersect(on_within_box_idx, right_idx),5));
+% correlation_array(3,2,2) = mean(xy_deltatxy_step_filtered(intersect(trailing_idx, off_within_box_idx),5));
+% and completely unsure
+% correlation_array(2,2,2) = mean(xy_deltatxy_step_filtered(intersect(on_within_box_idx, off_within_box_idx),5));
+
+correlation_array(1,2,2) = mean(xy_deltatxy_step_filtered(intersect(leading_idx, left_within_box_idx),5));
+correlation_array(1,3,2) = mean(xy_deltatxy_step_filtered(intersect(leading_idx, right_within_box_idx),5));
+correlation_array(4,2,2) = mean(xy_deltatxy_step_filtered(intersect(trailing_idx, left_within_box_idx),5));
+correlation_array(4,3,2) = mean(xy_deltatxy_step_filtered(intersect(trailing_idx, right_within_box_idx),5));
+
+correlation_array(2,1,2) = mean(xy_deltatxy_step_filtered(intersect(lead_within_box_idx, left_idx),5));
+correlation_array(3,1,2) = mean(xy_deltatxy_step_filtered(intersect(trail_within_box_idx, left_idx),5));
+correlation_array(2,4,2) = mean(xy_deltatxy_step_filtered(intersect(lead_within_box_idx, right_idx),5));
+correlation_array(3,4,2) = mean(xy_deltatxy_step_filtered(intersect(trail_within_box_idx, right_idx),5));
+
+correlation_array(2,2,2) = mean(xy_deltatxy_step_filtered(intersect(lead_within_box_idx, left_within_box_idx),5));
+correlation_array(2,3,2) = mean(xy_deltatxy_step_filtered(intersect(lead_within_box_idx, right_within_box_idx),5));
+correlation_array(3,2,2) = mean(xy_deltatxy_step_filtered(intersect(trail_within_box_idx, left_within_box_idx),5));
+correlation_array(3,3,2) = mean(xy_deltatxy_step_filtered(intersect(trail_within_box_idx, right_within_box_idx),5));
 
 correlation_array
+% close all
+%% Autocorrelations in time
+% find points to split molecules
+molidx = find(xy_deltatxy_step_filtered(2:end,2) - xy_deltatxy_step_filtered(1:end-1,2) < 0); % if we have a negative time, we are at a new ref molecule
+molidx = [1; molidx; size(xy_deltatxy_step_filtered,1)];
+
+autocorr = cell(1,50);
+for j = 1:length(molidx)-1
+    deltatxystep = xy_deltatxy_step_filtered(molidx(j):molidx(j+1),:);
+    
+    % To start we should move everything into the ch1 reference
+    ch2mask = find(deltatxystep(:,1) == 2);
+    deltatxystep(ch2mask,[3:4,6:7]) = -deltatxystep(ch2mask,[3:4,6:7]);
+
+    % could also add a buffer for separation. i.e. if the sep is too small,
+    % say 5nm, then let's just say it is the same sign as the previous.
+    % This isn't doing anything though...weirdly
+    buffer_dist = 5;
+    deltatxystep = [deltatxystep(1,:); deltatxystep]; %add first row for edge case
+    too_small_idx = find(abs(deltatxystep(2:end,4)) < buffer_dist); too_small_idx = too_small_idx+1;
+    for c = 1:length(too_small_idx) %have to do a for loop for iterative purposes
+        deltatxystep(too_small_idx(c),4) = sign(deltatxystep(too_small_idx(c)-1,4));
+    end
+    too_small_idx = find(abs(deltatxystep(2:end,3)) < buffer_dist); too_small_idx = too_small_idx+1;
+    for c = 1:length(too_small_idx) %have to do a for loop for iterative purposes
+        deltatxystep(too_small_idx(c),3) = sign(deltatxystep(too_small_idx(c)-1,3));
+    end
+    too_small_idx = find(abs(deltatxystep(2:end,6)) < buffer_dist); too_small_idx = too_small_idx+1;
+    for c = 1:length(too_small_idx) %have to do a for loop for iterative purposes
+        deltatxystep(too_small_idx(c),6) = sign(deltatxystep(too_small_idx(c)-1,6));
+    end
+    too_small_idx = find(abs(deltatxystep(2:end,7)) < buffer_dist); too_small_idx = too_small_idx+1;
+    for c = 1:length(too_small_idx) %have to do a for loop for iterative purposes
+        deltatxystep(too_small_idx(c),7) = sign(deltatxystep(too_small_idx(c)-1,7));
+    end
+    deltatxystep(1,:) = []; %delete first row
+    
+    % now do sliding correlation by if they are close enough to each other.
+    % In this case we will just do signs
+    % G(1,1) = G(-1,-1) = 1;  G(1,-1) = G(-1,1) = 0
+    for k = 0:length(autocorr)-1
+        % first channel that is the stepper - 
+        channel = -abs( deltatxystep(i:end-k,1) - deltatxystep(i+k:end,1) ) + 1;
+        % then we do the other channels just based off signs
+        pos_and_step = -abs( sign(deltatxystep(i:end-k,[3:4,6:7])) - sign(deltatxystep(i+k:end,[3:4,6:7])) )/2 + 1;
+        temp = autocorr{k+1};
+        autocorr{k+1} = [temp; channel, pos_and_step];
+    end
+
+end
+
+% now let's just make a plot for average "autocorrelation" in every asset
+% fixed
+% deltatxystep(:,[1:4,6:7])
+
+figure()
+hold on
+labels = {"channel", "xsep", "ysep", "xstep", "ystep"};
+for l = 1:size(autocorr{1},2)
+    g = nan(1,length(autocorr));
+    for m = 1:length(g)
+        x = autocorr{m};
+        g(m) = mean(x(:,l),'omitnan');
+    end
+    plot(0:length(autocorr)-1,g,'DisplayName',labels{l})
+    try
+    x = autocorr{2};
+    x = x(:,l);
+    tau = fit_exp_run_lengths(x(~isnan(x)));
+    fprintf(strcat(labels{l}, " tau (steps) : ", num2str(round(1/tau,2)), "\n"))
+    catch
+    end
+end
+legend()
+
 % 
 % % --- Helper function to keep parameters in bounds ---
 % function nll = penalizedNegLL(p, nllFunc)
@@ -559,3 +793,47 @@ correlation_array
 %     else
 %         nll = nllFunc(p);
 %     end
+
+function [lambda_hat, run_lengths] = fit_exp_run_lengths(binary_array)
+    % fit_exp_run_lengths: Fit an exponential distribution to lengths of consecutive ones
+    % Input:
+    %   binary_array - Vector of 0s and 1s
+    % Output:
+    %   lambda_hat   - Estimated rate parameter of exponential distribution
+    %   run_lengths  - Vector of run lengths of ones
+
+    % Ensure input is a row vector and pad binary array
+    binary_array = [0 binary_array(:)' 0];
+
+    % Find transitions
+    diff_array = diff(binary_array);
+    start_idx = find(diff_array == 1);  % Start of runs
+    end_idx = find(diff_array == -1); % End of runs
+    
+
+    % Run lengths
+    run_lengths = end_idx - start_idx;
+
+    if isempty(run_lengths)
+        lambda_hat = NaN;
+        warning('No runs of ones found.');
+        return;
+    end
+
+    % Fit exponential using MATLAB's fitdist
+    pd = fitdist(run_lengths', 'Exponential');
+    lambda_hat = 1 / pd.mu;  % rate parameter λ = 1/mean
+
+    % Optional: Plot histogram and fitted PDF
+    % figure;
+    % histogram(run_lengths, 'Normalization', 'pdf');
+    % hold on;
+    % x_vals = linspace(0, max(run_lengths)+1, 100);
+    % y_vals = lambda_hat * exp(-lambda_hat * x_vals);
+    % plot(x_vals, y_vals, 'r', 'LineWidth', 2);
+    % xlabel('Run length');
+    % ylabel('Probability Density');
+    % title(sprintf('Exponential Fit (\\lambda = %.3f)', lambda_hat));
+    % legend('Data', 'Exponential fit');
+    % hold off;
+

@@ -41,8 +41,10 @@ time1 = mean_decimate_array(time1, decimation_factor);
 time2 = mean_decimate_array(time2, decimation_factor);
 
 % Only include points in the intersection after we have removed all NaNs
-[t_begin, idx_begin] = max([time1(1), time2(1)]); [t_end, idx_end] = min([time1(end), time2(end)]);
-if t_begin < 2 
+[~, idx_begin] = max([time1(1), time2(1)]); [~, idx_end] = min([time1(end), time2(end)]);
+% a dummy Joseph did this stupid beforehand... now it is fixed... 6 months
+% later. Always check your code kids!
+if idx_begin < 2 
     [~,closestIndex] = min(abs(time2-time1(1)));
     begin_idx_arr = [1, closestIndex];
 else
@@ -50,7 +52,7 @@ else
     begin_idx_arr = [closestIndex, 1];
 end
 
-if t_end < 2 
+if idx_end < 2 
     [~,closestIndex] = min(abs(time2-time1(end)));
     end_idx_arr = [length(time1), closestIndex];
 else
@@ -123,6 +125,10 @@ for a = 1:length(tshort)
 
     end
 end
+
+% Post processing we could remove xdiff, ydiff where sqrt(xdiff^2 + ydiff^2)
+% < or > some threshold so that we don't include that spurious data.
+
 
 %% Stepping depending on prior head position
 % Now to do time, we should make a time organized list with all of the
@@ -318,6 +324,20 @@ for a = 1:size(T_org,1) % could actually probably just do intersect changepoints
 
 end
 
+% Post processing remove steps that are too short where sqrt(deltax^2 +
+% deltay^2) < some threshold. Only works for merged statistics.
+remidx = find(sqrt(xy_deltatxy_step(:,6).^2 + xy_deltatxy_step(:,7).^2) < 4);
+fprintf(strcat("post-processing in two_color_statistics removing ", num2str(length(remidx)), " no-step points \n"))
+% we have to do a for loop just in case two are right next to each other.
+for i = length(remidx):-1:1
+    if remidx(i) == size(xy_deltatxy_step,1)
+        xy_deltatxy_step(remidx(i),:) = [];
+    else
+        xy_deltatxy_step(remidx(i)+1,3:7) = xy_deltatxy_step(remidx(i)+1,3:7) + xy_deltatxy_step(remidx(i),3:7);
+        xy_deltatxy_step(remidx(i),:) = [];
+    end
+end
+
 %% Print statements for verification
 
 % xdiff
@@ -334,6 +354,7 @@ end
 two_color_stats_struct = struct();
 two_color_stats_struct.xydiff = [xdiff', ydiff'];
 two_color_stats_struct.xy_deltatxy_step = xy_deltatxy_step;
+
 
 
 function B = mean_decimate_array(A, decimation_factor)
