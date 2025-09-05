@@ -774,16 +774,22 @@ for l = 1:size(autocorr{1},2)
         x = autocorr{m};
         g(m) = mean(x(:,l),'omitnan');
     end
-    plot(0:length(autocorr)-1,g,'DisplayName',labels{l})
+    
     try
-    x = autocorr{2};
-    x = x(:,l);
-    tau = fit_exp_run_lengths(x(~isnan(x)));
-    fprintf(strcat(labels{l}, " tau (steps) : ", num2str(round(1/tau,2)), "\n"))
+        x = autocorr{2};
+        x = x(:,l);
+        tau = fit_exp_run_lengths(x(~isnan(x)));
+        fprintf(strcat(labels{l}, " tau (steps) : ", num2str(round(1/tau,2)), "\n"))
+        plot(0:length(autocorr)-1,g,'DisplayName', strcat(labels{l}, " \tau : ", num2str(round(1/tau,2)), " (steps)"))
     catch
+        plot(0:length(autocorr)-1,g,'DisplayName',labels{l})
     end
 end
 legend()
+ax = gca();
+set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', ...
+        'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+
 
 % 
 % % --- Helper function to keep parameters in bounds ---

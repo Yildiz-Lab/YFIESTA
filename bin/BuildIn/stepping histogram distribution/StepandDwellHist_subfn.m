@@ -239,7 +239,7 @@ for i=1:fnum
     end
 
     % Option to export data
-writematrix(two_color_xy_deltatxy_step,'xy_deltatxy_step_compiled_2C.csv')
+% writematrix(two_color_xy_deltatxy_step,'xy_deltatxy_step_compiled_2C.csv')
 %     % JS Edit 2024/03/07
 %     %post processing too small dwell steps (incrase accuracy)
 %     % find steps below the time threshold. For MINFLUX resolving

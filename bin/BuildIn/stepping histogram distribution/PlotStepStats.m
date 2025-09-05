@@ -125,12 +125,22 @@ muHat = ylog \ xsortminusnan
 muMLE = expfit(xsortminusnan)
 
 if options.Poissonk1
+    try
     [fittedmdl,gof] = fit(X',Y',mdl_exp_cdf,'start',[3.])
+    catch
+        [fittedmdl,gof] = fit(X',Y',mdl_exp_cdf,'start',[3.],'Lower',[0.01],'Upper',[500])
+        fprintf("Warning, fit was unable to converge without setting limits \n")
+    end
     cfint = confint(fittedmdl);
 plot(X',fittedmdl(X'),'r--','DisplayName',"Fitted 1/theta = "+num2str(round(fittedmdl.k,1))+" ("+num2str(round(cfint(1),1))+","+num2str(round(cfint(2),1))+") R2="+num2str(round(gof.rsquare,2)))
 end
 if options.Poissonk2
+    try
     [fittedmdl2,gof2] = fit(X',Y',mdl_gamma_cdf,'start',[3.])
+    catch
+        [fittedmdl2,gof2] = fit(X',Y',mdl_gamma_cdf,'start',[3.],'Lower',[0.01],'Upper',[500])
+        fprintf("Warning, fit was unable to converge without setting limits \n")
+    end
     cfint2 = confint(fittedmdl2);
 plot(X',fittedmdl2(X'),'k--','DisplayName',"Fitted 1/theta2 = "+num2str(round(fittedmdl2.k,1))+" ("+num2str(round(cfint2(1),1))+","+num2str(round(cfint2(2),1))+") R2="+num2str(round(gof2.rsquare,2)))
 end
