@@ -716,13 +716,19 @@ correlation_array
 molidx = find(xy_deltatxy_step_filtered(2:end,2) - xy_deltatxy_step_filtered(1:end-1,2) < 0); % if we have a negative time, we are at a new ref molecule
 molidx = [1; molidx; size(xy_deltatxy_step_filtered,1)];
 
-autocorr = cell(1,50);
+% ugh a triple for loop oof
+autocorr = cell(1,30);
+ch1sum = []; ch2sum = []; time_diff = [];
+sliding_window = [];
+
 for j = 1:length(molidx)-1
     deltatxystep = xy_deltatxy_step_filtered(molidx(j):molidx(j+1),:);
     
     % To start we should move everything into the ch1 reference
+    % This is just the xsep, ysep, not the steps
     ch2mask = find(deltatxystep(:,1) == 2);
-    deltatxystep(ch2mask,[3:4,6:7]) = -deltatxystep(ch2mask,[3:4,6:7]);
+    % deltatxystep(ch2mask,[3:4,6:7]) = -deltatxystep(ch2mask,[3:4,6:7]);
+    deltatxystep(ch2mask,3:4) = -deltatxystep(ch2mask,3:4);
 
     % could also add a buffer for separation. i.e. if the sep is too small,
     % say 5nm, then let's just say it is the same sign as the previous.
@@ -752,14 +758,68 @@ for j = 1:length(molidx)-1
     % G(1,1) = G(-1,-1) = 1;  G(1,-1) = G(-1,1) = 0
     for k = 0:length(autocorr)-1
         % first channel that is the stepper - 
-        channel = -abs( deltatxystep(i:end-k,1) - deltatxystep(i+k:end,1) ) + 1;
+        channel = -abs( deltatxystep(1:end-k,1) - deltatxystep(1+k:end,1) ) + 1;
         % then we do the other channels just based off signs
-        pos_and_step = -abs( sign(deltatxystep(i:end-k,[3:4,6:7])) - sign(deltatxystep(i+k:end,[3:4,6:7])) )/2 + 1;
+        pos_and_step = -abs( sign(deltatxystep(1:end-k,[3:4,6:7])) - sign(deltatxystep(1+k:end,[3:4,6:7])) )/2 + 1;
         temp = autocorr{k+1};
         autocorr{k+1} = [temp; channel, pos_and_step];
+        
+        if k == 1
+            % deltatxystep
+            x = [channel, pos_and_step];
+            start_end_idx = find_run_regions_idx(x(:,3), 1, 7);
+            % now we ask for information about time and distance during this run,
+            % through the reference frame knowing the sum of all x and y steps tell
+            % us the translocation of both motors
+            
+            ch1idx = find(deltatxystep(:,1) == 1); ch2idx = find(deltatxystep(:,1) == 2);
+            
+            % Now that we have this filter, we will ask for the sum of all columns in
+            % between the start and the end idx separated by channels
+        
+            for m = 1:size(start_end_idx,1)
+                mask = start_end_idx(m,1):start_end_idx(m,2)-1;
+                % we subtract one because the last step is where the cross happens, and so the run has ended
+                
+                % calculate delta - initial condition in both channels
+                mask_ch1idx = intersect(mask,ch1idx); mask_ch2idx = intersect(mask,ch2idx);
+                fprintf(strcat("Number ch1: ", num2str(length(mask_ch1idx)), " Number ch2: ", num2str(length(mask_ch2idx)), "\n"))
+                
+                ch1sum = [ch1sum; sum(deltatxystep(mask_ch1idx,:),1)]; %- deltatxystep(mask_ch1idx(1),3:4);
+                ch2sum = [ch2sum; sum(deltatxystep(mask_ch2idx,:),1)]; %- deltatxystep(mask_ch2idx(1),3:4);
+                time_diff = [time_diff; deltatxystep(mask(end),2) - deltatxystep(mask(1),2)];
+                
+            end
+        end
+
+        %autocorrelation for window of size below
+        if k == 1
+            y = autocorr{k+1};
+            window_size = 3;
+            storage = nan(size(y,1)-window_size, size(deltatxystep,2)+size(y,2));
+            for s = 1:(size(y,1)-window_size)
+                storage(s,1:7) = mean(deltatxystep(s:s+window_size,:),'omitnan');
+                storage(s,8:12) = mean(y(s:s+window_size-1,:),'omitnan');
+            end
+            storage
+
+        end
+
     end
 
 end
+
+v1 = ch1sum(:,6)./time_diff;
+v2 = ch2sum(:,6)./time_diff;
+
+figure()
+subplot(1,2,1)
+hold on
+histogram(v1,'BinWidth',25)
+histogram(v2,'BinWidth',25)
+
+subplot(1,2,2)
+histogram((v1+v2)/2,'BinWidth',25)
 
 % now let's just make a plot for average "autocorrelation" in every asset
 % fixed
@@ -778,7 +838,7 @@ for l = 1:size(autocorr{1},2)
     try
         x = autocorr{2};
         x = x(:,l);
-        tau = fit_exp_run_lengths(x(~isnan(x)));
+        tau = fit_exp_run_lengths(x(~isnan(x)), 1);
         fprintf(strcat(labels{l}, " tau (steps) : ", num2str(round(1/tau,2)), "\n"))
         plot(0:length(autocorr)-1,g,'DisplayName', strcat(labels{l}, " \tau : ", num2str(round(1/tau,2)), " (steps)"))
     catch
@@ -791,6 +851,9 @@ set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', ...
         'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
 
 
+
+
+
 % 
 % % --- Helper function to keep parameters in bounds ---
 % function nll = penalizedNegLL(p, nllFunc)
@@ -800,21 +863,29 @@ set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', ...
 %         nll = nllFunc(p);
 %     end
 
-function [lambda_hat, run_lengths] = fit_exp_run_lengths(binary_array)
-    % fit_exp_run_lengths: Fit an exponential distribution to lengths of consecutive ones
+function [lambda_hat, run_lengths] = fit_exp_run_lengths(binary_array, type)
+    % fit_exp_run_lengths: Fit an exponential distribution to lengths of
+    % consecutive type
     % Input:
     %   binary_array - Vector of 0s and 1s
+    %   type - 0 or 1 depending on if you want to know the runs of zeros or
+    %   ones
     % Output:
     %   lambda_hat   - Estimated rate parameter of exponential distribution
     %   run_lengths  - Vector of run lengths of ones
 
     % Ensure input is a row vector and pad binary array
-    binary_array = [0 binary_array(:)' 0];
+    binary_array = [mod(type+1,2) binary_array(:)' mod(type+1,2)];
 
     % Find transitions
     diff_array = diff(binary_array);
-    start_idx = find(diff_array == 1);  % Start of runs
-    end_idx = find(diff_array == -1); % End of runs
+    if type
+        start_idx = find(diff_array == 1);  % Start of runs
+        end_idx = find(diff_array == -1); % End of runs
+    else
+        start_idx = find(diff_array == -1);  % Start of runs
+        end_idx = find(diff_array == 1); % End of runs
+    end
     
 
     % Run lengths
@@ -843,3 +914,47 @@ function [lambda_hat, run_lengths] = fit_exp_run_lengths(binary_array)
     % legend('Data', 'Exponential fit');
     % hold off;
 
+function start_end_idx = find_run_regions_idx(binary_array, type, run_threshold)
+
+    % Ensure input is a row vector and pad binary array with opposite
+    % population
+    binary_array = [mod(type+1,2) binary_array(:)' mod(type+1,2)];
+
+    % Find transitions
+    diff_array = diff(binary_array);
+    if type
+        start_idx = find(diff_array == 1);  % Start of runs
+        end_idx = find(diff_array == -1); % End of runs
+    else
+        start_idx = find(diff_array == -1);  % Start of runs
+        end_idx = find(diff_array == 1); % End of runs
+    end
+
+    start_end_idx(:,1) = start_idx'; start_end_idx(:,2) = end_idx';
+    rem_idx = find( start_end_idx(:,2) - start_end_idx(:,1) < run_threshold);
+    start_end_idx(rem_idx,:) = []; %remove too short runs
+    
+
+% function start_end_idx_by_percentages = sliding_window_regions(binary_array, type, window_sizes, sorted_thresholds)
+%     % sliding_window_regions
+%     % Input:
+%     %   binary_array - Vector of 0s and 1s
+%     %   type (bool) - 0 or 1 depending on if you want to know the runs of zeros or
+%     %   ones
+%     %   window_sizes - (1xN) array of desired stretches of window
+%     %   sorted_thresholds - (1xM+1) normalized array of boundaries
+%     % Output:
+%     %   start_end_idx_by_percentages - (MxN) cell containing an (Lx2) array
+%     %   with beginning and end
+% 
+%     % Ensure input is a row vector and pad binary array with opposite
+%     % population
+%     binary_array = [mod(type+1,2) binary_array(:)' mod(type+1,2)];
+% 
+%     % Find transitions
+%     diff_array = diff(binary_array);
+% 
+% 
+%     start_end_idx(:,1) = start_idx'; start_end_idx(:,2) = end_idx';
+%     rem_idx = find( start_end_idx(:,2) - start_end_idx(:,1) < run_threshold);
+%     start_end_idx(rem_idx,:) = []; %remove too short runs
