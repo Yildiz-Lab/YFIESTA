@@ -719,7 +719,8 @@ molidx = [1; molidx; size(xy_deltatxy_step_filtered,1)];
 
 % ugh a triple for loop oof
 autocorr = cell(1,30);
-ch1sum = []; ch2sum = []; chtotsum = []; time_diff = [];
+ch1sum = []; ch2sum = []; chtotsum = [];
+time_diff = []; time_diff_notruns = [];
 chtot_notruns = [];
 sliding_window = [];
 
@@ -810,21 +811,20 @@ for j = 1:length(molidx)-1
             not_runs(isnan(not_runs)) = [];
             breaks = find(not_runs(2:end) - not_runs(1:end-1) > 1); breaks = [0; breaks; length(not_runs)];
             for m = 1:size(breaks)-1
-                midx = not_runs(breaks(m)+1:breaks(m+1))
+                midx = not_runs(breaks(m)+1:breaks(m+1));
                 chtot_notruns = [chtot_notruns; sum(deltatxystep(midx,:),1), mean(x(midx,:),1), length(midx)];
+                time_diff_notruns = [time_diff_notruns; deltatxystep(midx(end),2) - deltatxystep(midx(1),2)];
             end
             
             % This tells us in the stretches, what is the position of the
             % relative heads
             % sign(ch1sum(end-size(start_end_idx,1)+1:end,:))
             % sign(ch2sum(end-size(start_end_idx,1)+1:end,:))
-            sign(chtotsum(end-size(start_end_idx,1)+1:end,:))
+            
             % chtotsum
             % ch1sum(end-size(start_end_idx,1)+1:end,:)
             % ch2sum(end-size(start_end_idx,1)+1:end,:)
             
-            length(deltatxystep(:,1))
-            sum(sum(chtotsum(:,13:14)))
             % Let's report some overall stats.
             % First the short axis ratio, which we have already done "run
             % stuff" based on short axis so we don't have to sum this
@@ -834,9 +834,10 @@ for j = 1:length(molidx)-1
             % calculate the total number of steps happening in runs
             right = find(chtotsum(end-size(start_end_idx,1)+1:end,4) < 0);
             left = find(chtotsum(end-size(start_end_idx,1)+1:end,4) > 0);
-            [mu,s1,s2] = beta_confidence(sum(sum(chtotsum(right,13:14))), sum(sum(chtotsum(left,13:14))))
+            [mu,s1,s2] = beta_confidence(sum(sum(chtotsum(right,13:14))), sum(sum(chtotsum(left,13:14))));
+            mu
             fprintf(strcat("short-axis Ratio: ", num2str( sum(sign(chtotsum(end-size(start_end_idx,1)+1:end,4)) < 1) / size(start_end_idx,1) ), '\n') )
-            
+
             % Then the long-axis which depends 
             % fprintf(strcat("long-axis Ratio: ", num2str( ( sum(sign(ch1sum(end-size(start_end_idx,1)+1:end,3)) < 1) + sum(sign(ch2sum(end-size(start_end_idx,1)+1:end,3)) < 1) ) / 2 / size(start_end_idx,1) ), '\n') )
             
@@ -879,6 +880,7 @@ plot_polar_conversion(r, theta, 24)
 
 v1 = ch1sum(:,6)./time_diff;
 v2 = ch2sum(:,6)./time_diff;
+vnot = chtot_notruns(:,6)./time_diff_notruns;
 
 figure()
 subplot(1,2,1)
@@ -887,7 +889,9 @@ histogram(v1,'BinWidth',25)
 histogram(v2,'BinWidth',25)
 
 subplot(1,2,2)
+hold on
 histogram((v1+v2)/2,'BinWidth',25)
+histogram(vnot/2,'BinWidth',25)
 
 % now let's just make a plot for average "autocorrelation" in every asset
 % fixed
