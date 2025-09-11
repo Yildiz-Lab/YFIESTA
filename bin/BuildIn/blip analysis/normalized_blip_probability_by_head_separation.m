@@ -78,7 +78,7 @@ data1 = hh.Data; %Actual data histogram, load "F:\MINFLUX JS\Dynein 2C\Compiled 
 data2 = nn.Data; %Histogram of weighted head separation for normalization load "F:\MINFLUX JS\Dynein 2C\Compiled Traces\Stier\Stier_all_on-off-axis-sep.fig"
 
 % Define bins for the histogram
-numBins = 35;
+numBins = 25;
 binEdges = linspace(min([min(data1), min(data2)]), max([max(data1), max(data2)]), numBins+1);
 binCenters = binEdges(1:end-1) + diff(binEdges)/2;  % Compute bin centers
 
@@ -139,5 +139,12 @@ legend('Separation of heads at dip', 'Histogram of head separation', 'Normalized
 figure()
 uA = hh1.Values(hh2.Values > 0);
 uB = hh2.Values(hh2.Values > 0);
-sAB = uA ./ uB .* sqrt(1./uA + 1./uB);
-errorbar(binCenters(hh2.Values > 0), normalized_values * max(hh1.Values) / max(normalized_values), sAB)
+sAB = uA ./ uB .* sqrt(1./uA + 1./uB); %what was I doing here?
+
+erc = nan(1,length(hh1.Values));
+for i = 1:numel(erc)
+    % beta_confidence(length(data1)*hh1.Values(i), length(data2)*hh2.Values(i))
+    erc(i) = beta_confidence(length(data1)*hh1.Values(i), length(data2)*hh2.Values(i));
+end
+
+errorbar(binCenters(hh2.Values > 0), normalized_values * max(hh1.Values) / max(normalized_values), erc)

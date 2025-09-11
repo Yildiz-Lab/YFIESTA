@@ -718,17 +718,27 @@ molidx = [1; molidx; size(xy_deltatxy_step_filtered,1)];
 
 % ugh a triple for loop oof
 autocorr = cell(1,30);
-ch1sum = []; ch2sum = []; time_diff = [];
+ch1sum = []; ch2sum = []; chtotsum = []; time_diff = [];
 sliding_window = [];
 
+r = []; theta = [];
 for j = 1:length(molidx)-1
     deltatxystep = xy_deltatxy_step_filtered(molidx(j):molidx(j+1),:);
     
+    % before anything, make r, theta for separation of ch1 to ch2
+    % deltatxystep has column 3 and 4 containing on, off axis separation
+    % appropriately. Let's just calculate it at every step.
+    r = [r; sqrt(deltatxystep(:,3).^2 + deltatxystep(:,4).^2)];
+    theta_add = atan(deltatxystep(:,4)./deltatxystep(:,3)) - pi*floor((sign(deltatxystep(:,3))-1)/2);
+    theta = [theta; theta_add];
+
     % To start we should move everything into the ch1 reference
     % This is just the xsep, ysep, not the steps
     ch2mask = find(deltatxystep(:,1) == 2);
     % deltatxystep(ch2mask,[3:4,6:7]) = -deltatxystep(ch2mask,[3:4,6:7]);
     deltatxystep(ch2mask,3:4) = -deltatxystep(ch2mask,3:4);
+    
+    
 
     % could also add a buffer for separation. i.e. if the sep is too small,
     % say 5nm, then let's just say it is the same sign as the previous.
@@ -759,7 +769,7 @@ for j = 1:length(molidx)-1
     for k = 0:length(autocorr)-1
         % first channel that is the stepper - 
         channel = -abs( deltatxystep(1:end-k,1) - deltatxystep(1+k:end,1) ) + 1;
-        % then we do the other channels just based off signs
+        % then we do the other channels just based off signs autocorr
         pos_and_step = -abs( sign(deltatxystep(1:end-k,[3:4,6:7])) - sign(deltatxystep(1+k:end,[3:4,6:7])) )/2 + 1;
         temp = autocorr{k+1};
         autocorr{k+1} = [temp; channel, pos_and_step];
@@ -767,7 +777,7 @@ for j = 1:length(molidx)-1
         if k == 1
             % deltatxystep
             x = [channel, pos_and_step];
-            start_end_idx = find_run_regions_idx(x(:,3), 1, 7);
+            start_end_idx = find_run_regions_idx(x(:,3), 1, 5);
             % now we ask for information about time and distance during this run,
             % through the reference frame knowing the sum of all x and y steps tell
             % us the translocation of both motors
@@ -785,29 +795,65 @@ for j = 1:length(molidx)-1
                 mask_ch1idx = intersect(mask,ch1idx); mask_ch2idx = intersect(mask,ch2idx);
                 fprintf(strcat("Number ch1: ", num2str(length(mask_ch1idx)), " Number ch2: ", num2str(length(mask_ch2idx)), "\n"))
                 
-                ch1sum = [ch1sum; sum(deltatxystep(mask_ch1idx,:),1)]; %- deltatxystep(mask_ch1idx(1),3:4);
-                ch2sum = [ch2sum; sum(deltatxystep(mask_ch2idx,:),1)]; %- deltatxystep(mask_ch2idx(1),3:4);
+                ch1sum = [ch1sum; sum(deltatxystep(mask_ch1idx,:),1), mean(x(mask_ch1idx,:),1)]; %- deltatxystep(mask_ch1idx(1),3:4);
+                ch2sum = [ch2sum; sum(deltatxystep(mask_ch2idx,:),1), mean(x(mask_ch2idx,:),1)]; %- deltatxystep(mask_ch2idx(1),3:4);
+                chtotsum = [chtotsum; sum(deltatxystep(mask,:),1), mean(x(mask,:),1)];
                 time_diff = [time_diff; deltatxystep(mask(end),2) - deltatxystep(mask(1),2)];
                 
             end
+            
+            % This tells us in the stretches, what is the position of the
+            % relative heads
+            % sign(ch1sum(end-size(start_end_idx,1)+1:end,:))
+            % sign(ch2sum(end-size(start_end_idx,1)+1:end,:))
+            sign(chtotsum(end-size(start_end_idx,1)+1:end,:))
+            % ch1sum(end-size(start_end_idx,1)+1:end,:)
+            % ch2sum(end-size(start_end_idx,1)+1:end,:)
+
+            % Let's report some overall stats.
+            % First the short axis ratio, which we have already done "run
+            % stuff" based on short axis so we don't have to sum this
+            % fprintf(strcat("short-axis Ratio: ", num2str( sum(sign(ch1sum(end-size(start_end_idx,1)+1:end,4)) < 1) / size(start_end_idx,1) ), '\n') )
+            fprintf(strcat("short-axis Ratio: ", num2str( sum(sign(chtotsum(end-size(start_end_idx,1)+1:end,4)) < 1) / size(start_end_idx,1) ), '\n') )
+            
+            % Then the long-axis which depends 
+            % fprintf(strcat("long-axis Ratio: ", num2str( ( sum(sign(ch1sum(end-size(start_end_idx,1)+1:end,3)) < 1) + sum(sign(ch2sum(end-size(start_end_idx,1)+1:end,3)) < 1) ) / 2 / size(start_end_idx,1) ), '\n') )
+            fprintf(strcat("long-axis Ratio: ", num2str( sum(sign(chtotsum(end-size(start_end_idx,1)+1:end,3)) < 1) / size(start_end_idx,1) ), '\n') )
+
+            % fprintf(strcat("short-axis * long-axis corr: ", num2str( ( sum( sign(ch1sum(end-size(start_end_idx,1)+1:end,3)) .* sign(ch1sum(end-size(start_end_idx,1)+1:end,4)) > 0) + sum( sign(ch2sum(end-size(start_end_idx,1)+1:end,3)) .* sign(ch2sum(end-size(start_end_idx,1)+1:end,4)) > 0) ) / 2 / size(start_end_idx,1) ), '\n') )
+            fprintf(strcat("short-axis * long-axis corr: ", num2str( sum( sign(chtotsum(end-size(start_end_idx,1)+1:end,3)) .* sign(chtotsum(end-size(start_end_idx,1)+1:end,4)) > 0) / size(start_end_idx,1) ), '\n') )
+            fprintf('\n')
         end
 
-        %autocorrelation for window of size below
-        if k == 1
-            y = autocorr{k+1};
-            window_size = 3;
-            storage = nan(size(y,1)-window_size, size(deltatxystep,2)+size(y,2));
-            for s = 1:(size(y,1)-window_size)
-                storage(s,1:7) = mean(deltatxystep(s:s+window_size,:),'omitnan');
-                storage(s,8:12) = mean(y(s:s+window_size-1,:),'omitnan');
-            end
-            storage
-
-        end
+        % %autocorrelation for window of size below
+        % if k == 1
+        %     y = [channel, pos_and_step]; %autocorr{k+1}; %uncomment this for entire array and do it outside the loop
+        %     window_size = 1;
+        %     storage = nan(size(y,1)-window_size, size(deltatxystep,2)+size(y,2));
+        %     for s = 1:(size(y,1)-window_size)
+        %         storage(s,1:7) = mean(deltatxystep(s:s+window_size,:),'omitnan');
+        %         storage(s,8:12) = mean(y(s:s+window_size-1,:),'omitnan');
+        %     end
+        %     % Now idea is find segments where there is "lots of crossings"
+        %     % vs not and in the segments where there isn't confusion what
+        %     % is dominating?
+        % 
+        %     not_crossing_much = find(storage(:,10) > 0.5);
+        %     crossing_much = find(storage(:,10) <= 0.5);
+        %     % length(not_crossing_much)
+        %     % length(crossing_much)
+        %     fprintf(strcat('runs w/o cross: ', num2str(mean(sign(storage(not_crossing_much,4)))), '\n'));
+        %     fprintf(strcat('crosses: ', num2str(mean(sign(storage(crossing_much,4)))), '\n'));
+        % 
+        % end
 
     end
 
 end
+
+% r
+% theta
+plot_polar_conversion(r, theta, 24)
 
 v1 = ch1sum(:,6)./time_diff;
 v2 = ch2sum(:,6)./time_diff;

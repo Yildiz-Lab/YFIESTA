@@ -12,6 +12,13 @@ time = data.time(~isnan(data.time));
 x = data.trace(~isnan(data.trace(:,1)),1);
 xsteps = data.trace(~isnan(data.trace(:,1)),3);
 xsteps_bool = data.trace(~isnan(data.trace(:,1)),5);
+if isfield(data,'trace_2d') %we have a merged option so let's use that
+    time = data.time(~isnan(data.time));
+    x = data.trace_2d(~isnan(data.trace_2d(:,1)), 1);
+    xsteps = data.trace_2d(~isnan(data.trace_2d(:,1)), 3);
+    xsteps_bool = data.trace_2d(~isnan(data.trace_2d(:,1)), 5);
+    ysteps = data.trace_2d(~isnan(data.trace_2d(:,1)), 4);
+end
 
 dt = []; dx = []; step = []; rel_sep_2C = [];
 
@@ -33,6 +40,13 @@ if nargin > 1 % we have two channels, so we should account for that
     x2 = data2.trace(~isnan(data2.trace(:,1)),1);
     xsteps2 = data2.trace(~isnan(data2.trace(:,1)),3);
     xsteps2_bool = data2.trace(~isnan(data2.trace(:,1)),5);
+    if isfield(data2,'trace_2d') %we have a merged option so let's use that
+        time2 = data2.time(~isnan(data2.time));
+        x2 = data2.trace_2d(~isnan(data2.trace_2d(:,1)), 1);
+        xsteps2 = data2.trace_2d(~isnan(data2.trace_2d(:,1)), 3);
+        xsteps2_bool = data2.trace_2d(~isnan(data2.trace_2d(:,1)), 5);
+        ysteps2 = data2.trace_2d(~isnan(data2.trace_2d(:,1)), 4);
+    end
     end
 end
 
@@ -137,6 +151,12 @@ for i = 1:length(blip_idx)
                 % xsteps2(idx2)
                 % meanstep
                 rel_sep_2C(i) = xsteps2(idx2) - meanstep;
+                % Or we could just do it with the merged option
+                if isfield(data,'trace_2d')
+                    meanstep = [xsteps(xidx-1), ysteps(xidx-1)];
+                    rel_sep_2C(i) = sign(rel_sep_2C(i)) * pdist2([xsteps2(idx2), ysteps2(idx2)], meanstep);
+                    rel_sep_2C(i) = pdist2([xsteps2(idx2), ysteps2(idx2)], meanstep);
+                end
             end
             end
         end
