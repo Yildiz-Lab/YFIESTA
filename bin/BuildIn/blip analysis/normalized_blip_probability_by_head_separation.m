@@ -144,7 +144,7 @@ sAB = uA ./ uB .* sqrt(1./uA + 1./uB); %what was I doing here?
 erc = nan(1,length(hh1.Values));
 for i = 1:numel(erc)
     % beta_confidence(length(data1)*hh1.Values(i), length(data2)*hh2.Values(i))
-    erc(i) = beta_confidence(length(data1)*hh1.Values(i), length(data2)*hh2.Values(i));
+    erc(i) = beta_confidence(length(data1)*hh1.Values(i), length(data2)*hh2.Values(i)-length(data1)*hh1.Values(i));
 end
 
 errorbar(binCenters(hh2.Values > 0), normalized_values * max(hh1.Values) / max(normalized_values), erc)

@@ -711,6 +711,7 @@ correlation_array(3,3,2) = mean(xy_deltatxy_step_filtered(intersect(trail_within
 
 correlation_array
 % close all
+
 %% Autocorrelations in time
 % find points to split molecules
 molidx = find(xy_deltatxy_step_filtered(2:end,2) - xy_deltatxy_step_filtered(1:end-1,2) < 0); % if we have a negative time, we are at a new ref molecule
@@ -719,6 +720,7 @@ molidx = [1; molidx; size(xy_deltatxy_step_filtered,1)];
 % ugh a triple for loop oof
 autocorr = cell(1,30);
 ch1sum = []; ch2sum = []; chtotsum = []; time_diff = [];
+chtot_notruns = [];
 sliding_window = [];
 
 r = []; theta = [];
@@ -743,7 +745,7 @@ for j = 1:length(molidx)-1
     % could also add a buffer for separation. i.e. if the sep is too small,
     % say 5nm, then let's just say it is the same sign as the previous.
     % This isn't doing anything though...weirdly
-    buffer_dist = 5;
+    buffer_dist = 2;
     deltatxystep = [deltatxystep(1,:); deltatxystep]; %add first row for edge case
     too_small_idx = find(abs(deltatxystep(2:end,4)) < buffer_dist); too_small_idx = too_small_idx+1;
     for c = 1:length(too_small_idx) %have to do a for loop for iterative purposes
@@ -778,6 +780,7 @@ for j = 1:length(molidx)-1
             % deltatxystep
             x = [channel, pos_and_step];
             start_end_idx = find_run_regions_idx(x(:,3), 1, 5);
+
             % now we ask for information about time and distance during this run,
             % through the reference frame knowing the sum of all x and y steps tell
             % us the translocation of both motors
@@ -786,10 +789,11 @@ for j = 1:length(molidx)-1
             
             % Now that we have this filter, we will ask for the sum of all columns in
             % between the start and the end idx separated by channels
-        
+            
+            not_runs = (1:length(deltatxystep(:,1))-1)';
             for m = 1:size(start_end_idx,1)
-                mask = start_end_idx(m,1):start_end_idx(m,2)-1;
-                % we subtract one because the last step is where the cross happens, and so the run has ended
+                mask = start_end_idx(m,1):start_end_idx(m,2)-1; % we subtract one because the last step is where the cross happens, and so the run has ended
+                not_runs(start_end_idx(m,1):start_end_idx(m,2)-1) = NaN; %if not in the run, call it nan for now. Remove later.
                 
                 % calculate delta - initial condition in both channels
                 mask_ch1idx = intersect(mask,ch1idx); mask_ch2idx = intersect(mask,ch2idx);
@@ -797,9 +801,17 @@ for j = 1:length(molidx)-1
                 
                 ch1sum = [ch1sum; sum(deltatxystep(mask_ch1idx,:),1), mean(x(mask_ch1idx,:),1)]; %- deltatxystep(mask_ch1idx(1),3:4);
                 ch2sum = [ch2sum; sum(deltatxystep(mask_ch2idx,:),1), mean(x(mask_ch2idx,:),1)]; %- deltatxystep(mask_ch2idx(1),3:4);
-                chtotsum = [chtotsum; sum(deltatxystep(mask,:),1), mean(x(mask,:),1)];
+                chtotsum = [chtotsum; sum(deltatxystep(mask,:),1), mean(x(mask,:),1), length(mask_ch1idx), length(mask_ch2idx)];
                 time_diff = [time_diff; deltatxystep(mask(end),2) - deltatxystep(mask(1),2)];
                 
+            end
+
+            % Now calculate outside the synchronity for a control
+            not_runs(isnan(not_runs)) = [];
+            breaks = find(not_runs(2:end) - not_runs(1:end-1) > 1); breaks = [0; breaks; length(not_runs)];
+            for m = 1:size(breaks)-1
+                midx = not_runs(breaks(m)+1:breaks(m+1))
+                chtot_notruns = [chtot_notruns; sum(deltatxystep(midx,:),1), mean(x(midx,:),1), length(midx)];
             end
             
             % This tells us in the stretches, what is the position of the
@@ -807,17 +819,27 @@ for j = 1:length(molidx)-1
             % sign(ch1sum(end-size(start_end_idx,1)+1:end,:))
             % sign(ch2sum(end-size(start_end_idx,1)+1:end,:))
             sign(chtotsum(end-size(start_end_idx,1)+1:end,:))
+            % chtotsum
             % ch1sum(end-size(start_end_idx,1)+1:end,:)
             % ch2sum(end-size(start_end_idx,1)+1:end,:)
-
+            
+            length(deltatxystep(:,1))
+            sum(sum(chtotsum(:,13:14)))
             % Let's report some overall stats.
             % First the short axis ratio, which we have already done "run
             % stuff" based on short axis so we don't have to sum this
             % fprintf(strcat("short-axis Ratio: ", num2str( sum(sign(ch1sum(end-size(start_end_idx,1)+1:end,4)) < 1) / size(start_end_idx,1) ), '\n') )
+            % [mu,s1,s2] = beta_confidence(sum(sign(chtotsum(end-size(start_end_idx,1)+1:end,4)) < 0), sum(sign(chtotsum(end-size(start_end_idx,1)+1:end,4)) > 0))
+            
+            % calculate the total number of steps happening in runs
+            right = find(chtotsum(end-size(start_end_idx,1)+1:end,4) < 0);
+            left = find(chtotsum(end-size(start_end_idx,1)+1:end,4) > 0);
+            [mu,s1,s2] = beta_confidence(sum(sum(chtotsum(right,13:14))), sum(sum(chtotsum(left,13:14))))
             fprintf(strcat("short-axis Ratio: ", num2str( sum(sign(chtotsum(end-size(start_end_idx,1)+1:end,4)) < 1) / size(start_end_idx,1) ), '\n') )
             
             % Then the long-axis which depends 
             % fprintf(strcat("long-axis Ratio: ", num2str( ( sum(sign(ch1sum(end-size(start_end_idx,1)+1:end,3)) < 1) + sum(sign(ch2sum(end-size(start_end_idx,1)+1:end,3)) < 1) ) / 2 / size(start_end_idx,1) ), '\n') )
+            
             fprintf(strcat("long-axis Ratio: ", num2str( sum(sign(chtotsum(end-size(start_end_idx,1)+1:end,3)) < 1) / size(start_end_idx,1) ), '\n') )
 
             % fprintf(strcat("short-axis * long-axis corr: ", num2str( ( sum( sign(ch1sum(end-size(start_end_idx,1)+1:end,3)) .* sign(ch1sum(end-size(start_end_idx,1)+1:end,4)) > 0) + sum( sign(ch2sum(end-size(start_end_idx,1)+1:end,3)) .* sign(ch2sum(end-size(start_end_idx,1)+1:end,4)) > 0) ) / 2 / size(start_end_idx,1) ), '\n') )
