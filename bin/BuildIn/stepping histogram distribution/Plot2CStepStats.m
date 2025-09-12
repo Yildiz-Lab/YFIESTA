@@ -718,11 +718,12 @@ molidx = find(xy_deltatxy_step_filtered(2:end,2) - xy_deltatxy_step_filtered(1:e
 molidx = [1; molidx; size(xy_deltatxy_step_filtered,1)];
 
 % ugh a triple for loop oof
-autocorr = cell(1,30);
+autocorr = cell(1,50);
 ch1sum = []; ch2sum = []; chtotsum = [];
 time_diff = []; time_diff_notruns = [];
 chtot_notruns = [];
-sliding_window = [];
+% sliding_window = [];
+persistence_storage = nan(length(molidx),5);
 
 r = []; theta = [];
 for j = 1:length(molidx)-1
@@ -746,7 +747,7 @@ for j = 1:length(molidx)-1
     % could also add a buffer for separation. i.e. if the sep is too small,
     % say 5nm, then let's just say it is the same sign as the previous.
     % This isn't doing anything though...weirdly
-    buffer_dist = 2;
+    buffer_dist = 5;
     deltatxystep = [deltatxystep(1,:); deltatxystep]; %add first row for edge case
     too_small_idx = find(abs(deltatxystep(2:end,4)) < buffer_dist); too_small_idx = too_small_idx+1;
     for c = 1:length(too_small_idx) %have to do a for loop for iterative purposes
@@ -810,7 +811,7 @@ for j = 1:length(molidx)-1
             % Now calculate outside the synchronity for a control
             not_runs(isnan(not_runs)) = [];
             breaks = find(not_runs(2:end) - not_runs(1:end-1) > 1); breaks = [0; breaks; length(not_runs)];
-            for m = 1:size(breaks)-1
+            for m = 1:length(breaks)-1
                 midx = not_runs(breaks(m)+1:breaks(m+1));
                 chtot_notruns = [chtot_notruns; sum(deltatxystep(midx,:),1), mean(x(midx,:),1), length(midx)];
                 time_diff_notruns = [time_diff_notruns; deltatxystep(midx(end),2) - deltatxystep(midx(1),2)];
@@ -835,8 +836,11 @@ for j = 1:length(molidx)-1
             right = find(chtotsum(end-size(start_end_idx,1)+1:end,4) < 0);
             left = find(chtotsum(end-size(start_end_idx,1)+1:end,4) > 0);
             [mu,s1,s2] = beta_confidence(sum(sum(chtotsum(right,13:14))), sum(sum(chtotsum(left,13:14))));
-            mu
             fprintf(strcat("short-axis Ratio: ", num2str( sum(sign(chtotsum(end-size(start_end_idx,1)+1:end,4)) < 1) / size(start_end_idx,1) ), '\n') )
+            
+            persistence_storage(j,4:5) = [sum(sum(chtotsum(right,13:14))), sum(sum(chtotsum(left,13:14)))];
+            persistence_storage(j,1:3) = [mu,s1,s2];
+            % persistence_storage(j,1) = length(right)/(length(right) + length(left));
 
             % Then the long-axis which depends 
             % fprintf(strcat("long-axis Ratio: ", num2str( ( sum(sign(ch1sum(end-size(start_end_idx,1)+1:end,3)) < 1) + sum(sign(ch2sum(end-size(start_end_idx,1)+1:end,3)) < 1) ) / 2 / size(start_end_idx,1) ), '\n') )
@@ -873,6 +877,11 @@ for j = 1:length(molidx)-1
     end
 
 end
+
+fprintf("SUM STUFF... \n")
+sum(sum(chtotsum(:,13:14)))
+sum(sum(chtot_notruns(:,13)))
+persistence_storage
 
 % r
 % theta
