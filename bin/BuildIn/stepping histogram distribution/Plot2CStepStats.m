@@ -185,7 +185,8 @@ set(ax4, 'YLim', [0,max([h3.Values, h4.Values])+10])
 
 %% And now the fraction of steps taken by each population, at least in on-axis
 
-figure('Position',[311 266 722 420])
+% figure('Position',[311 266 722 420])
+figure('Position',[311 266 308 154])
 subplot(1,2,1)
 % binedges = -95:10:95; %make symmetric across 0 for ease of flipping
 binedges = -60:8:60; %make symmetric across 0 for ease of flipping
@@ -235,12 +236,12 @@ for i = 1:length(N_trail)
 end
 
 hold on
-errorbar(sep, bcf_trail(:,1), bcf_trail(:,2)-bcf_trail(:,1), bcf_trail(:,3)-bcf_trail(:,1), 'Color', [0 0.4470 0.7410], 'LineWidth',2, 'DisplayName','Trailing head')
-errorbar(sep, bcf_lead(:,1), bcf_lead(:,2)-bcf_lead(:,1), bcf_lead(:,3)-bcf_lead(:,1), 'Color', [0.8500 0.3250 0.0980], 'LineWidth',2, 'DisplayName','Leading head')
+errorbar(sep, bcf_trail(:,1), bcf_trail(:,2)-bcf_trail(:,1), bcf_trail(:,3)-bcf_trail(:,1), 'Color', [0 0.4470 0.7410], 'LineWidth',1,'CapSize',5, 'DisplayName','Trailing head')
+errorbar(sep, bcf_lead(:,1), bcf_lead(:,2)-bcf_lead(:,1), bcf_lead(:,3)-bcf_lead(:,1), 'Color', [0.8500 0.3250 0.0980], 'LineWidth',1,'CapSize',5, 'DisplayName','Leading head')
 legend('Location', 'best','AutoUpdate','off');  % Display legend
 
-scatter(sep, bcf_trail(:,1), 50, [0 0.4470 0.7410], 'filled', 'DisplayName','')
-scatter(sep, bcf_lead(:,1), 50, [0.8500 0.3250 0.0980], 'filled', 'DisplayName','')
+scatter(sep, bcf_trail(:,1), 15, [0 0.4470 0.7410], 'filled', 'DisplayName','')
+scatter(sep, bcf_lead(:,1), 15, [0.8500 0.3250 0.0980], 'filled', 'DisplayName','')
 
 xlabel('MTBD separation (nm)')
 ylabel('Percentage of steps')
@@ -250,7 +251,7 @@ xlim([binedges(round(end/2)+1), binedges(round(end/2)+1+last_bin_show)]);
 % xlim([binedges(round(end/2)), binedges(round(end/2)+last_bin_show)]); 
 xticks(sep)
 ax = gca;
-set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+set(ax, 'FontName', 'Arial', 'FontSize', 8, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
 
 hold off
 
@@ -354,18 +355,18 @@ catch
     fprintf('Skipping rate plotting due to insufficient data (Check Line 278-354 in Plot2CStepStats.m \n')
 end
 
-figure()
+figure('Position',[311 266 154 154])
 hold on
 [val0, idx0] = min(abs((bins(1:end-1)+bins(2:end))/2));
 if val0 < 0
     idx0 = idx0-1;
 end
 % Leading
-scatter(-(bins(1:idx0)+bins(2:idx0+1))/2, mean_dwell_time(1:idx0,1), 40, [0.8500 0.3250 0.0980], 'filled', 'DisplayName', '')
-errorbar(-(bins(1:idx0)+bins(2:idx0+1))/2, mean_dwell_time(1:idx0,1), mean_dwell_time(1:idx0,1) - mean_dwell_time(1:idx0,2), -mean_dwell_time(1:idx0,1) + mean_dwell_time(1:idx0,3), 'Color', [0.8500 0.3250 0.0980], 'LineStyle', 'none', 'DisplayName', 'Leading head', 'LineWidth',2)
+scatter(-(bins(1:idx0)+bins(2:idx0+1))/2, mean_dwell_time(1:idx0,1), 15, [0.8500 0.3250 0.0980], 'filled', 'DisplayName', '')
+errorbar(-(bins(1:idx0)+bins(2:idx0+1))/2, mean_dwell_time(1:idx0,1), mean_dwell_time(1:idx0,1) - mean_dwell_time(1:idx0,2), -mean_dwell_time(1:idx0,1) + mean_dwell_time(1:idx0,3), 'Color', [0.8500 0.3250 0.0980], 'LineStyle', 'none', 'DisplayName', 'Leading head', 'LineWidth',1,'CapSize',5)
 % Trailing
-scatter((bins(idx0+1:end-1)+bins(idx0+2:end))/2, mean_dwell_time(idx0+1:end,1), 40, [0 0.4470 0.7410], 'filled', 'DisplayName', '')
-errorbar((bins(idx0+1:end-1)+bins(idx0+2:end))/2, mean_dwell_time(idx0+1:end,1), mean_dwell_time(idx0+1:end,1) - mean_dwell_time(idx0+1:end,2), -mean_dwell_time(idx0+1:end,1) + mean_dwell_time(idx0+1:end,3), 'Color', [0 0.4470 0.7410], 'LineStyle', 'none', 'DisplayName', 'Trailing head', 'LineWidth',2)
+scatter((bins(idx0+1:end-1)+bins(idx0+2:end))/2, mean_dwell_time(idx0+1:end,1), 15, [0 0.4470 0.7410], 'filled', 'DisplayName', '')
+errorbar((bins(idx0+1:end-1)+bins(idx0+2:end))/2, mean_dwell_time(idx0+1:end,1), mean_dwell_time(idx0+1:end,1) - mean_dwell_time(idx0+1:end,2), -mean_dwell_time(idx0+1:end,1) + mean_dwell_time(idx0+1:end,3), 'Color', [0 0.4470 0.7410], 'LineStyle', 'none', 'DisplayName', 'Trailing head', 'LineWidth',1,'CapSize',5)
 
 xticks((bins(idx0:end-1)+bins(idx0+1:end))/2)
 yticks(5:5:25)
@@ -378,7 +379,7 @@ xlabel("Interhead separation (nm)");
 ylabel("Dwell Time (ms)");
 set(ax, ...
         'FontName', 'Arial', ...
-        'FontSize', 10, ...
+        'FontSize', 8, ...
         'TickDir', 'out', ...
         'LineWidth', 1, ...
         'Box', 'off', ...
@@ -388,7 +389,7 @@ set(ax, ...
 
 %% And now the fraction of steps taken by each population in off-axis
 
-figure('Position',[311 266 722 420])
+figure('Position',[311 266 308 154])
 subplot(1,2,1)
 % binedges = -95:10:95; %make symmetric across 0 for ease of flipping
 binedges = -32.5:5:32.5; %make symmetric across 0 for ease of flipping
@@ -439,12 +440,12 @@ for i = 1:length(N_trail)
 end
 
 hold on
-errorbar(sep, bcf_trail(:,1), bcf_trail(:,2)-bcf_trail(:,1), bcf_trail(:,3)-bcf_trail(:,1), 'Color', [0 0.4470 0.7410], 'LineWidth',2, 'DisplayName','Left MTBD')
-errorbar(sep, bcf_lead(:,1), bcf_lead(:,2)-bcf_lead(:,1), bcf_lead(:,3)-bcf_lead(:,1), 'Color', [0.8500 0.3250 0.0980], 'LineWidth',2, 'DisplayName','Right MTBD')
+errorbar(sep, bcf_trail(:,1), bcf_trail(:,2)-bcf_trail(:,1), bcf_trail(:,3)-bcf_trail(:,1), 'Color', [0 0.4470 0.7410], 'LineWidth',1,'CapSize',5, 'DisplayName','Left MTBD')
+errorbar(sep, bcf_lead(:,1), bcf_lead(:,2)-bcf_lead(:,1), bcf_lead(:,3)-bcf_lead(:,1), 'Color', [0.8500 0.3250 0.0980], 'LineWidth',1,'CapSize',5, 'DisplayName','Right MTBD')
 legend('Location', 'best','AutoUpdate','off');  % Display legend
 
-scatter(sep, bcf_trail(:,1), 50, [0 0.4470 0.7410], 'filled', 'DisplayName','')
-scatter(sep, bcf_lead(:,1), 50, [0.8500 0.3250 0.0980], 'filled', 'DisplayName','')
+scatter(sep, bcf_trail(:,1), 15, [0 0.4470 0.7410], 'filled', 'DisplayName','')
+scatter(sep, bcf_lead(:,1), 15, [0.8500 0.3250 0.0980], 'filled', 'DisplayName','')
 
 xlabel('MTBD separation (nm)')
 ylabel('Percentage of steps')
@@ -479,7 +480,7 @@ for j = 1:length(bins)-1 % bin your dwells
     dwell_times_binned{j} = dwelltime(mask1)*1000; %convert to ms
 end
 
-figure()
+figure('Position',[411 422 154 308])
 
 try
 
@@ -546,7 +547,7 @@ xlabel("Interhead separation (nm)");
 ylabel("Dwell Time (ms)");
 set(ax, ...
         'FontName', 'Arial', ...
-        'FontSize', 10, ...
+        'FontSize', 8, ...
         'TickDir', 'out', ...
         'LineWidth', 1, ...
         'Box', 'off', ...
@@ -563,11 +564,11 @@ if val0 < 0
     idx0 = idx0-1;
 end
 % Right
-scatter(-(bins(1:idx0)+bins(2:idx0+1))/2, mean_dwell_time(1:idx0,1), 40, [0.8500 0.3250 0.0980], 'filled', 'DisplayName', '')
-errorbar(-(bins(1:idx0)+bins(2:idx0+1))/2, mean_dwell_time(1:idx0,1), mean_dwell_time(1:idx0,1) - mean_dwell_time(1:idx0,2), -mean_dwell_time(1:idx0,1) + mean_dwell_time(1:idx0,3), 'Color', [0.8500 0.3250 0.0980], 'LineStyle', 'none', 'DisplayName', 'Right head', 'LineWidth',2)
+scatter(-(bins(1:idx0)+bins(2:idx0+1))/2, mean_dwell_time(1:idx0,1), 15, [0.8500 0.3250 0.0980], 'filled', 'DisplayName', '')
+errorbar(-(bins(1:idx0)+bins(2:idx0+1))/2, mean_dwell_time(1:idx0,1), mean_dwell_time(1:idx0,1) - mean_dwell_time(1:idx0,2), -mean_dwell_time(1:idx0,1) + mean_dwell_time(1:idx0,3), 'Color', [0.8500 0.3250 0.0980], 'LineStyle', 'none', 'DisplayName', 'Right head', 'LineWidth',1,'CapSize',5)
 % Left
-scatter((bins(idx0+1:end-1)+bins(idx0+2:end))/2, mean_dwell_time(idx0+1:end,1), 40, [0 0.4470 0.7410], 'filled', 'DisplayName', '')
-errorbar((bins(idx0+1:end-1)+bins(idx0+2:end))/2, mean_dwell_time(idx0+1:end,1), mean_dwell_time(idx0+1:end,1) - mean_dwell_time(idx0+1:end,2), -mean_dwell_time(idx0+1:end,1) + mean_dwell_time(idx0+1:end,3), 'Color', [0 0.4470 0.7410], 'LineStyle', 'none', 'DisplayName', 'Left head', 'LineWidth',2)
+scatter((bins(idx0+1:end-1)+bins(idx0+2:end))/2, mean_dwell_time(idx0+1:end,1), 15, [0 0.4470 0.7410], 'filled', 'DisplayName', '')
+errorbar((bins(idx0+1:end-1)+bins(idx0+2:end))/2, mean_dwell_time(idx0+1:end,1), mean_dwell_time(idx0+1:end,1) - mean_dwell_time(idx0+1:end,2), -mean_dwell_time(idx0+1:end,1) + mean_dwell_time(idx0+1:end,3), 'Color', [0 0.4470 0.7410], 'LineStyle', 'none', 'DisplayName', 'Left head', 'LineWidth',1,'CapSize',5)
 
 xticks((bins(idx0:end-1)+bins(idx0+1:end))/2)
 yticks(5:5:25)
@@ -710,7 +711,6 @@ correlation_array(3,2,2) = mean(xy_deltatxy_step_filtered(intersect(trail_within
 correlation_array(3,3,2) = mean(xy_deltatxy_step_filtered(intersect(trail_within_box_idx, right_within_box_idx),5));
 
 correlation_array
-% close all
 
 %% Autocorrelations in time
 % find points to split molecules
@@ -804,8 +804,9 @@ for j = 1:length(molidx)-1
                 ch1sum = [ch1sum; sum(deltatxystep(mask_ch1idx,:),1), mean(x(mask_ch1idx,:),1)]; %- deltatxystep(mask_ch1idx(1),3:4);
                 ch2sum = [ch2sum; sum(deltatxystep(mask_ch2idx,:),1), mean(x(mask_ch2idx,:),1)]; %- deltatxystep(mask_ch2idx(1),3:4);
                 chtotsum = [chtotsum; sum(deltatxystep(mask,:),1), mean(x(mask,:),1), length(mask_ch1idx), length(mask_ch2idx)];
+                chtotsum(end, 3) = mean(deltatxystep(mask,3),1,'omitnan'); %do the mean head separation rather than sum
+                chtotsum(end, 4) = mean(abs(deltatxystep(mask,4)),1,'omitnan'); %do absolute value to avoid crossing in y changing the means substantially
                 time_diff = [time_diff; deltatxystep(mask(end),2) - deltatxystep(mask(1),2)];
-                
             end
 
             % Now calculate outside the synchronity for a control
@@ -852,41 +853,25 @@ for j = 1:length(molidx)-1
             fprintf('\n')
         end
 
-        % %autocorrelation for window of size below
-        % if k == 1
-        %     y = [channel, pos_and_step]; %autocorr{k+1}; %uncomment this for entire array and do it outside the loop
-        %     window_size = 1;
-        %     storage = nan(size(y,1)-window_size, size(deltatxystep,2)+size(y,2));
-        %     for s = 1:(size(y,1)-window_size)
-        %         storage(s,1:7) = mean(deltatxystep(s:s+window_size,:),'omitnan');
-        %         storage(s,8:12) = mean(y(s:s+window_size-1,:),'omitnan');
-        %     end
-        %     % Now idea is find segments where there is "lots of crossings"
-        %     % vs not and in the segments where there isn't confusion what
-        %     % is dominating?
-        % 
-        %     not_crossing_much = find(storage(:,10) > 0.5);
-        %     crossing_much = find(storage(:,10) <= 0.5);
-        %     % length(not_crossing_much)
-        %     % length(crossing_much)
-        %     fprintf(strcat('runs w/o cross: ', num2str(mean(sign(storage(not_crossing_much,4)))), '\n'));
-        %     fprintf(strcat('crosses: ', num2str(mean(sign(storage(crossing_much,4)))), '\n'));
-        % 
-        % end
-
     end
 
 end
 
-fprintf("SUM STUFF... \n")
+fprintf("Channel distribution runs and not runs... \n")
 sum(sum(chtotsum(:,13:14)))
 sum(sum(chtot_notruns(:,13)))
 persistence_storage
 
-% r
-% theta
+
+%% figure to get the mean separation of x,y in runs
+figure() 
+histogram(sqrt(chtotsum(:,3).^2 + chtotsum(:,4).^2))
+title('Mean separation during runs')
+
+%% get polar plot of r, theta for interhead separation
 plot_polar_conversion(r, theta, 24)
 
+%% get the velocities within or not in runs. Is there a difference?
 v1 = ch1sum(:,6)./time_diff;
 v2 = ch2sum(:,6)./time_diff;
 vnot = chtot_notruns(:,6)./time_diff_notruns;
@@ -902,9 +887,7 @@ hold on
 histogram((v1+v2)/2,'BinWidth',25)
 histogram(vnot/2,'BinWidth',25)
 
-% now let's just make a plot for average "autocorrelation" in every asset
-% fixed
-% deltatxystep(:,[1:4,6:7])
+%% now let's just make a plot for average "autocorrelation" in every asset
 
 figure()
 hold on
@@ -932,10 +915,6 @@ set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', ...
         'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
 
 
-
-
-
-% 
 % % --- Helper function to keep parameters in bounds ---
 % function nll = penalizedNegLL(p, nllFunc)
 %     if p(1) < 0 || p(1) > 1 || p(2) <= 0 || p(3) <= 0
