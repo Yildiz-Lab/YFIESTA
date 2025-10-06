@@ -10,23 +10,34 @@ function Plot2CStepStats(xydiff, xy_deltatxy_step)
 
 %% Plot options
 
-figure()
-% On-axis Inter-head separation
-subplot(1,2,1)
-histogram(xydiff(:,1))
-title('Long-axis separation (nm)')
-
-% Off-axis Inter-head separation
-subplot(1,2,2)
-histogram(xydiff(:,2))
-title('Short-axis separation (nm)')
+% figure()
+% % On-axis Inter-head separation
+% subplot(2,1,1)
+% histogram(xydiff(:,1),'BinWidth',2)
+% title('Long-axis separation (nm)')
+% ax4=gca; set(ax4,'XLim',[-60,60]);
+% set(ax4, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+% 
+% % Off-axis Inter-head separation
+% subplot(2,1,2)
+% histogram(xydiff(:,2),'BinWidth',2)
+% title('Short-axis separation (nm)')
+% ax4=gca; set(ax4,'XLim',[-48,48]);
+% set(ax4, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
 
 
 %% Next figure with line fits
 x = xy_deltatxy_step(:,3); %x-head separation
 y = xy_deltatxy_step(:,6); %x-step
+% z = xy_deltatxy_step(:,4); %y-head separation
 mask = ~isnan(x .* y);
-x = x(mask); y = y(mask);
+x = x(mask); y = y(mask); %z = z(mask);
+
+% further filtering mask opts
+% mask2 = find(x >= -36 & x <= 36 & z <= -25 & z >= 25);
+% mask2 = find(x >= -24 & x <= 24);
+mask2 = find(y >= -28 & y <= 36);
+x = x(mask2); y = y(mask2);
 
 % Fit a linear model (y = mx + b)
 coeffs = polyfit(x, y, 1); % First-degree polynomial fit
@@ -46,7 +57,8 @@ x_on = [x, y]; %assign variable for later use
 figure('Position', [161 169 847 595])
 % Step size on-axis
 subplot(3,1,1)
-scatter(xy_deltatxy_step(:,3), xy_deltatxy_step(:,6), 50, 'k', 'filled')
+% scatter(xy_deltatxy_step(:,3), xy_deltatxy_step(:,6), 50, 'k', 'filled')
+scatter(x, y, 50, 'k', 'filled')
 hold on;
 plot(x, y_fit, 'r-', 'LineWidth', 2, ...
     'DisplayName', sprintf('Fit: y = %.2fx + %.2f\nR^2 = %.3f', m, b, R2)); % Line of best fit
@@ -183,10 +195,72 @@ set(ax3, 'YLim', [0,max([h3.Values, h4.Values])+10])
 set(ax4, 'YLim', [0,max([h3.Values, h4.Values])+10])
 
 
+%% Is this any different
+
+figure()
+subplot(2,1,1)
+h1 = histogram(x_on(:,1),'BinWidth',2,'Normalization','count');
+% h1 = histogram(x_on(:,1),'BinWidth',2,'Normalization','pdf');
+title('Long-axis separation (nm)')
+ax1=gca; set(ax1,'XLim',long_axis_range);
+set(ax1, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+
+% fit gmm
+options = statset('MaxIter',10000);
+% gm = fitgmdist(x_on(:,1), 8, 'Options', options);
+gm = fitgmdist(x_on(:,1), 13, 'Options', options);
+
+for i = 1:length(gm.mu)
+    hold on
+    x = min(long_axis_range):0.1:max(long_axis_range);
+    % y = length(h1.Data) * gm.ComponentProportion(i) * normpdf(x,gm.mu(i),gm.Sigma(1,1,i));
+    y = length(h1.Data) * gm.ComponentProportion(i) * normpdf(x,gm.mu(i),4);
+    plot(x, y);
+
+    % Create a unique label for each point
+    % label_text = sprintf(num2str(round(gm.mu,1)));
+    label_text = num2str(round(gm.mu(i),1));
+
+    % Add the text to the plot
+    % text(gm.mu(i), gm.ComponentProportion(i), label_text, 'FontSize', 8, 'Color', 'red', ...
+    %      'HorizontalAlignment', 'center'); 
+    text(gm.mu(i), max(h1.Values), label_text, 'FontSize', 10, 'Color', 'red', ...
+         'HorizontalAlignment', 'center');
+end
+
+subplot(2,1,2)
+h2 = histogram(x_off(:,1),'BinWidth',2);
+title('Short-axis separation (nm)')
+ax2=gca; set(ax2,'XLim',short_axis_range);
+set(ax2, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+
+% fit gmm
+options = statset('MaxIter',10000);
+% gm = fitgmdist(x_off(:,1), 7, 'Options', options);
+gm = fitgmdist(x_off(:,1), 10, 'Options', options);
+
+for i = 1:length(gm.mu)
+    hold on
+    x = min(short_axis_range):0.1:max(short_axis_range);
+    % y = length(h2.Data) * gm.ComponentProportion(i) * normpdf(x,gm.mu(i),gm.Sigma(1,1,i));
+    y = length(h2.Data) * gm.ComponentProportion(i) * normpdf(x,gm.mu(i),4);
+    plot(x, y);
+
+    % Create a unique label for each point
+    % label_text = sprintf(num2str(round(gm.mu,1)));
+    label_text = num2str(round(gm.mu(i),1));
+
+    % Add the text to the plot
+    % text(gm.mu(i), gm.ComponentProportion(i), label_text, 'FontSize', 8, 'Color', 'red', ...
+    %      'HorizontalAlignment', 'center'); 
+    text(gm.mu(i), max(h2.Values), label_text, 'FontSize', 10, 'Color', 'red', ...
+         'HorizontalAlignment', 'center');
+end
+
 %% And now the fraction of steps taken by each population, at least in on-axis
 
-% figure('Position',[311 266 722 420])
-figure('Position',[311 266 308 154])
+figure('Position',[311 266 722 420])
+% figure('Position',[311 266 308 154])
 subplot(1,2,1)
 % binedges = -95:10:95; %make symmetric across 0 for ease of flipping
 binedges = -60:8:60; %make symmetric across 0 for ease of flipping
@@ -195,6 +269,8 @@ last_bin_show = 5;
 hold on
 h_trail = histogram(x_on(trailing_idx,1),'BinEdges',binedges,'DisplayName','Trailing');
 h_lead = histogram(x_on(leading_idx,1),'BinEdges',binedges,'DisplayName','Leading');
+% h_trail = histogram(x_on(:,1),'BinEdges',binedges,'DisplayName','Trailing');
+% h_lead = histogram(x_on(:,1),'BinEdges',binedges,'DisplayName','Leading');
 % h_trail = histogram(x_on(trailing_idx,2),'BinEdges',binedges,'DisplayName','Trailing');
 % h_lead = histogram(x_on(leading_idx,2),'BinEdges',binedges,'DisplayName','Leading');
 hold off
@@ -275,7 +351,20 @@ for j = 1:length(bins)-1 % bin your dwells
     dwell_times_binned{j} = dwelltime(mask1)*1000; %convert to ms
 end
 
-
+% quick combine just to do them all at once (for figure 2 stuff)
+% Only take leading head (since want -52 - 0)
+% length(dwell_times_binned)
+for j = 1:length(dwell_times_binned) % bin your dwells
+    % j
+    % length(dwell_times_binned{j})
+    % length(dwell_times_binned{length(bins)-j})
+    if j ~= round((length(dwell_times_binned)+1)/2,0) %midpoint
+        dwell_times_binned{j} = [dwell_times_binned{j}, dwell_times_binned{length(bins)-j}] ; %convert to ms
+    else
+        j
+    end
+    % length(dwell_times_binned{j})
+end
 
 try
 
@@ -355,18 +444,19 @@ catch
     fprintf('Skipping rate plotting due to insufficient data (Check Line 278-354 in Plot2CStepStats.m \n')
 end
 
-figure('Position',[311 266 154 154])
+figure('Position',[311 266 420 420])
+% figure('Position',[311 266 154 154])
 hold on
 [val0, idx0] = min(abs((bins(1:end-1)+bins(2:end))/2));
 if val0 < 0
     idx0 = idx0-1;
 end
 % Leading
-scatter(-(bins(1:idx0)+bins(2:idx0+1))/2, mean_dwell_time(1:idx0,1), 15, [0.8500 0.3250 0.0980], 'filled', 'DisplayName', '')
-errorbar(-(bins(1:idx0)+bins(2:idx0+1))/2, mean_dwell_time(1:idx0,1), mean_dwell_time(1:idx0,1) - mean_dwell_time(1:idx0,2), -mean_dwell_time(1:idx0,1) + mean_dwell_time(1:idx0,3), 'Color', [0.8500 0.3250 0.0980], 'LineStyle', 'none', 'DisplayName', 'Leading head', 'LineWidth',1,'CapSize',5)
+scatter(-(bins(1:idx0)+bins(2:idx0+1))/2, mean_dwell_time(1:idx0,1), 40, [0.8500 0.3250 0.0980], 'filled', 'DisplayName', '')
+errorbar(-(bins(1:idx0)+bins(2:idx0+1))/2, mean_dwell_time(1:idx0,1), mean_dwell_time(1:idx0,1) - mean_dwell_time(1:idx0,2), -mean_dwell_time(1:idx0,1) + mean_dwell_time(1:idx0,3), 'Color', [0.8500 0.3250 0.0980], 'LineStyle', 'none', 'DisplayName', 'Leading head', 'LineWidth',1,'CapSize',10)
 % Trailing
-scatter((bins(idx0+1:end-1)+bins(idx0+2:end))/2, mean_dwell_time(idx0+1:end,1), 15, [0 0.4470 0.7410], 'filled', 'DisplayName', '')
-errorbar((bins(idx0+1:end-1)+bins(idx0+2:end))/2, mean_dwell_time(idx0+1:end,1), mean_dwell_time(idx0+1:end,1) - mean_dwell_time(idx0+1:end,2), -mean_dwell_time(idx0+1:end,1) + mean_dwell_time(idx0+1:end,3), 'Color', [0 0.4470 0.7410], 'LineStyle', 'none', 'DisplayName', 'Trailing head', 'LineWidth',1,'CapSize',5)
+scatter((bins(idx0+1:end-1)+bins(idx0+2:end))/2, mean_dwell_time(idx0+1:end,1), 40, [0 0.4470 0.7410], 'filled', 'DisplayName', '')
+errorbar((bins(idx0+1:end-1)+bins(idx0+2:end))/2, mean_dwell_time(idx0+1:end,1), mean_dwell_time(idx0+1:end,1) - mean_dwell_time(idx0+1:end,2), -mean_dwell_time(idx0+1:end,1) + mean_dwell_time(idx0+1:end,3), 'Color', [0 0.4470 0.7410], 'LineStyle', 'none', 'DisplayName', 'Trailing head', 'LineWidth',1,'CapSize',10)
 
 xticks((bins(idx0:end-1)+bins(idx0+1:end))/2)
 yticks(5:5:25)

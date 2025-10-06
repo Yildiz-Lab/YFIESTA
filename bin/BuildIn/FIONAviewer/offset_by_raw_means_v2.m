@@ -19,8 +19,12 @@ function [dx, dy] = offset_by_raw_means_v2(molecule_filepath)
 % fnames = {fname};
 
 decimation_factor = 10;
+% cutoff for std dev max or pure nm, will take the minimum
+% set other to something high if you want to use 
 std_max_factor = 1.0;
-std_max = 25; % pure nm, set to something high if want to use std_max_factor since it takes the minimum
+std_max = 25;
+% define the beginning index to use for alignment, a useful trick if you have lots of tails you don't want applied to your data, especially with gold beads
+bidx = 1;
 
 if nargin < 1
     [fnames, dir] = uigetfile({'*.mat'},'Select files to calculate linear correction','MultiSelect','on')
@@ -82,12 +86,12 @@ for i = 1:length(fnames)
                     % data from this molecule
                     
                     % Ch1 data
-                    time1 = mean_decimate_array(Molecule(j).Results(:,2), decimation_factor);
-                    x1 = mean_decimate_array(Molecule(j).Results(:,3), decimation_factor); y1 = mean_decimate_array(Molecule(j).Results(:,4), decimation_factor);
+                    time1 = mean_decimate_array(Molecule(j).Results(bidx:end,2), decimation_factor);
+                    x1 = mean_decimate_array(Molecule(j).Results(:,3), decimation_factor); y1 = mean_decimate_array(Molecule(j).Results(bidx:end,4), decimation_factor);
                     
                     % Ch2 data
-                    time2 = mean_decimate_array(Molecule(k).Results(:,2), decimation_factor);
-                    x2 = mean_decimate_array(Molecule(k).Results(:,3), decimation_factor); y2 = mean_decimate_array(Molecule(k).Results(:,4), decimation_factor);
+                    time2 = mean_decimate_array(Molecule(k).Results(bidx:end,2), decimation_factor);
+                    x2 = mean_decimate_array(Molecule(k).Results(:,3), decimation_factor); y2 = mean_decimate_array(Molecule(k).Results(bidx:end,4), decimation_factor);
                     
                     % Assume Ch1 is shorter
                     short = 1;
@@ -174,6 +178,7 @@ scatter(molinfo(:,5),molinfo(:,2), 20, 'filled')
 title("Y Drift")
 % legend(strcat("\mu: ", num2str(round(dy,2)), ", \sigma: ", num2str(round(stdy,2))))
 
+
 % After post-process outlier removed
 
 manual_factor = round(std_max/sqrt(stdx.^2 + stdy.^2),2);
@@ -211,6 +216,9 @@ scatter(removed_mols(:,5), removed_mols(:,1), 20, 'filled')
 end
 plot([0,1.1*max(molinfo(:,5))],[dx,dx],'r--')
 title("X Drift w/ \pm" + num2str(std_max_factor) + " \sigma outliers removed")
+ax = gca;
+set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+
 subplot(1,2,2)
 scatter(molinfo(:,5),molinfo(:,2), 20, 'filled')
 hold on
@@ -222,19 +230,94 @@ scatter(removed_mols(:,5), removed_mols(:,2), 20, 'filled')
 end
 plot([0,1.1*max(molinfo(:,5))],[dy,dy],'r--')
 title("Y Drift w/ \pm" + num2str(std_max_factor) + " \sigma outliers removed")
+ax = gca;
+set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
 
 
-figure()
-subplot(1,2,1)
-histogram(dx_all)
-title("\Delta X after \pm" + num2str(std_max_factor) + " \sigma outliers removed")
+% Separate option, now combined into one total figure
+% figure()
+% scatter(molinfo(:,1),molinfo(:,2), 20, 'filled')
+% hold on
+% for i = 1:size(molnum)
+%     text(molinfo(i,1),molinfo(i,2)+0.25, num2str(molnum(i)))
+% end
+% if ~isempty(removed_mols)
+% scatter(removed_mols(:,1), removed_mols(:,2), 20, 'filled')
+% end
+% % plot([0,1.1*max(molinfo(:,5))],[dx,dx],'r--')
+% title("X-Y mean correction w/ \pm" + num2str(std_max_factor) + " \sigma outliers removed")
+% xlabel('X offset correction (nm)')
+% ylabel('Y offset correction (nm)')
+% ax = gca;
+% set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+% 
+% 
+% figure()
+% subplot(1,2,1)
+% histogram(dx_all)
+% title("\Delta X after \pm" + num2str(std_max_factor) + " \sigma outliers removed")
+% legend(strcat("\mu: ", num2str(round(dx,2)), ", \sigma: ", num2str(round(stdx,2))))
+% ax = gca;
+% set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+% subplot(1,2,2)
+% histogram(dy_all)
+% title("\Delta Y after \pm" + num2str(std_max_factor) + " \sigma outliers removed")
+% legend(strcat("\mu: ", num2str(round(dy,2)), ", \sigma: ", num2str(round(stdy,2))))
+% ax = gca;
+% set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+
+
+% Figure setup
+figure('Position', [200 200 600 600]);
+
+% Define axis positions (tight layout, right-side y histogram)
+scatter_pos = [0.13 0.13 0.65 0.65];  % [left bottom width height]
+xhist_pos   = [0.13 0.79 0.65 0.18];  % top histogram
+yhist_pos   = [0.79 0.13 0.18 0.65];  % right histogram
+
+% Scatter plot
+axScatter = axes('Position', scatter_pos);
+scatter(axScatter, molinfo(:,1), molinfo(:,2), 25, 'filled', 'MarkerFaceAlpha', 0.6);
+xlabel('X offset correction (nm)');
+ylabel('Y offset correction (nm)');
+hold on;
+% for i = 1:size(molnum)
+%     text(molinfo(i,1),molinfo(i,2)+0.25, num2str(molnum(i)))
+% end
+if ~isempty(removed_mols)
+scatter(axScatter, removed_mols(:,1), removed_mols(:,2), 20, 'filled')
+end
+set(axScatter, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+
+% X histogram (top)
+axHistX = axes('Position', xhist_pos);
+histogram(axHistX, dx_all, 30, 'FaceColor', [0.5 0.5 0.5], 'BinWidth', 2);
+axHistX.XAxis.Visible = 'off';
+axHistX.YAxis.Visible = 'off';
+axHistX.Box = 'off';
 legend(strcat("\mu: ", num2str(round(dx,2)), ", \sigma: ", num2str(round(stdx,2))))
-subplot(1,2,2)
-histogram(dy_all)
-title("\Delta Y after \pm" + num2str(std_max_factor) + " \sigma outliers removed")
+xlim(axHistX, axScatter.XLim);
+set(axHistX, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+
+% Y histogram (right)
+axHistY = axes('Position', yhist_pos);
+histogram(axHistY, dy_all, 30, 'FaceColor', [0.5 0.5 0.5], 'BinWidth', 2, 'Orientation', 'horizontal');
+axHistY.XAxis.Visible = 'off';
+axHistY.YAxis.Visible = 'off';
+axHistY.Box = 'off';
 legend(strcat("\mu: ", num2str(round(dy,2)), ", \sigma: ", num2str(round(stdy,2))))
+ylim(axHistY, axScatter.YLim);
+set(axHistY, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+
+% Link axes for alignment
+linkaxes([axScatter axHistX], 'x');
+linkaxes([axScatter axHistY], 'y');
+
+% Bring scatter to front
+axes(axScatter);
 
 
+%% Extra functions
 
 function B = mean_decimate_array(A, decimation_factor)
 

@@ -25,6 +25,7 @@ set(gca,'ThetaZeroLocation','top')
 
 % theta_transform = theta_transform - pi*(theta_transform > pi);
 fwd_mask = and(theta > -pi/2, theta < pi/2);
+% fwd_mask = and(theta > -pi/4, theta < pi/4);
 
 subplot(1,2,2)
 polarhistogram(theta,'BinEdges',linspace(0,2*pi,binnum))
@@ -44,6 +45,11 @@ set(gca,'fontname','Arial');
 % subplot(2,2,4)
 % polarhistogram(theta(r<0),'BinWidth',bindeg*pi/180)
 % set(gca,'ThetaZeroLocation','top')
+
+figure()
+histogram(theta*180/pi)
+hold on
+histogram(theta(fwd_mask)*180/pi)
 
 % Do a heat map on subplot 3
 
