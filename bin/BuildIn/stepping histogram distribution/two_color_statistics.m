@@ -355,6 +355,7 @@ two_color_stats_struct = struct();
 two_color_stats_struct.xydiff = [xdiff', ydiff'];
 two_color_stats_struct.xy_deltatxy_step = xy_deltatxy_step;
 
+% save('two_color_stats_struct', "two_color_stats_struct")
 
 
 function B = mean_decimate_array(A, decimation_factor)

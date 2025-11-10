@@ -236,10 +236,17 @@ for i=1:fnum
         two_color_xydiff = [two_color_xydiff; two_color_data_struct.xydiff];
         two_color_xy_deltatxy_step = [two_color_xy_deltatxy_step; two_color_data_struct.xy_deltatxy_step];
 
+        % save('two_color_xy_deltatxy_step', "two_color_xy_deltatxy_step")
+
+        % pad with Nan's in between so that transitions don't cross
+        % correlate in Markov matrix
+        two_color_xy_deltatxy_step = [two_color_xy_deltatxy_step; nan(1,7)];
+
     end
 
     % Option to export data
 % writematrix(two_color_xy_deltatxy_step,'xy_deltatxy_step_compiled_2C.csv')
+% save('two_color_xy_deltatxy_step', "two_color_xy_deltatxy_step")
 %     % JS Edit 2024/03/07
 %     %post processing too small dwell steps (incrase accuracy)
 %     % find steps below the time threshold. For MINFLUX resolving

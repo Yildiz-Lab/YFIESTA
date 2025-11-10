@@ -96,14 +96,14 @@ for i=1:fnum
 %     totpts = totpts + pts; stepnum = stepnum + num;
 
     % [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,5,1,1);
-    % [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,5,1,5);
+    [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,5,1,5);
     % [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,15,3,6);
-    [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,20,4,10); % April - May 2025
+    % [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,20,4,10); % April - May 2025
     % [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,20,6,15);
     blipin = [blipin; bin]; blipout = [blipout; bout];
     ptsin = [ptsin; pin]; ptsout = [ptsout; pout];
     totpts = totpts + pts; stepnum = stepnum + num;
-    
+
     m = length(fwd_mean_modded);
     [fwd_mean_modded{m+1}, bwd_mean_modded{m+1}] = align_to_step_mod_mean(steptrace.data,min_step_length);
     
@@ -114,6 +114,11 @@ for i=1:fnum
     end
 
 end
+
+length(blipin)
+length(ptsin)
+length(blipout)
+length(ptsout)
 
 plot_step_mod_mean(fwd_mean_modded,bwd_mean_modded,time_mean_modded_bins)
 
