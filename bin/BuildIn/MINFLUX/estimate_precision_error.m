@@ -34,6 +34,8 @@ dt = [];
 r = [];
 t = [];
 
+mean_sigma = [];
+
 for i=1:fnum
     
     if isfile(directory)
@@ -60,6 +62,12 @@ for i=1:fnum
         % trace specific
         drind = sqrt(var(sqrt( (data.trace(1:end-1,1)-data.trace(2:end,1)).^2 + (data.trace(1:end-1,2)-data.trace(2:end,2)).^2 ),'omitnan'))/sqrt(2)
         dtind = mean(data.time(2:end)-data.time(1:end-1),'omitnan')
+
+        % Let's also calculate just raw standard error based on trace fits.
+        % (Remember that the trace fits need to be accurate)
+
+        mean_sigma = [mean_sigma, std(sqrt((data.trace(:,1)-data.trace(:,3)).^2 + (data.trace_yx(:,1)-data.trace_yx(:,3)).^2),'omitnan')];
+
     end
 
 end
@@ -70,5 +78,7 @@ sigma/sqrt(2)
 meandt = mean(dt,'omitnan')
 
 lifetime = mean(t, 'omitnan')
+
+mean_sigma = mean(mean_sigma)
 
 end

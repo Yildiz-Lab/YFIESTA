@@ -21,10 +21,10 @@ function [dx, dy] = offset_by_raw_means_v2(molecule_filepath)
 decimation_factor = 10;
 % cutoff for std dev max or pure nm, will take the minimum
 % set other to something high if you want to use 
-std_max_factor = 1.0;
+std_max_factor = 3.0;
 std_max = 25;
 % define the beginning index to use for alignment, a useful trick if you have lots of tails you don't want applied to your data, especially with gold beads
-bidx = 1;
+bidx = 15;
 
 if nargin < 1
     [fnames, dir] = uigetfile({'*.mat'},'Select files to calculate linear correction','MultiSelect','on')

@@ -195,67 +195,67 @@ set(ax3, 'YLim', [0,max([h3.Values, h4.Values])+10])
 set(ax4, 'YLim', [0,max([h3.Values, h4.Values])+10])
 
 
-%% Is this any different
+%% MTBD separation
 
 figure()
 subplot(2,1,1)
 h1 = histogram(x_on(:,1),'BinWidth',2,'Normalization','count');
 % h1 = histogram(x_on(:,1),'BinWidth',2,'Normalization','pdf');
 title('Long-axis separation (nm)')
-ax1=gca; set(ax1,'XLim',long_axis_range);
+ax1=gca; set(ax1,'XLim',[-50,50]); % set(ax1,'XLim',long_axis_range);
 set(ax1, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
 
-% fit gmm
-options = statset('MaxIter',10000);
-% gm = fitgmdist(x_on(:,1), 8, 'Options', options);
-gm = fitgmdist(x_on(:,1), 13, 'Options', options);
-
-for i = 1:length(gm.mu)
-    hold on
-    x = min(long_axis_range):0.1:max(long_axis_range);
-    % y = length(h1.Data) * gm.ComponentProportion(i) * normpdf(x,gm.mu(i),gm.Sigma(1,1,i));
-    y = length(h1.Data) * gm.ComponentProportion(i) * normpdf(x,gm.mu(i),4);
-    plot(x, y);
-
-    % Create a unique label for each point
-    % label_text = sprintf(num2str(round(gm.mu,1)));
-    label_text = num2str(round(gm.mu(i),1));
-
-    % Add the text to the plot
-    % text(gm.mu(i), gm.ComponentProportion(i), label_text, 'FontSize', 8, 'Color', 'red', ...
-    %      'HorizontalAlignment', 'center'); 
-    text(gm.mu(i), max(h1.Values), label_text, 'FontSize', 10, 'Color', 'red', ...
-         'HorizontalAlignment', 'center');
-end
+% fit gmm option
+% options = statset('MaxIter',10000);
+% % gm = fitgmdist(x_on(:,1), 8, 'Options', options);
+% gm = fitgmdist(x_on(:,1), 13, 'Options', options);
+% 
+% for i = 1:length(gm.mu)
+%     hold on
+%     x = min(long_axis_range):0.1:max(long_axis_range);
+%     % y = length(h1.Data) * gm.ComponentProportion(i) * normpdf(x,gm.mu(i),gm.Sigma(1,1,i));
+%     y = length(h1.Data) * gm.ComponentProportion(i) * normpdf(x,gm.mu(i),4);
+%     plot(x, y);
+% 
+%     % Create a unique label for each point
+%     % label_text = sprintf(num2str(round(gm.mu,1)));
+%     label_text = num2str(round(gm.mu(i),1));
+% 
+%     % Add the text to the plot
+%     % text(gm.mu(i), gm.ComponentProportion(i), label_text, 'FontSize', 8, 'Color', 'red', ...
+%     %      'HorizontalAlignment', 'center'); 
+%     text(gm.mu(i), max(h1.Values), label_text, 'FontSize', 10, 'Color', 'red', ...
+%          'HorizontalAlignment', 'center');
+% end
 
 subplot(2,1,2)
 h2 = histogram(x_off(:,1),'BinWidth',2);
 title('Short-axis separation (nm)')
-ax2=gca; set(ax2,'XLim',short_axis_range);
+ax2=gca; set(ax2,'XLim',[-50,50]); %set(ax2,'XLim',short_axis_range);
 set(ax2, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
 
 % fit gmm
-options = statset('MaxIter',10000);
+% options = statset('MaxIter',10000);
 % gm = fitgmdist(x_off(:,1), 7, 'Options', options);
-gm = fitgmdist(x_off(:,1), 10, 'Options', options);
-
-for i = 1:length(gm.mu)
-    hold on
-    x = min(short_axis_range):0.1:max(short_axis_range);
-    % y = length(h2.Data) * gm.ComponentProportion(i) * normpdf(x,gm.mu(i),gm.Sigma(1,1,i));
-    y = length(h2.Data) * gm.ComponentProportion(i) * normpdf(x,gm.mu(i),4);
-    plot(x, y);
-
-    % Create a unique label for each point
-    % label_text = sprintf(num2str(round(gm.mu,1)));
-    label_text = num2str(round(gm.mu(i),1));
-
-    % Add the text to the plot
-    % text(gm.mu(i), gm.ComponentProportion(i), label_text, 'FontSize', 8, 'Color', 'red', ...
-    %      'HorizontalAlignment', 'center'); 
-    text(gm.mu(i), max(h2.Values), label_text, 'FontSize', 10, 'Color', 'red', ...
-         'HorizontalAlignment', 'center');
-end
+% gm = fitgmdist(x_off(:,1), 10, 'Options', options);
+% 
+% for i = 1:length(gm.mu)
+%     hold on
+%     x = min(short_axis_range):0.1:max(short_axis_range);
+%     % y = length(h2.Data) * gm.ComponentProportion(i) * normpdf(x,gm.mu(i),gm.Sigma(1,1,i));
+%     y = length(h2.Data) * gm.ComponentProportion(i) * normpdf(x,gm.mu(i),4);
+%     plot(x, y);
+% 
+%     % Create a unique label for each point
+%     % label_text = sprintf(num2str(round(gm.mu,1)));
+%     label_text = num2str(round(gm.mu(i),1));
+% 
+%     % Add the text to the plot
+%     % text(gm.mu(i), gm.ComponentProportion(i), label_text, 'FontSize', 8, 'Color', 'red', ...
+%     %      'HorizontalAlignment', 'center'); 
+%     text(gm.mu(i), max(h2.Values), label_text, 'FontSize', 10, 'Color', 'red', ...
+%          'HorizontalAlignment', 'center');
+% end
 
 %% And now the fraction of steps taken by each population, at least in on-axis
 
@@ -264,6 +264,7 @@ figure('Position',[311 266 722 420])
 subplot(1,2,1)
 % binedges = -95:10:95; %make symmetric across 0 for ease of flipping
 binedges = -60:8:60; %make symmetric across 0 for ease of flipping
+binedges_long_axis = binedges;
 last_bin_show = 5;
 
 hold on
@@ -330,6 +331,7 @@ ax = gca;
 set(ax, 'FontName', 'Arial', 'FontSize', 8, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
 
 hold off
+
 
 %% Dwell times binning and averaging, adapted from file to show the dwell times vs interhead separation
 
@@ -678,6 +680,84 @@ set(ax, ...
         'XColor', 'k', ...
         'YColor', 'k');
 
+%%
+% Step sizes binned by interhead separation
+figure('Position',[311 266 722 420])
+% figure('Position',[311 266 308 154])
+subplot(1,2,1)
+
+m = [];
+s = [];
+for j = 1:length(binedges_long_axis)-1
+    idx = x_on(:,1) >= binedges_long_axis(j) & x_on(:,1) < binedges_long_axis(j+1);
+    m(j) = mean(x_on(idx,2));
+    s(j) = std(x_on(idx,2));
+end
+x = (binedges_long_axis(1:end-1) + binedges_long_axis(2:end))./2;
+hold on
+errorbar(x, m, s, 'Color', [0 0.4470 0.7410], 'LineWidth',1,'CapSize',5, 'DisplayName','')
+scatter(x, m, 40, 'filled', 'MarkerFaceColor', [0 0.4470 0.7410], 'DisplayName','')
+
+% Fit a linear model (y = mx + b)
+coeffs = polyfit(x(4:end-4), m((4:end-4)), 1); % First-degree polynomial fit
+slope = coeffs(1);  % Slope
+b = coeffs(2);  % Intercept
+
+% Generate fitted y values
+y_fit = polyval(coeffs, x);  % Evaluate polynomial at original x values
+plot(x, y_fit, 'r-', 'LineWidth', 2, ...
+    'DisplayName', sprintf('Fit: y = %.2fx + %.2f', slope, b)); % Line of best fit
+
+coeffs = polyfit(x(~isnan(m)), m(~isnan(m)), 3); % First-degree polynomial fit
+
+% Generate fitted y values
+y_fit = polyval(coeffs, x);  % Evaluate polynomial at original x values
+plot(x, y_fit, 'k-', 'LineWidth', 2, ...
+    'DisplayName', sprintf('Fit: y = %.2fx^3 + %.2fx^2 + %.2fx + %.2f', coeffs(1), coeffs(2), coeffs(3), coeffs(4))); % Line of best fit
+
+legend()
+
+ax = gca;
+set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+
+% short-axis
+subplot(1,2,2)
+
+m = [];
+s = [];
+for j = 1:length(binedges)-1
+    idx = x_off(:,1) >= binedges(j) & x_off(:,1) < binedges(j+1);
+    m(j) = mean(x_off(idx,2));
+    s(j) = std(x_off(idx,2));
+end
+x = (binedges(1:end-1) + binedges(2:end))./2;
+hold on
+errorbar(x, m, s, 'Color', [0 0.4470 0.7410], 'LineWidth',1,'CapSize',5, 'DisplayName','')
+scatter(x, m, 40, 'filled', 'MarkerFaceColor', [0 0.4470 0.7410], 'DisplayName','')
+
+% Fit a linear model (y = mx + b)
+coeffs = polyfit(x(5:end-5), m(5:end-5), 1); % First-degree polynomial fit
+slope = coeffs(1);  % Slope
+b = coeffs(2);  % Intercept
+
+% Generate fitted y values
+y_fit = polyval(coeffs, x);  % Evaluate polynomial at original x values
+plot(x, y_fit, 'r-', 'LineWidth', 2, ...
+    'DisplayName', sprintf('Fit: y = %.2fx + %.2f', slope, b)); % Line of best fit
+
+coeffs = polyfit(x(~isnan(m)), m(~isnan(m)), 3); % First-degree polynomial fit
+
+% Generate fitted y values
+y_fit = polyval(coeffs, x);  % Evaluate polynomial at original x values
+plot(x, y_fit, 'k-', 'LineWidth', 2, ...
+    'DisplayName', sprintf('Fit: y = %.2fx^3 + %.2fx^2 + %.2fx + %.2f', coeffs(1), coeffs(2), coeffs(3), coeffs(4))); % Line of best fit
+
+legend()
+
+ax = gca;
+ax.XLim = [binedges(1),binedges(end)]
+set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+
 %% Determine if there is one head that takes more steps (has higher overlal stepping rate)
 % Is there a directional dependence on this.
 
@@ -836,7 +916,7 @@ for j = 1:length(molidx)-1
     % could also add a buffer for separation. i.e. if the sep is too small,
     % say 5nm, then let's just say it is the same sign as the previous.
     % This isn't doing anything though...weirdly
-    buffer_dist = 0.;
+    buffer_dist = 3.5;
     deltatxystep = [deltatxystep(1,:); deltatxystep]; %add first row for edge case
     too_small_idx = find(abs(deltatxystep(2:end,4)) < buffer_dist); too_small_idx = too_small_idx+1;
     for c = 1:length(too_small_idx) %have to do a for loop for iterative purposes
@@ -977,7 +1057,6 @@ histogram((v1+v2)/2,'BinWidth',25)
 histogram(vnot/2,'BinWidth',25)
 
 %% now let's just make a plot for average "autocorrelation" in every asset
-
 figure()
 hold on
 labels = {"channel", "xsep", "ysep", "xstep", "ystep"};
@@ -991,14 +1070,30 @@ for l = 1:size(autocorr{1},2)
     try
         x = autocorr{2};
         x = x(:,l);
-        tau = fit_exp_run_lengths(x(~isnan(x)), 1);
-        fprintf(strcat(labels{l}, " tau (steps) : ", num2str(round(1/tau,2)), "\n"))
-        plot(0:length(autocorr)-1,g,'DisplayName', strcat(labels{l}, " \tau : ", num2str(round(1/tau,2)), " (steps)"))
+        [tau, run_lengths] = fit_exp_run_lengths(x(~isnan(x)), 1);
+        % fprintf(strcat(labels{l}, " tau (steps) : ", num2str(round(1/tau,2)), "\n"))
+        % plot autocorr
+        % plot(0:length(autocorr)-1,g,'DisplayName', strcat(labels{l}, " \tau : ", num2str(round(1/tau,2)), " (steps)"))
+        
+        % plot 1-cdf of run_lengths (thank Google AI for the help)
+        % 2. Sort the data in ascending order
+        sorted_runs = sort(run_lengths);
+        
+        % 3. Compute the empirical probabilities
+        n = length(sorted_runs); % Total number of data points
+        ecdf_runs = (1:n)' / n; % The empirical probability for the i-th sorted data point is i/n
+        stairs(sorted_runs, 1-ecdf_runs,'DisplayName', strcat(labels{l}, " \tau : ", num2str(round(1/tau,2)), " (steps)"))
+        % also plot fit
+        xmdl = 0:0.1:max(sorted_runs)+4;
+        plot(xmdl, exp(-xmdl*tau))
+        % histogram(run_lengths,'DisplayName', strcat(labels{l}, " \tau : ", num2str(round(1/tau,2)), " (steps)"))
     catch
         plot(0:length(autocorr)-1,g,'DisplayName',labels{l})
     end
 end
 legend()
+ylabel('1-cdf')
+xlabel('consecutive steps')
 ax = gca();
 set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', ...
         'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
@@ -1039,6 +1134,7 @@ function [lambda_hat, run_lengths] = fit_exp_run_lengths(binary_array, type)
 
     % Run lengths
     run_lengths = end_idx - start_idx;
+    % fprintf(strcat("RUN LENGTHS ", num2str(mean(run_lengths)), '\n'))
 
     if isempty(run_lengths)
         lambda_hat = NaN;
@@ -1047,7 +1143,7 @@ function [lambda_hat, run_lengths] = fit_exp_run_lengths(binary_array, type)
     end
     
     % Fit exponential using MATLAB's fitdist
-    pd = fitdist(run_lengths', 'Exponential');
+    pd = fitdist(run_lengths', 'Exponential')
     lambda_hat = 1 / pd.mu;  % rate parameter λ = 1/mean
 
     % Optional: Plot histogram and fitted PDF
