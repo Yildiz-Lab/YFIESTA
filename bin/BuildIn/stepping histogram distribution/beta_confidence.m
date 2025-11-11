@@ -3,10 +3,13 @@ function [m,c1,c2] = beta_confidence(a,b,conf)
 
 %Uses the beta distribution to calculate the error of percentage of a
 %stochastic counting process with two options (i.e. stepping)
+
 % https://youtu.be/8idr1WZ1A7Q?si=tYfVCQjD3X9CJ1IL
 % https://youtu.be/ZA4JkHKZM50?si=1JOHh87X2fHG-Eoh
 % https://youtu.be/juF3r12nM5A?si=w5s4e59eqjS4rTUc
 % https://en.wikipedia.org/wiki/Beta_distribution
+
+% Very similar to the Clopper-Pearson interval at large n (i.e. n>30), though not exactly identical 
 
 % Parameters:
     % a: Number of events of type a

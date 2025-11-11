@@ -125,6 +125,11 @@ fprintf(strcat("Size ",num2str(round(-mean(blipin),2))," +/- ",num2str(round(std
 fprintf(strcat("Prob outside window: ", num2str(round(mu0,3)), " +/- [", num2str(round(s10,3)), ", ", num2str(round(s20,3)), "]", "\n"))
 fprintf(strcat("Size ",num2str(round(-mean(blipout),2))," +/- ",num2str(round(std(blipout),2)),"\n"))
 
+% length(blipin)
+% length(ptsin)
+% length(blipout)
+% length(ptsout)
+
 fn1 = figure();
 hold on
 c_on = bar(1:2,[mu,mu0]);

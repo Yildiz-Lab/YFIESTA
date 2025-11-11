@@ -288,6 +288,7 @@ if ~isempty(removed_mols)
 scatter(axScatter, removed_mols(:,1), removed_mols(:,2), 20, 'filled')
 end
 set(axScatter, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+axis equal
 
 % X histogram (top)
 axHistX = axes('Position', xhist_pos);

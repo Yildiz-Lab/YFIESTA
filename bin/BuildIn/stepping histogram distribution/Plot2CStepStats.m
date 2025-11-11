@@ -333,12 +333,12 @@ hold off
 
 %% Dwell times binning and averaging, adapted from file to show the dwell times vs interhead separation
 
-
 % load from object associated with dependence on interhead separation
 
 % dwellspacing - XData
 % dwelltime - YData
 dwellspacing = xy_deltatxy_step(:,3)';
+% dwellspacing = sqrt(xy_deltatxy_step(:,3).^2 + xy_deltatxy_step(:,4).^2)'; 
 dwelltime = xy_deltatxy_step(:,5)';
 
 % bins = -44:8:60;
@@ -800,7 +800,7 @@ correlation_array(2,3,2) = mean(xy_deltatxy_step_filtered(intersect(lead_within_
 correlation_array(3,2,2) = mean(xy_deltatxy_step_filtered(intersect(trail_within_box_idx, left_within_box_idx),5));
 correlation_array(3,3,2) = mean(xy_deltatxy_step_filtered(intersect(trail_within_box_idx, right_within_box_idx),5));
 
-correlation_array
+correlation_array;
 
 %% Autocorrelations in time
 % find points to split molecules
@@ -832,12 +832,11 @@ for j = 1:length(molidx)-1
     % deltatxystep(ch2mask,[3:4,6:7]) = -deltatxystep(ch2mask,[3:4,6:7]);
     deltatxystep(ch2mask,3:4) = -deltatxystep(ch2mask,3:4);
     
-    
 
     % could also add a buffer for separation. i.e. if the sep is too small,
     % say 5nm, then let's just say it is the same sign as the previous.
     % This isn't doing anything though...weirdly
-    buffer_dist = 5;
+    buffer_dist = 0.;
     deltatxystep = [deltatxystep(1,:); deltatxystep]; %add first row for edge case
     too_small_idx = find(abs(deltatxystep(2:end,4)) < buffer_dist); too_small_idx = too_small_idx+1;
     for c = 1:length(too_small_idx) %have to do a for loop for iterative purposes
@@ -947,10 +946,10 @@ for j = 1:length(molidx)-1
 
 end
 
-fprintf("Channel distribution runs and not runs... \n")
-sum(sum(chtotsum(:,13:14)))
-sum(sum(chtot_notruns(:,13)))
-persistence_storage
+% fprintf("Channel distribution runs and not runs... \n")
+% sum(sum(chtotsum(:,13:14)))
+% sum(sum(chtot_notruns(:,13)))
+% persistence_storage
 
 
 %% figure to get the mean separation of x,y in runs
@@ -1046,7 +1045,7 @@ function [lambda_hat, run_lengths] = fit_exp_run_lengths(binary_array, type)
         warning('No runs of ones found.');
         return;
     end
-
+    
     % Fit exponential using MATLAB's fitdist
     pd = fitdist(run_lengths', 'Exponential');
     lambda_hat = 1 / pd.mu;  % rate parameter λ = 1/mean
