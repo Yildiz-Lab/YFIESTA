@@ -51,7 +51,7 @@ diffNext = handles.stepVector(indexT:end) - currX;
 nextStepIndex = find(diffNext, 1, 'first') + indexT - 1;
 
 % determine if a step is being added or deleted:
-addStep = strcmp(get(handles.AddDeleteStep, 'String'), 'Add');
+addStep = strcmp(get(handles.AddDeleteStep, 'String'), 'Delete');
 if addStep
     %disp('Adding')
     %this adds a step at indexT...

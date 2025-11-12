@@ -161,7 +161,7 @@ end
 
 % JS Edit for user preferences related to gridlines, user can change
 % if desired
-handles.GridDiv.String = '8 nm';
+handles.GridDiv.String = '16 nm';
 handles.display.gridLines = 1;
 set(handles.GridLines,'string','Remove GridLines');
 % End of JS Edit

@@ -335,12 +335,12 @@ hold off
 
 %% Dwell times binning and averaging, adapted from file to show the dwell times vs interhead separation
 
-
 % load from object associated with dependence on interhead separation
 
 % dwellspacing - XData
 % dwelltime - YData
 dwellspacing = xy_deltatxy_step(:,3)';
+% dwellspacing = sqrt(xy_deltatxy_step(:,3).^2 + xy_deltatxy_step(:,4).^2)'; 
 dwelltime = xy_deltatxy_step(:,5)';
 
 % bins = -44:8:60;
@@ -1141,7 +1141,7 @@ function [lambda_hat, run_lengths] = fit_exp_run_lengths(binary_array, type)
         warning('No runs of ones found.');
         return;
     end
-
+    
     % Fit exponential using MATLAB's fitdist
     pd = fitdist(run_lengths', 'Exponential')
     lambda_hat = 1 / pd.mu;  % rate parameter λ = 1/mean

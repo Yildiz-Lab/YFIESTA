@@ -1,6 +1,6 @@
 % Make sure to load Molecule
 
-mindistance = 300; %nm
+mindistance = 100; %nm
 
 distances = [];
 efo = [];

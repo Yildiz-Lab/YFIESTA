@@ -45,7 +45,7 @@ step_thresh = 7;
 avg_window = 15;
 minsteplength = round(7.0/0.67);
 maxnanratio = 0.75;
-% 
+
 % step_thresh = 5;
 % avg_window = 10;
 % minsteplength = round(7.0);
@@ -66,7 +66,7 @@ maxnanratio = 0.75;
 % we have to set this to delete to use the prebuilt AddRmvStepManually func
 % remember the old state so we can return it when we plot later
 oldstate = get(handles.AddDeleteStep,'String');
-set(handles.AddDeleteStep,'String','Delete');
+set(handles.AddDeleteStep,'String','Add');
 
 % Oh Joseph, you long padded yourself with NaNs
 PSD1Data_LongPadded = horzcat(nan(1,avg_window),handles.PSD1Data_Long,nan(1,avg_window));
