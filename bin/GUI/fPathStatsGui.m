@@ -687,6 +687,7 @@ PathStats=getappdata(hPathsStatsGui.fig,'PathStats');
 xy = PathStats(n).PathData(:,4:5);
 eco = PathStats(n).Results(:,8); %For MINFLUX visualization to make cropping easier
 
+
 % put in NaN for the blank spots. Shouldn't affect the fitting or any post
 % processing
 frames = PathStats(n).Results(:,1);

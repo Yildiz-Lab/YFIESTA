@@ -61,7 +61,7 @@ for j = 1:length(uid)
 
     MFMolecule(j).Name = ['Molecule ', ' ', num2str(uid(j))];
     MFMolecule(j).File = fname;
-    MFMolecule(j).Comments = ['MINFLUX Acq [efo=fwhm, eco=Amp]']; % Comments can also be applied as "MINFLUX Acquisition"
+    MFMolecule(j).Comments = ['MINFLUX Acq [efo=fwhm, eco=Amp, dcr=Position Estimate]']; % Comments can also be applied as "MINFLUX Acquisition"
     
 
     % Molecule.Results is the most important change
@@ -98,7 +98,7 @@ for j = 1:length(uid)
     MFMolecule(j).Results(:,6) = pdist2(MFMolecule(j).Results(:,3:4), MFMolecule(j).Results(1,3:4));
     MFMolecule(j).Results(:,7) = MFData.efo(idx(nni)); %this is now the efo
     MFMolecule(j).Results(:,8) = MFData.eco(idx(nni)); %this is now the eco
-    MFMolecule(j).Results(:,9) = nan(length(idx(nni)),1);
+    MFMolecule(j).Results(:,9) = MFData.dcr(idx(nni),1); %nan(length(idx(nni)),1);
     MFMolecule(j).Results(:,10) = zeros(length(idx(nni)),1);
     end
 

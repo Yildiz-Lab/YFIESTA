@@ -1,22 +1,31 @@
 % Make sure to load Molecule
 
-mindistance = 100; %nm
+mindistance = 200; %nm
 
 distances = [];
+t0 = [];
 efo = [];
 eco = [];
 
 for i = 1:length(Molecule)
     
     distances = [distances; Molecule(i).Results(end,6)];
+    t0 = [t0; Molecule(i).Results(1,2)];
     efo = [efo; Molecule(i).Results(end,7)];
     eco = [eco; Molecule(i).Results(end,8)];
 
 end
 
-distances = distances(distances > mindistance);
+figure()
+hold on
+scatter(t0, distances, 20, 'r', 'filled')
+
+t0 = t0(distances > mindistance);
 efo = efo(distances > mindistance);
 eco = eco(distances > mindistance);
+distances = distances(distances > mindistance);
+
+scatter(t0, distances, 20, 'k', 'filled')
 
 figure()
 subplot(1,2,1)
@@ -33,6 +42,7 @@ scatter(distances, eco)
 plot([min(distances);max(distances)], mean(eco)*ones(2,1),'r--')
 subplot(1,2,2)
 histogram(efo)
+
 
 
 %% precision error
