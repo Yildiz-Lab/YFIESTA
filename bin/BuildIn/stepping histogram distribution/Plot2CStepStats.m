@@ -198,10 +198,18 @@ set(ax4, 'YLim', [0,max([h3.Values, h4.Values])+10])
 %% MTBD separation
 
 figure()
-subplot(2,1,1)
-h1 = histogram(x_on(:,1),'BinWidth',2,'Normalization','count');
+subplot(2,2,1)
+h1 = histogram(x_on(:,1),'BinWidth',2,'Normalization','count','DisplayName', sprintf('N = %.0f \n mu = %.2f \n sigma = %.2f', length(x_on(:,1)), mean(x_on(:,1)), std(x_on(:,1))));
 % h1 = histogram(x_on(:,1),'BinWidth',2,'Normalization','pdf');
 title('Long-axis separation (nm)')
+legend()
+ax1=gca; set(ax1,'XLim',[-50,50]); % set(ax1,'XLim',long_axis_range);
+set(ax1, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+
+subplot(2,2,3)
+h1 = histogram(xy_deltatxy_step(:,3),'BinWidth',2,'Normalization','count','DisplayName', sprintf('N = %.0f \n mu = %.2f \n sigma = %.2f', length(xy_deltatxy_step(:,3)), mean(xy_deltatxy_step(:,3)), std(xy_deltatxy_step(:,3))));
+title('Long-axis separation (nm)')
+legend()
 ax1=gca; set(ax1,'XLim',[-50,50]); % set(ax1,'XLim',long_axis_range);
 set(ax1, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
 
@@ -228,9 +236,18 @@ set(ax1, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 
 %          'HorizontalAlignment', 'center');
 % end
 
-subplot(2,1,2)
-h2 = histogram(x_off(:,1),'BinWidth',2);
+subplot(2,2,2)
+h2 = histogram(x_off(:,1),'BinWidth',2,'DisplayName', sprintf('N = %.0f \n mu = %.2f \n sigma = %.2f', length(x_off(:,1)), mean(x_off(:,1)), std(x_off(:,1))));
 title('Short-axis separation (nm)')
+legend()
+ax2=gca; set(ax2,'XLim',[-50,50]); %set(ax2,'XLim',short_axis_range);
+set(ax2, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+
+
+subplot(2,2,4)
+h4 = histogram(xy_deltatxy_step(:,4),'BinWidth',2,'Normalization','count','DisplayName', sprintf('N = %.0f \n mu = %.2f \n sigma = %.2f', length(xy_deltatxy_step(:,4)), mean(xy_deltatxy_step(:,4)), std(xy_deltatxy_step(:,4))));
+title('Short-axis separation (nm)')
+legend()
 ax2=gca; set(ax2,'XLim',[-50,50]); %set(ax2,'XLim',short_axis_range);
 set(ax2, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
 
@@ -771,13 +788,16 @@ correlation_array = zeros(4,4,2); %First row percentage, second row mean rate
 
 % need to use the original data
 mask = ~isnan(xy_deltatxy_step(:,3) .* xy_deltatxy_step(:,4));
+% mask = ~isnan(xy_deltatxy_step(:,3) .* xy_deltatxy_step(:,6));
 xy_deltatxy_step_filtered = xy_deltatxy_step(mask,:); % just get rid of any steps with nan's
+% mask = ~isnan(xy_deltatxy_step_filtered(:,4) .* xy_deltatxy_step_filtered(:,7));
+% xy_deltatxy_step_filtered = xy_deltatxy_step_filtered(mask,:);
 idx_onsteps = ~isnan(xy_deltatxy_step_filtered(:,6));
 idx_offsteps = ~isnan(xy_deltatxy_step_filtered(:,7));
 
 figure()
 s = sqrt(xy_deltatxy_step_filtered(:,3).^2 + xy_deltatxy_step_filtered(:,4).^2);
-histogram(s, 'DisplayName', sprintf('mu = %.2f \n sigma = %.2f', mean(s), std(s)))
+histogram(s, 'DisplayName', sprintf('N = %.0f \n mu = %.2f \n sigma = %.2f', length(s), mean(s), std(s)))
 legend()
 
 ax = gca;

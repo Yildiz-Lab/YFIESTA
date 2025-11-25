@@ -23,11 +23,11 @@ shortStepVector = stepVector;
     last = 1;
     for (i = 1:limit)
          if (changepoints(i) == 1)
-             shortStepVector(last:i-1) = nanmean(handles.currentPlotPSD_Short(last:i-1));
+             shortStepVector(last:i-1) = mean(handles.currentPlotPSD_Short(last:i-1),'omitnan');
              last = i;
          end
          if (i == limit)
-             shortStepVector(last:limit) = nanmean(handles.currentPlotPSD_Short(last:limit));
+             shortStepVector(last:limit) = mean(handles.currentPlotPSD_Short(last:limit),'omitnan');
          end
     end
 

@@ -271,9 +271,9 @@ if isempty(h)
 
     hDataGui.tFrameValue = uicontrol('Parent',hDataGui.fig,'Units','normalized','FontSize',10,'HorizontalAlignment','right',...
                                   'Position',[0.9 0.96 0.05 0.02],'String','','Style','text','Tag','tFrameValue','BackgroundColor',c,'ForegroundColor',ctext);
-
-    j = findjobj(hDataGui.fig,'class','label');
-    set(j,'VerticalAlignment',1);
+    
+    % j = findjobj(hDataGui.fig,'class','label'); %Commented out for 2025b f
+    % set(j,'VerticalAlignment',1);
     set(hDataGui.fig, 'WindowButtonMotionFcn', @UpdateCursor);
     set(hDataGui.fig, 'WindowButtonUpFcn',@ButtonUp);
     set(hDataGui.fig, 'WindowButtonDownFcn',@ButtonDown);
