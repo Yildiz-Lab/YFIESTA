@@ -35,7 +35,9 @@ switch (func)
     case 'Undo'
         Undo(varargin{1}); 
     case 'Split'
-        Split(varargin{1});          
+        Split(varargin{1}); 
+    case 'FIONA'
+        FIONA(varargin{1});
     case 'SelectAll'
         SelectAll(varargin{1});          
     case 'Correction'
@@ -258,16 +260,19 @@ if isempty(h)
                              'Position',[0.235 0.51 0.1 0.025],'String','Delete points','Tag','bDelete','BackgroundColor',cbutton,'ForegroundColor',ctext);
                          
     hDataGui.bSplit = uicontrol('Parent',hDataGui.fig,'Units','normalized','Callback','fDataGui(''Split'',getappdata(0,''hDataGui''));',...
-                             'Position',[0.35 0.51 0.2 0.025],'String','Create new track','Tag','bSplit','BackgroundColor',cbutton,'ForegroundColor',ctext);
+                             'Position',[0.35 0.51 0.15 0.025],'String','Create new track','Tag','bSplit','BackgroundColor',cbutton,'ForegroundColor',ctext);
+
+    hDataGui.bFIONA = uicontrol('Parent',hDataGui.fig,'Units','normalized','Callback','fDataGui(''FIONA'',getappdata(0,''hDataGui''));',...
+                             'Position',[0.51 0.51 0.15 0.025],'String','Step Track (FIONA)','Tag','bFIONA','BackgroundColor',cbutton,'ForegroundColor',ctext);
    
     hDataGui.bInsertPoints = uicontrol('Parent',hDataGui.fig,'Units','normalized','Callback','fDataGui(''FitMissingPoints'',getappdata(0,''hDataGui''));',...
-                             'Position',[0.565 0.51 0.2 0.025],'String','Track missing frames','Tag','bInsertPoints','BackgroundColor',cbutton,'ForegroundColor',ctext);
+                             'Position',[0.67 0.51 0.15 0.025],'String','Track missing frames','Tag','bInsertPoints','BackgroundColor',cbutton,'ForegroundColor',ctext);
                          
     hDataGui.bSwitch = uicontrol('Parent',hDataGui.fig,'Units','normalized','Callback','fDataGui(''Switch'',getappdata(0,''hDataGui''));',...
-                                'Position',[0.78 0.51 0.2 0.025],'String','Switch MT orientation','Tag','bDelete','BackgroundColor',cbutton,'ForegroundColor',ctext);
+                                'Position',[0.83 0.51 0.15 0.025],'String','Switch MT orientation','Tag','bDelete','BackgroundColor',cbutton,'ForegroundColor',ctext);
                             
     hDataGui.tFrame = uicontrol('Parent',hDataGui.fig,'Units','normalized','FontSize',10,'HorizontalAlignment','left',...
-                             'Position',[0.85 0.96 0.05 0.02],'String','Frame:','Style','text','Tag','tFrame','BackgroundColor',c,'ForegroundColor',ctext);
+                             'Position',[0.81 0.96 0.05 0.02],'String','Frame:','Style','text','Tag','tFrame','BackgroundColor',c,'ForegroundColor',ctext);
 
     hDataGui.tFrameValue = uicontrol('Parent',hDataGui.fig,'Units','normalized','FontSize',10,'HorizontalAlignment','right',...
                                   'Position',[0.9 0.96 0.05 0.02],'String','','Style','text','Tag','tFrameValue','BackgroundColor',c,'ForegroundColor',ctext);
@@ -1806,6 +1811,262 @@ if length(answer)>1
         Create(hDataGui.Type,hDataGui.idx);
     end
 end
+
+%% JS Edit 2025/11/25 to directly plug FIONA into fDataGui after PathStats has been run
+% Copied and modified from FIONA function in fPathStatsGui
+function FIONA(hDataGui)
+global Config;
+global Molecule;
+
+minj = hDataGui.idx;
+
+if isempty(Molecule(minj).PathData)
+    fprintf("No path data found, please run path statistics to achieve path data")
+    return
+end
+xy = Molecule(minj).PathData(:,4:5);
+
+% JS Edit 2022/10/05
+% Color your molecule 
+Molecule(minj).Color = [0 1 1];
+
+
+% Store in a separate folder for safekeeping
+FFolderName = fullfile(Config.Directory{1}, Config.StackName{1}(1:end-6));
+if ~isfolder(FFolderName)
+    mkdir(FFolderName);
+end
+fname = fullfile(FFolderName,Molecule(minj).Name(10:end));
+
+% JS Edit 2022/05/29 to make FIONA
+% put in NaN for the blank spots. Shouldn't affect the fitting or any post
+% processing
+% Update: This is because we take any Nan's and interpolate for purposes of
+% the SIC using the previous 3 data points
+frames = Molecule(minj).Results(:,1);
+frame1 = frames(1); framef = frames(end);
+xynew = nan(framef-frame1+1,2);
+for i = 1:size(xy,1)
+    xynew(frames(i)-frame1+1,:) = xy(i,:);
+end
+
+
+% Currently comment out all plotNeighbors stuff, don't quite see it
+% implemented yet in fDataGui
+
+% plotNeighbors = get(hPathsStatsGui.cNeighbor,'Value');
+% if plotNeighbors == 1
+%     % JS Edit 2023/01/31
+%     % we should extend the path and more accurately plot the neighbors onto the
+%     % x,y coordinates of the channel we have determined
+% 
+%     % JS Edit 2024/11/27
+%     if isfield(Config,'NeighborStepsOpts') %presaved options load into GUI
+%         prevopts = Config.NeighborStepsOpts;
+%         options = fNeighborStepOptions(prevopts);
+%     else
+%         options = fNeighborStepOptions();
+%     end
+% 
+% 
+%     % first we need to find the least squares path if it isn't empty, which
+%     % usually is cubic which may cause problems
+%     if (PathStats(n).AverageDis == 0) || (PathStats(n).AverageDis == -5) 
+%         % use path data for the saved version
+%         [~,resnorm1] = PathFitLinear(PathStats(n).PathData(:,1:3));
+%         [~,resnorm2] = PathFitCurved(PathStats(n).PathData(:,1:3),3);
+%         [~,resnorm3] = PathFitCurved(PathStats(n).PathData(:,1:3),4);
+%         if all(resnorm1*1.1<[resnorm2 resnorm3])
+%             PathStats(n).AverageDis = -1;
+%         elseif resnorm2*1.1<resnorm3
+%             PathStats(n).AverageDis = -2;
+%         else
+%             PathStats(n).AverageDis = -3;
+%         end
+%     end
+% 
+%     % now we need to do something to extend the path to make it easier for
+%     % the neighbors to find
+%     % first, make an interpolation on latent variable so that it approximately goes a nm (we'll stick with 2d for now)
+%     % path_extend = 200; %nm %now a GUI option
+%     path_extend = [options.XB(2), options.XA(2)];
+%     pt_res = options.InterpRes; %0.2-1.0 nm %distance in nm between each point within and extended
+%     neighbor_exist_thresh = options.ExistThresh; %0.7 s %now a GUI param
+% 
+%     % JS Edit 2024/11/30 sort the PathData to make it easier to interpolate
+%     [~,sort_idx] = sort(PathStats(n).PathData(:,4));
+%     SortedPathData = PathStats(n).PathData(sort_idx,1:4);
+% 
+%     % interpolate between each data point by pt_res nm %make GUI option
+%     Delta = SortedPathData(2:end,:)-SortedPathData(1:end-1,:);
+% 
+%     % InterpResults will store the data we will use to then find closest
+%     % points for neighbors
+%     InterpResults = SortedPathData(1,1:3); % initialize with first point
+% 
+%     for i = 1:size(Delta,1) % loop through each spot to linearly interpolate between each successive point.
+%         dstep = Delta(i,4); % dstep makes distance in on-axis direction of each step
+% 
+%         if dstep < pt_res
+%             % dstep
+%             xi = SortedPathData(i,1);
+%             yi = SortedPathData(i,2);
+%             zi = SortedPathData(i,3);
+%         else
+%             tot_pts = round(dstep/pt_res)+1; % hence the number of points to interpolate between each spot plus one
+%             step = Delta(i,1:3)/tot_pts; % ds placement of each interpolation point, approximately 1 nm per step
+%             % sqrt(sum(step.^2,2,'omitnan'))
+%             xi = SortedPathData(i,1)*ones(1,tot_pts) + step(1)*(0:tot_pts-1); %include the original point as well
+%             yi = SortedPathData(i,2)*ones(1,tot_pts) + step(2)*(0:tot_pts-1);
+%             zi = SortedPathData(i,3)*ones(1,tot_pts) + step(3)*(0:tot_pts-1);
+%         end
+%         InterpResults = [InterpResults; xi' yi' zi'];
+%     end
+% 
+%     if options.ShowPathExt
+%         % View the InterpResults with just the trace if one ever wants to see the line
+%         figure()
+%         hold on
+%         scatter(InterpResults(:,1),InterpResults(:,2),'DisplayName',"Interpolated Points")
+%     end
+% 
+%     % Let's sort InterpResults as to not cause added confusion
+% 
+%     % Now we want to do the ends, a linear extrapolation at the end
+%     % this isn't as good for high curves but deals with edge cases
+% 
+%     % find index that gives us an extension equivalent to our expectation
+%     mval = min(abs(((InterpResults(:,1)-InterpResults(1,1)).^2 + (InterpResults(:,2)-InterpResults(1,2)).^2)-path_extend(1)^2));
+%     bidx2 = find(abs(((InterpResults(:,1)-InterpResults(1,1)).^2 + (InterpResults(:,2)-InterpResults(1,2)).^2)-path_extend(1)^2) == mval);
+%     % abs(((InterpResults(:,1)-InterpResults(end,1)).^2 + (InterpResults(:,2)-InterpResults(end,2)).^2)-path_extend^2)
+%     mval = min(abs(((InterpResults(:,1)-InterpResults(end,1)).^2 + (InterpResults(:,2)-InterpResults(end,2)).^2)-path_extend(2)^2));
+%     eidx2 = find(abs(((InterpResults(:,1)-InterpResults(end,1)).^2 + (InterpResults(:,2)-InterpResults(end,2)).^2)-path_extend(2)^2) == mval);
+% 
+%     % determine average slope
+%     % beginmdl_coef = polyfit(InterpResults(1:bidx,1), InterpResults(1:bidx,2), 1);
+%     % endmdl_coef = polyfit(InterpResults(eidx:end-eidx,1), InterpResults(eidx:end-eidx,2), 1);
+%     dx = mean(InterpResults(2:bidx2,1) - InterpResults(1:bidx2-1,1));
+%     dy = mean(InterpResults(2:bidx2,2) - InterpResults(1:bidx2-1,2));
+%     slope = mean((InterpResults(2:bidx2,2) - InterpResults(1:bidx2-1,2)) ./ (InterpResults(2:bidx2,1) - InterpResults(1:bidx2-1,1)), 'omitnan');
+% 
+%     % Now that we have the slope determined, let's make the extrapolation
+%     % at the resolution we want
+% 
+%     % For the beginning
+%     %      m                            * x                               + b
+%     ext_pts = round(path_extend(1)/pt_res);
+%     xb = -pt_res * sign(dx)*cos(atan(slope)) * (1:ext_pts); xb = xb + InterpResults(1,1)*ones(1,ext_pts);
+%     yb = -pt_res * sign(dy)*sin(atan(slope)) * (1:ext_pts); yb = yb + InterpResults(1,2)*ones(1,ext_pts);
+%     zb = nan(ext_pts,1); % will need to figure out z-axis later if ever
+%     InterpResults = [xb', yb', zb; InterpResults];
+% 
+%     % For the end
+%     dx = mean(InterpResults(end-eidx2+1:end,1) - InterpResults(end-eidx2:end-1,1));
+%     dy = mean(InterpResults(end-eidx2+1:end,2) - InterpResults(end-eidx2:end-1,2));
+%     slope = mean((InterpResults(end-eidx2+1:end,2) - InterpResults(end-eidx2:end-1,2)) ./ (InterpResults(end-eidx2+1:end,1) - InterpResults(end-eidx2:end-1,1)), 'omitnan');
+% 
+%     ext_pts = round(path_extend(2)/pt_res);
+%     xe = pt_res * sign(dx)*cos(atan(slope)) * (1:ext_pts); xe = xe + InterpResults(end,1)*ones(1,ext_pts);
+%     ye = pt_res * sign(dy)*sin(atan(slope)) * (1:ext_pts); ye = ye + InterpResults(end,2)*ones(1,ext_pts);
+%     ze = nan(ext_pts,1); % will need to figure out z-axis later if ever
+%     InterpResults = [InterpResults; xe', ye', ze];
+% 
+%     % Interpolated Points added, uncomment to add to figure
+%     if options.ShowPathExt
+%         hold on
+%         scatter(xb', yb', 'r','DisplayName','Beginning Extrapolated Points')
+%         scatter(xe', ye', 'k','DisplayName','Ending Extrapolated Points')
+%         legend()
+%     end
+% 
+%     % then, make a path with interpolation to place the neighbors
+%     if PathStats(n).AverageDis == -1
+%         [param1,~] = PathFitLinear(PathStats(n).Results(:,3:5));
+%         InterpPath = EvalLinearPath(param1,InterpResults);
+%     elseif PathStats(n).AverageDis == -2
+%         [param2,~] = PathFitCurved(PathStats(n).Results(:,3:5),3);
+%         InterpPath = EvalCurvedPath(param2,InterpResults);
+%     elseif PathStats(n).AverageDis == -3
+%         [param3,~] = PathFitCurved(PathStats(n).Results(:,3:5),4);
+%         InterpPath = EvalCurvedPath(param3,InterpResults);
+%     else % can't extend path, fit is individual
+%         InterpPath = PathStats(n).PathData;
+%     end
+% 
+%     if PathStats(n).Channel > 1
+%         neighbors = findNeighbors(InterpPath(:,1:2), options, 1);
+%     else
+%         neighbors = findNeighbors(InterpPath(:,1:2), options);
+%     end
+%     neighbor_txy = cell(length(neighbors),1);
+% 
+%     % Molecule(minj).Name
+%     % Molecule(minj).Results(1,2)
+%     % Molecule(minj).Results(end,2)
+% 
+%     for m = length(neighbors):-1:1
+%         Res = Molecule(neighbors(m)).Results;
+%         % Molecule(neighbors(m)).Name
+%         neighbor_footprint = [Res(1,2) - options.eExcludeTime, Res(end,2) + options.eExcludeTime];
+%         % log1 = all( neighbor_footprint < Molecule(minj).Results(1,2))
+%         % log2 = all( neighbor_footprint > Molecule(minj).Results(end,2))
+%         % log1 || log2
+%         % if size(Res,1) < neighbor_exist_thresh
+%         %     neighbor_txy(m) = [];
+%         if Res(end,2)-Res(1,2) < neighbor_exist_thresh % time is too short
+%             neighbor_txy(m) = []; %time is too short
+%          %   Exclude Time       &&         (  completely before || completely after  )
+%         elseif options.ExcludeTime && ( all( neighbor_footprint < Molecule(minj).Results(1,2)) ||  all( neighbor_footprint > Molecule(minj).Results(end,2)) )
+%             neighbor_txy(m) = []; %our neighbor is too far before the molecule or too far after
+%         else
+%         % txy_reorient = nan( Res(end,1)-Res(1,1) , 3);
+%         txy_reorient = nan( Res(end,1)-Res(1,1) , 5);
+%         B = [PathStats(n).Results(end,3) - PathStats(n).Results(1,3), PathStats(n).Results(end,4) - PathStats(n).Results(1,4),0]; %for cross product
+%         for p = 1:size(Res,1)
+% %             % Plot on direct path of molecule
+% %             [npos, nidx] = min( sqrt( (PathStats(n).PathData(:,1) - Res(p,3)).^2 + (PathStats(n).PathData(:,2) - Res(p,4)).^2) );
+% %             mpos = norm (PathStats(n).PathData(nidx,1:2) - PathStats(n).PathData(1,1:2));
+%             % Plot on interpolated path
+%             [npos, nidx] = min( sqrt( (InterpPath(:,1) - Res(p,3)).^2 + (InterpPath(:,2) - Res(p,4)).^2) );
+%             mpos = norm (InterpPath(nidx,1:2) - PathStats(n).PathData(1,1:2));
+% 
+%             % to get correct sign off axis, use a cross product on vectors
+%             % for overall direction
+%             C = [Res(p,3) - InterpPath(nidx,1), Res(p,4) - InterpPath(nidx,2),0]; % to nearest point
+%             D = [Res(p,3) - PathStats(n).Results(1,3), Res(p,4) - PathStats(n).Results(1,4),0]; % to beginning
+%             BXC = cross(B,C); npos = npos * sign(BXC(3));
+%             theta = acos(dot(B,D)/norm(B)/norm(D)); mpos = mpos * sign(cos(theta));
+% 
+%             % txy_reorient(Res(p,1)-Res(1,1)+1,:) = [Res(p,1) - frame1 + 1, mpos, npos];
+%             % JS Edit 2024/11/27 to get the molecule and molecule time data
+%             % saved
+%             txy_reorient(Res(p,1)-Res(1,1)+1,:) = [Res(p,1) - frame1 + 1, mpos, npos, str2double(Molecule(neighbors(m)).Name(10:end)), Res(p,2)];
+%         end
+%         neighbor_txy{m,1} = txy_reorient;
+% 
+%         if options.GenerateNeighbors
+%             fGenerateFIONA4Neighbors(minj, neighbors(m), PathStats(n), txy_reorient, InterpPath, fname, options)
+%         end
+% 
+%         end
+% 
+%     end
+% else
+    neighbor_txy = {}; %Note that neighbors could contain other statistics if wanted to be plotted...
+% end
+
+% New way to save
+if ~isfile(strcat(fname,'_fiona.mat')) % Don't overwrite existing file
+data.xy = xynew;
+data.yx = xynew(:,[2,1]);
+data.neighbors = neighbor_txy;
+data.time = Molecule(minj).Results(:,2);
+save(strcat(fname,'_fiona.mat'),'data');
+end
+
+% at the end run FIONAviewer
+FIONAviewer(fullfile(FFolderName,strcat(Molecule(minj).Name(10:end),'_fiona.mat')))
+
 
 
 % 

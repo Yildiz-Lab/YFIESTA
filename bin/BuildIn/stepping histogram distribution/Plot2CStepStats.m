@@ -51,6 +51,7 @@ y_fit = polyval(coeffs, x);  % Evaluate polynomial at original x values
 SS_total = sum((y - mean(y)).^2);  % Total sum of squares
 SS_residual = sum((y - y_fit).^2);  % Residual sum of squares
 R2 = 1 - (SS_residual / SS_total);  % R-squared formula
+PearsonR = corrcoef(x,y);
 
 x_on = [x, y]; %assign variable for later use
 
@@ -61,7 +62,7 @@ subplot(3,1,1)
 scatter(x, y, 50, 'k', 'filled')
 hold on;
 plot(x, y_fit, 'r-', 'LineWidth', 2, ...
-    'DisplayName', sprintf('Fit: y = %.2fx + %.2f\nR^2 = %.3f', m, b, R2)); % Line of best fit
+    'DisplayName', sprintf('Fit: y = %.2fx + %.2f\nR^2 = %.3f\n r= %.3f', m, b, R2, PearsonR(1,2))); % Line of best fit
 legend('Location', 'best');  % Display legend
 hold off;
 ylabel('\Delta long-axis (nm)')
@@ -85,6 +86,7 @@ y_fit = polyval(coeffs, x);  % Evaluate polynomial at original x values
 SS_total = sum((y - mean(y)).^2);  % Total sum of squares
 SS_residual = sum((y - y_fit).^2);  % Residual sum of squares
 R2 = 1 - (SS_residual / SS_total);  % R-squared formula
+PearsonR = corrcoef(x,y);
 
 x_off = [x, y]; %assign variable for later use
 
@@ -101,7 +103,7 @@ subplot(3,1,2)
 scatter(xy_deltatxy_step(:,4), xy_deltatxy_step(:,7), 50, 'k', 'filled')
 hold on;
 plot(x, y_fit, 'r-', 'LineWidth', 2, ...
-    'DisplayName', sprintf('Fit: y = %.2fx + %.2f\nR^2 = %.3f', m, b, R2)); % Line of best fit
+    'DisplayName', sprintf('Fit: y = %.2fx + %.2f\nR^2 = %.3f\n r= %.3f', m, b, R2, PearsonR(1,2))); % Line of best fit
 legend('Location', 'best');  % Display legend
 hold off;
 ylabel('\Delta short-axis (nm)')
@@ -1090,7 +1092,7 @@ for l = 1:size(autocorr{1},2)
     try
         x = autocorr{2};
         x = x(:,l);
-        [tau, run_lengths] = fit_exp_run_lengths(x(~isnan(x)), 1);
+        [mu, muci, run_lengths] = fit_exp_run_lengths(x(~isnan(x)), 1);
         % fprintf(strcat(labels{l}, " tau (steps) : ", num2str(round(1/tau,2)), "\n"))
         % plot autocorr
         % plot(0:length(autocorr)-1,g,'DisplayName', strcat(labels{l}, " \tau : ", num2str(round(1/tau,2)), " (steps)"))
@@ -1102,10 +1104,10 @@ for l = 1:size(autocorr{1},2)
         % 3. Compute the empirical probabilities
         n = length(sorted_runs); % Total number of data points
         ecdf_runs = (1:n)' / n; % The empirical probability for the i-th sorted data point is i/n
-        stairs(sorted_runs, 1-ecdf_runs,'DisplayName', strcat(labels{l}, " \tau : ", num2str(round(1/tau,2)), " (steps)"))
+        stairs(sorted_runs, 1-ecdf_runs,'DisplayName', strcat(labels{l}, " \tau : ", num2str(round(mu,2)), "\pm" , num2str(round(muci,1)), " (steps)"))
         % also plot fit
         xmdl = 0:0.1:max(sorted_runs)+4;
-        plot(xmdl, exp(-xmdl*tau))
+        plot(xmdl, exp(-xmdl/mu))
         % histogram(run_lengths,'DisplayName', strcat(labels{l}, " \tau : ", num2str(round(1/tau,2)), " (steps)"))
     catch
         plot(0:length(autocorr)-1,g,'DisplayName',labels{l})
@@ -1127,7 +1129,7 @@ set(ax, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', ...
 %         nll = nllFunc(p);
 %     end
 
-function [lambda_hat, run_lengths] = fit_exp_run_lengths(binary_array, type)
+function [k_hat, kci, run_lengths] = fit_exp_run_lengths(binary_array, type)
     % fit_exp_run_lengths: Fit an exponential distribution to lengths of
     % consecutive type
     % Input:
@@ -1157,14 +1159,17 @@ function [lambda_hat, run_lengths] = fit_exp_run_lengths(binary_array, type)
     % fprintf(strcat("RUN LENGTHS ", num2str(mean(run_lengths)), '\n'))
 
     if isempty(run_lengths)
-        lambda_hat = NaN;
+        k_hat = NaN;
         warning('No runs of ones found.');
         return;
     end
     
     % Fit exponential using MATLAB's fitdist
-    pd = fitdist(run_lengths', 'Exponential')
-    lambda_hat = 1 / pd.mu;  % rate parameter λ = 1/mean
+    pd = fitdist(run_lengths', 'Exponential');
+    k_hat = pd.mu;  % rate parameter λ = 1/mean
+
+    kci = paramci(pd);
+    kci = kci(2)-k_hat;
 
     % Optional: Plot histogram and fitted PDF
     % figure;
