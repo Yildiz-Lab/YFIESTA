@@ -1,1705 +1,590 @@
-%% 
-function varargout = FIONAviewer(varargin)
-% m-file file for FIONAviewer.fig
-%
-%   Written by Vladislav Belyy
-%   Last updated on 03/08/2012 
-%
-% See also: GUIDE, GUIDATA, GUIHANDLES
+function app = FIONAviewer(varargin)
+    % Modern UIFIGURE-based recreation of the original FIONAviewer GUI
+    % Works in MATLAB R2020+ (tested R2023, R2024)
+    
+    % make sure to add dependencies
+    addpath('SubFns/')
 
-% JS 2023/12/31
-% IF HAVING TROUBLE VIEWING WHOLE GUI IN WINDOW, TRY UNCOMMENTING 
-% JS EDIT LAPTOP OPTIONS (ln 47, ln 119) AND ADJUSTING FOR YOUR MACHINE
+    app.fig = uifigure('Name','FIONAviewer', ...
+                       'Position',[100 100 1400 800]);
+    
+    %% Initialize all necessary fields (in their subfields if possible)
+    % We will use subcategorization
+    % app.LeftPanel
+    app.LeftPanel = [];
+        app.LeftPanelFields.StepsFilename = [];
+        app.LeftPanelFields.BtnLoadMat = [];
+        app.LeftPanelFields.BtnLoadFile = [];
+        app.LeftPanelFields.BtnPrev = [];
+        app.LeftPanelFields.BtnNext = [];
+        app.LeftPanelFields.BtnSave = [];
+    
+    app.FitPanel = [];
+    % app.EditNumSteps = [];
+    % app.EditNoise = [];
+    % app.EditMinDelta = [];
+        app.FitPanelFields.DropFitAxis = [];
+        app.FitPanelFields.BtnFit = [];
+        app.FitPanelFields.BtnAdd = [];
+        app.FitPanelFields.BtnDelete = [];
+        app.FitPanelFields.MeanSampleWindow = [];
+        app.FitPanelFields.MinDeltaChange = [];
+        app.FitPanelFields.BtnAutoAlign = [];
+    % app.PanI = panInteraction; %Not functional will try again later
+    % app.ZoomI = zoomInteraction;
+    
+    app.FilterPanel = [];
+        app.FilterPanelFields.FilterGroup = [];
+        app.FilterPanelFields.BtnFilter = [];
+        app.FilterPanelFields.FilterWindow = [];
+        app.FilterPanelFields.FilterOrder = [];
+        app.FilterPanelFields.FilterLambdaPenalty = [];
+
+    app.DisplayPanel = [];
+        app.DisplayPanelFields.DropLineStyle = [];
+        app.DisplayPanelFields.BtnRefresh = [];
+        app.DisplayPanelFields.BtnZoomOut = [];
+        app.DisplayPanelFields.ChkGrid = [];
+
+    % app.StepPanel = [];
+    % app.EditStart = [];
+    % app.EditEnd = [];
+    % app.EditValue = [];
+    % app.BtnFitStepPanel2 = []; % renamed to avoid overwriting
+    % app.BtnAddFit = [];
+    % Any data fields used later
+    app.Data.t = [];
+    app.Data.PSD1Data_Long = [];
+    app.Data.PSD1Data_Short = [];
+    app.Data.stepVector = [];
+    app.Data.shortstepVector = [];
+    app.Data.FilterData = [];
+    app.Data.FilteredFlag = 0;
+    app.time_bool = 0;
+    app.display = struct();
+    
+    % this is the storage space for what we will eventually export in "Save"
+    app.data = [];
+
+    app.FileName = [];
+    app.FilePath = [];
+
+    %% ---------------------------
+    %  AXES (Main Plot Area)
+    % ----------------------------
+    app.AxMain = uiaxes(app.fig, ...
+        'Position',[350 100 1000 650], ...
+        'Tag','MainAxes');
+    title(app.AxMain,'');
+    xlabel(app.AxMain,'frame');
+    ylabel(app.AxMain,'position (nm)');
+    grid(app.AxMain,'on');
+    set(app.AxMain, 'FontName', 'Arial', 'FontSize', 10, 'TickDir', 'out', 'LineWidth', 1, 'Box', 'off', 'XColor', 'k', 'YColor', 'k');
+
+    %% -------------------------------------------
+    % LEFT PANEL — File Loading + Status
+    % -------------------------------------------
+    app.LeftPanel = uipanel(app.fig, ...
+        'Title','Current File', ...
+        'Position',[30 530 300 220]);
+
+    app.LeftPanelFields.StepsFilename = uilabel(app.LeftPanel, ...
+        'Position',[20 170 250 30], ...
+        'Text','No file loaded');
+
+    app.LeftPanelFields.BtnLoadMat = uibutton(app.LeftPanel, ...
+        'Position',[20 135 250 35], ...
+        'Text','Load New .mat File', ...
+        'ButtonPushedFcn',@(src,evt)onLoadMat(app, []));
+
+    app.LeftPanelFields.BtnLoadFile = uibutton(app.LeftPanel, ...
+        'Position',[20 95 250 35], ...
+        'Text','Load New File?', ...
+        'ButtonPushedFcn',@(src,evt)onLoadNew(app));
+
+    app.LeftPanelFields.BtnPrev = uibutton(app.LeftPanel, ...
+        'Position',[20 50 120 35], ...
+        'Text','←  Previous', ...
+        'ButtonPushedFcn',@(src,evt)onPrev(app, src));
+
+    app.LeftPanelFields.BtnNext = uibutton(app.LeftPanel, ...
+        'Position',[150 50 120 35], ...
+        'Text','Next  →', ...
+        'ButtonPushedFcn',@(src,evt)onNext(app, src));
+
+    app.LeftPanelFields.BtnExport = uibutton(app.LeftPanel, ...
+        'Position',[20 10 120 35], ...
+        'Text','Export Figure', ...
+        'ButtonPushedFcn', @(src,event) onExportFigure(app));
+
+    app.LeftPanelFields.BtnSave = uibutton(app.LeftPanel, ...
+        'Position',[150 10 120 35], ...
+        'Text','Save', ...
+        'ButtonPushedFcn',@(src,evt)onSave(app));
+
+    %% -------------------------------------------
+    % FIT STEPS PANEL (Left-mid)
+    % -------------------------------------------
+    app.FitPanel = uipanel(app.fig, ...
+        'Title','Fit steps', ...
+        'Position',[20 390 300 120]);
+
+    % uilabel(app.FitPanel,'Position',[10 120 150 20],'Text','Max # of steps:');
+    % app.EditNumSteps = uieditfield(app.FitPanel,'numeric', ...
+    %     'Position',[160 120 50 22], ...
+    %     'Value',20);
+    % 
+    % uilabel(app.FitPanel,'Position',[10 90 150 20],'Text','Expected sq noise:');
+    % app.EditNoise = uieditfield(app.FitPanel,'numeric', ...
+    %     'Position',[160 90 50 22], ...
+    %     'Value',2);
+    % 
+    % uilabel(app.FitPanel,'Position',[10 60 150 20],'Text','Min DeltaQ:');
+    % app.EditMinDelta = uieditfield(app.FitPanel,'numeric', ...
+    %     'Position',[160 60 50 22], ...
+    %     'Value',2);
+
+    uilabel(app.FitPanel,'Position',[10 75 60 20],'Text','Fit Axis:');
+    app.FitPanelFields.DropFitAxis = uidropdown(app.FitPanel, ...
+        'Position',[10 55 120 22], ...
+        'Items',{'Long-axis','Short-axis'}, ...
+        'Value','Long-axis');
+
+    app.FitPanelFields.BtnFit = uibutton(app.FitPanel, ...
+        'Position',[10 15 120 30], ...
+        'Text','Fit', ...
+        'ButtonPushedFcn',@(src,evt)onFit(app));
+    
+    app.FitPanelFields.BtnAdd = uibutton(app.FitPanel, ...
+        'Position',[150 15 60 30], ...
+        'Text','Add', ...
+        'ButtonPushedFcn',@(src,evt)onAdd(app, src));
+    app.FitPanelFields.BtnAdd.UserData.pressed = false;
+    app.FitPanelFields.BtnAdd.BackgroundColor = [1 1 1];
+    
+    app.FitPanelFields.BtnDelete = uibutton(app.FitPanel, ...
+        'Position',[220 15 60 30], ...
+        'Text','Delete', ...
+        'ButtonPushedFcn',@(src,evt)onDelete(app, src));
+    app.FitPanelFields.BtnDelete.UserData.pressed = false;
+    app.FitPanelFields.BtnDelete.BackgroundColor = [1 1 1];
 
 
-% Last Modified by GUIDE v2.5 14-Jan-2013 14:47:04
-% Begin initialization code - DO NOT EDIT
-gui_Singleton = 1;
-gui_State = struct('gui_Name',       mfilename, ...
-    'gui_Singleton',  gui_Singleton, ...
-    'gui_OpeningFcn', @FIONAviewer_OpeningFcn, ...
-    'gui_OutputFcn',  @FIONAviewer_OutputFcn, ...
-    'gui_LayoutFcn',  [] , ...
-    'gui_Callback',   []);
-if nargin && ischar(varargin{1})
-    gui_State.gui_Callback = str2func(varargin{1});
-end
+    app.FitPanelFields.BtnAutoAlign = uibutton(app.FitPanel, ...
+    'Position',[220 55 70 30], ...
+    'Text','Align', ...
+    'ButtonPushedFcn',@(src,evt)onAlign(app));
+    
+    % uilabel(app.FitPanel,'Position',[200 50 40 30],'Text','Window:');
+    % app.FitPanelFields.MeanSampleWindow = uieditfield(app.FitPanel,'numeric', ...
+    %     'Position',[150 55 50 25],'Value', 10);
+    
+    % uilabel(app.FitPanel,'Position',[140 75 80 30],'Text','Min Change:');
+    % app.FitPanelFields.MinDeltaChange = uieditfield(app.FitPanel,'numeric', ...
+    %     'Position',[150 55 60 25],'Value', 4);
+    
+    
+    %% MANUAL CLICKS
+    app.AxMain.ButtonDownFcn = @(src, event) AxMainClick(app, src, event);
+    % HOTKEYS
+    app.fig.WindowKeyPressFcn = @(fig,event) onKeyPress(app, event);
+    % app.AxMain.ButtonDownFcn = @(src,event) uifigureFocus(app);
 
-if nargout
-    [varargout{1:nargout}] = gui_mainfcn(gui_State, varargin{:});
-else
-    gui_mainfcn(gui_State, varargin{:});
-end
-% End initialization code - DO NOT EDIT
+    %% -------------------------------------------
+    % FILTER PANEL (Bottom-left)
+    % -------------------------------------------
+    app.FilterPanel = uipanel(app.fig, ...
+        'Title','Filter Method', ...
+        'Position',[20 50 300 180]);
 
+    app.FilterPanelFields.FilterGroup = uibuttongroup(app.FilterPanel, ...
+        'Position',[10 50 280 100]);
 
-% --- Executes just before FIONAviewer is made visible.
-function FIONAviewer_OpeningFcn(hObject, eventdata, handles, varargin) %#ok
-% This function has no output args, see OutputFcn.
-% hObject    handle to figure
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-% varargin   command line arguments to FIONAviewer (see VARARGIN)
+    uiradiobutton(app.FilterPanelFields.FilterGroup,'Text','Decimate','Position',[10 80 150 20]);
+    uiradiobutton(app.FilterPanelFields.FilterGroup,'Text','Median Filter','Position',[10 60 150 20]);
+    uiradiobutton(app.FilterPanelFields.FilterGroup,'Text','Running Mean','Position',[10 40 150 20]);
+    uiradiobutton(app.FilterPanelFields.FilterGroup,'Text','Butterworth','Position',[10 20 150 20]);
+    uiradiobutton(app.FilterPanelFields.FilterGroup,'Text','L1 Piecewise Constant','Position',[10 0 200 20]);
+    
+    uilabel(app.FilterPanel,'Position',[145 120 80 25],'Text','Dec/Window:');
+    app.FilterPanelFields.FilterWindow = uieditfield(app.FilterPanel,'numeric', ...
+        'Position',[225 120 50 25],'Value', 10);
+    
+    uilabel(app.FilterPanel,'Position',[145 93 80 25],'Text','Filter Order:');
+    app.FilterPanelFields.FilterOrder = uieditfield(app.FilterPanel,'numeric', ...
+        'Position',[225 93 50 25],'Value', 4);
+    
+    uilabel(app.FilterPanel,'Position',[145 66 80 25],'Text','Lambda:');
+    app.FilterPanelFields.FilterLambdaPenalty = uieditfield(app.FilterPanel,'numeric', ...
+        'Position',[225 66 50 25],'Value', 15);
 
-setappdata(0,'UseNativeSystemDialogs',false)
+    app.FilterPanelFields.BtnFilter = uibutton(app.FilterPanel, ...
+        'Position',[150 10 130 35], ...
+        'Text','Filter', ...
+        'ButtonPushedFcn',@(src,evt)onFilter(app, src));
+    app.FilterPanelFields.BtnFilter.UserData.pressed = false;
+    app.FilterPanelFields.BtnFilter.BackgroundColor = [1 1 1];
 
-handles.figureHandle = hObject;
+    %% -------------------------------------------
+    % DISPLAY CONTROL PANEL (Bottom middle)
+    % -------------------------------------------
+    app.DisplayPanel = uipanel(app.fig, ...
+        'Title','Display control', ...
+        'Position',[20 250 300 120]); %'Position',[350 20 450 130]);
 
-%  JS EDIT LAPTOP OPTIONS 23/12/31
-if ismac
-fs = get(0,'ScreenSize'); % gets screen size and position [xpos, ypos, xwidth, yheight]
-set(handles.figureHandle,'Units','Pixels','Position',fs) %positions so that it fits the whole screen
-% if MAC toolbar gets in the way, then move it up a bit
-fs(2) = 0.1*fs(4); fs(4) = 0.9*fs(4); %can edit full screen so that later axis edit is already normalized (ln 120)
-set(handles.figureHandle,'Units','Pixels','Position',fs)
-end
-% End of JS Edit
+    uilabel(app.DisplayPanel,'Position',[10 70 60 20],'Text','Plot marker:');
+    app.DisplayPanelFields.DropLineStyle = uidropdown(app.DisplayPanel, ...
+        'Position',[80 70 100 22], ...
+        'Items',{'Lines','Dots','None'}, ...
+        'Value','Lines');
 
-% MainPath=pwd;
-% SubFunctions=strcat(MainPath,'\SubFns');
-% addpath(SubFunctions)
-handles.BFlogic=1;
+    app.DisplayPanelFields.BtnRefresh = uibutton(app.DisplayPanel, ...
+        'Position',[200 65 80 30], ...
+        'Text','Refresh', ...
+        'ButtonPushedFcn',@(src,evt)onReplot(app));
 
+    % app.DisplayPanelFields.BtnZoomOut = uibutton(app.DisplayPanel, ...
+    %     'Position',[200 25 80 30], ...
+    %     'Text','Zoom Out', ...
+    %     'ButtonPushedFcn',@(s,e)onZoomOut(app));
 
+    app.DisplayPanelFields.ChkGrid = uicheckbox(app.DisplayPanel, ...
+        'Position',[10 25 120 30], ...
+        'Text','Grid Spacing','Value', 0);
 
-set(handles.FilterData,'string','Filter/Decimate Data?')
+    % uilabel(app.DisplayPanelFields.GridSpacingText,'Position',[10 120 150 20],'Text','Grid Spacing (nm)');
+    app.DisplayPanelFields.GridSpacing = uieditfield(app.DisplayPanel,'numeric', ...
+        'Position',[100 25 40 30], ...
+        'Value', 16);
 
-handles.display = struct('filtered', 0, 'trapPos', 0, ...
-    'gridLines', 0, 'center', 0 ... % 0 = No centering, 1 = median, 2 = user values
-    ); % Store displayed elements
+    % %% -------------------------------------------
+    % % STEP FITTER PANEL (Bottom-right, Yellow)
+    % % -------------------------------------------
+    % app.StepPanel = uipanel(app.fig, ...
+    %     'Title','Set Usage For Step Fitter', ...
+    %     'Position',[820 20 350 130]);
+    % 
+    % uilabel(app.StepPanel,'Position',[10 70 60 20],'Text','Start');
+    % uilabel(app.StepPanel,'Position',[10 40 60 20],'Text','End');
+    % uilabel(app.StepPanel,'Position',[10 10 60 20],'Text','Value');
+    % 
+    % app.EditStart = uieditfield(app.StepPanel,'numeric','Position',[70 70 60 22]);
+    % app.EditEnd   = uieditfield(app.StepPanel,'numeric','Position',[70 40 60 22]);
+    % app.EditValue = uieditfield(app.StepPanel,'numeric','Position',[70 10 60 22]);
+    % 
+    % app.BtnAdd     = uibutton(app.StepPanel,'Text','ADD', ...
+    %     'Position',[150 70 80 25], ...
+    %     'ButtonPushedFcn',@(s,e)onAdd(app));
+    % app.BtnFit     = uibutton(app.StepPanel,'Text','FIT', ...
+    %     'Position',[150 40 80 25], ...
+    %     'ButtonPushedFcn',@(s,e)onFit(app));
+    % app.BtnAddFit  = uibutton(app.StepPanel,'Text','ADD AND FIT', ...
+    %     'Position',[150 10 120 25], ...
+    %     'ButtonPushedFcn',@(s,e)onAddAndFit(app));
+    
 
-
-handles.rawPSD1Data_X = 0; % unprocessed data from the PSD
-handles.rawPSD1Data_Y = 0;
-handles.t=0; % time axis
-handles.trackAngle = 0; % track angle
-
-% Bead position; formerly handles.X and handles.Y
-handles.PSD1Data_Long = 0; % Rotated bead position along track
-handles.PSD1Data_Short = 0; % Rotatedposition across track
-
-handles.PSD1Data_Long_Filt = 0; % Filtered bead position
-handles.PSD1Data_Short_Filt = 0;
-handles.t_Filt = 0; % Filtered/decimated time
-
-% Trap position; formerly handles.Flong and handles.Fshort
-handles.trapPosLong=0;
-handles.trapPosShort=0;
-
-handles.trapPosLong_Filt=0; % Filtered/decimated trap position
-handles.trapPosShort_Filt=0;
-
-                                    
-handles.currentPlotT = 0; % Current plot's time axis
-handles.currentPlotPSD_Long = 0; % Currently plotted PSD signal, long axis
-handles.currentPlotPSD_Short = 0; % Currently plotted PSD signal, short
-handles.currentPlotTrap_Long = 0; % Currently plotted trap position, long
-handles.currentPlotTrap_Short = 0; % Currently plotted trap position, short
-handles.currentXlabel='frame';
-% handles.currentXlabel='time (s)';
-handles.currentYlabel='position (nm)'; 
-
-handles.KX=0.05;    % Spring constant, x
-handles.KY=0.05;    % Spring constant, y
-
-handles.stepVector = 0; % will store step results
-handles.lineVector = 0; % will store line fit results
-handles.lineFitCoeffs = []; % Will store line fit coefficients
-
-
-% Styling 
-handles.currentstyleX='b-'; % Currently selected plot style
-handles.currentstyleY='r-';
-handles.currentstyleTrap='m-';
-handles.FilteredFlag = 0;
-
-
-handles.currentPath='C:\';
-
-
-% Initialize primary axes
-set(handles.axes1,'Ygrid','on')
-
-% JS EDIT LAPTOP OPTIONS 23/12/31 to make the axes
-if ismac
-set(handles.axes1,'Units','Pixels','Position',[0.38*fs(3),0.25*fs(4),0.6*fs(3),0.7*fs(4)])
-end
-% End of JS Edit
-
-axes(handles.axes1); %#ok<MAXES>
-plot(0,0)
-hold on 
-xlabel(handles.currentXlabel);
-ylabel(handles.currentYlabel);
-title('No data selected')
-hold off
-
-% % Choose default command line output for FIONAviewer
-% handles.output = hObject;
-% % Update handles structure
-% guidata(hObject, handles);
-
-% JS Edit to make it automatically load what was just run
-handles.xydisplayed = 0; %use to keep track whether we are an xy or yx display
-if ~isempty(varargin)
-    [pathname, filename, ext] = fileparts(varargin(1));
-    % check if these are cells. If they are, remove the cell part to make
-    % strings. Problem as of r2023b or Mac handling idk.
-    if length(pathname) < 2
-        pathname = pathname{1};
-        filename = filename{1};
-        ext = ext{1};
+    if ~isempty(varargin)
+        setappdata(app.fig, 'app', app);
+        app = onLoadMat(app, varargin{1});
     end
-    % run what LoadFile_Callback usually does
-    handles = LoadNewDataFile(hObject, handles, fullfile(pathname,'/'), strcat(filename,ext));
-    
-    keepLimits = 0; % reset Y-limits
-    handles = PlotData(hObject, handles, keepLimits); % Plot the data
-    
-    set(handles.StepsFilename, 'String', fullfile(pathname, strcat(filename,'.mat')));
+
+    % at the end save it all
+    setappdata(app.fig, 'app', app);
+
 end
 
-% JS Edit for user preferences related to gridlines, user can change
-% if desired
-handles.GridDiv.String = '16 nm';
-handles.display.gridLines = 1;
-set(handles.GridLines,'string','Remove GridLines');
-% End of JS Edit
-
-% Choose default command line output for FIONAviewer
-handles.output = hObject;
-% Update handles structure
-guidata(hObject, handles);
-
-
-% --- Executes on key press with focus on figure1 or any of its controls.
-function figure1_WindowKeyPressFcn(~, eventdata, handles)
-% eventdata  structure with the following fields (see FIGURE)
-%	Key: name of the key that was pressed, in lower case
-%	Character: character interpretation of the key(s) that was pressed
-%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
-
-
-key = eventdata.Key; % determine which key was pressed
-
-% Determine if the user is trying to add or remove steps manually:
-manualStepsButton = get(handles.ManualStepFitting, 'String');
-manuallyAdjust = strcmp(manualStepsButton, 'Exit');
-
-if manuallyAdjust
-       
-    if strcmp(key, 't') % toggle between add/delete
-        currentString = get(handles.AddDeleteStep, 'String');
-
-        if strcmp(currentString, 'Add')
-            set(handles.AddDeleteStep, 'String', 'Delete');
-        else
-            set(handles.AddDeleteStep, 'String', 'Add');
-        end
+% Load existing MATLAB file
+function app = onLoadMat(app, name)
+    app = getappdata(app.fig, 'app');
+    if isempty(name)
+        [file, path] = uigetfile('*.mat');
+    else
+        [path, file, ~] = fileparts(name);
     end
+
+    if isequal(file,0)
+        return;
+    end
+
+    % Call your loader
+    app = LoadMatDataFile(app, path, file);
+
+    % Update plot on the main axes
+    app = updateMainPlot(app);
+    setappdata(app.fig, 'app', app);
+end
+
+% Load new and convert MATLAB file
+function app = onLoadNew(app)
+    app = getappdata(app.fig, 'app');
+    [file, path] = uigetfile('*.mat');
+
+    if isequal(file,0)
+        return;
+    end
+
+    % Call your newly modernized loader
+    app = LoadNewDataFile(app, path, file);
+
+    % Update plot on the main axes
+    app = updateMainPlot(app);
+    setappdata(app.fig, 'app', app);
+end
+
+function onNext(app, source)
+    app = getappdata(app.fig, 'app');
+    app = ScrollPrevNext(app, source);
+    setappdata(app.fig,'app',app);
+end
+
+function onPrev(app, source)
+    app = getappdata(app.fig, 'app');
+    app = ScrollPrevNext(app, source);
+    setappdata(app.fig,'app',app);
+end
+
+
+function onExportFigure(app)
+    ExportFigure(app);
+end
+
+
+function app = onSave(app)
+    app = getappdata(app.fig, 'app');
+    
+    data = app.data;
+    %this will now re-write traces so be careful!
+    % app.LeftPanelFields.StepsFilename.Text
+    disp([ 'writing current trace to ' app.LeftPanelFields.StepsFilename.Text ])
+    save(app.LeftPanelFields.StepsFilename.Text ,'data');
+
+
+    setappdata(app.fig, 'app', app);
+end
+
+
+function app = onFit(app)
+    app = getappdata(app.fig, 'app');
+    if strcmp(app.FitPanelFields.DropFitAxis.Value,'Long-axis')
+        lineObj = findobj(app.AxMain, 'Type', 'Line', 'Tag', 'hLongAxis');
+        stepFit = SICstepFinder(lineObj.YData);
+        % reformat into size N so easily writeable later
+        if length(stepFit.StepFit) ~= length(app.Data.t)
+            out = repelem(stepFit.StepFit, app.FilterPanelFields.FilterWindow.Value);
+            stepFit.StepFit = out(1:length(app.Data.t));
+        end
+        app.Data.stepVector = stepFit.StepFit; % Update step vector
+    elseif strcmp(app.FitPanelFields.DropFitAxis.Value,'Short-axis')
+        lineObj = findobj(app.AxMain, 'Type', 'Line', 'Tag', 'hShortAxis');
+        stepFit = SICstepFinder(lineObj.YData);
+        % reformat into size N so easily writeable later
+        if length(stepFit.StepFit) ~= length(app.Data.t)
+            out = repelem(stepFit.StepFit, app.FilterPanelFields.FilterWindow.Value);
+            stepFit.StepFit = out(1:length(app.Data.t));
+        end
+        app.Data.shortstepVector = stepFit.StepFit; % Update step vector
+    end
+    app = updateMainPlot(app); %and replot
+    % Then let buttons be visible again
+    set(app.FitPanelFields.BtnAdd, 'Visible', 'on');
+    set(app.FitPanelFields.BtnDelete, 'Visible', 'on');
+    set(app.LeftPanelFields.BtnSave, 'Visible', 'on');
+    % Get trace ready for export
+    app = PackageTrace(app, stepFit);
+    % app.data.trace   % Can check that it worked here
+    % app.data.trace_yx
+    setappdata(app.fig, 'app', app);
+end
+
+
+function app = onAdd(app, btn)
+    app = getappdata(app.fig, 'app');
+    
+    % release other button (hack so that it will just toggle)
+    app.FitPanelFields.BtnDelete.BackgroundColor = [1 1 1];
+    app.FitPanelFields.BtnDelete.UserData.pressed = false;
+    
+    % Now decide if you want to toggle this one
+    if ~isfield(btn.UserData, 'pressed') || ~btn.UserData.pressed
+        % Button is now pressed
+        btn.BackgroundColor = [0.92 1 1];  % light cyan
+        btn.UserData.pressed = true;
+    else
+        % Button is now released
+        btn.BackgroundColor = [1 1 1];      % default
+        btn.UserData.pressed = false;
+    end
+    setappdata(app.fig, 'app', app);
+end
+
+
+function app = onDelete(app, btn)
+    app = getappdata(app.fig, 'app');
+
+    % release other button (hack so that it will just toggle)
+    app.FitPanelFields.BtnAdd.BackgroundColor = [1 1 1];
+    app.FitPanelFields.BtnAdd.UserData.pressed = false;
+
+    if ~isfield(btn.UserData, 'pressed') || ~btn.UserData.pressed
+        % Button is now pressed
+        btn.BackgroundColor = [0.92 1 1];  % light cyan
+        btn.UserData.pressed = true;
+    else
+        % Button is now released 
+        btn.BackgroundColor = [1 1 1];      % default
+        btn.UserData.pressed = false;
+    end
+    setappdata(app.fig, 'app', app);
+end
+
+
+function app = onAlign(app)
+    app = getappdata(app.fig, 'app');
+    
+    app = AlignToMaxDx(app);
+    app = updateMainPlot(app);
+    
+    setappdata(app.fig, 'app', app);
 end
 
 
 
-
-
-
-% --- Executes on button press in LoadFile.
-function LoadFile_Callback(hObject, eventdata, handles) %#ok
-
-
-
-% Ask user to choose file to display
-pathcat = get(handles.FilePath,'string');
-nameTemplate = [pathcat, '*_fiona.mat'];
-[filename, path, filterindex] = uigetfile(nameTemplate, ...
-    'Select File to Display (_fiona.mat)'); %#ok
-
-if filename ~= 0 % user selected a name and didn't hit cancel
-    handles.xydisplayed = 0;
-    handles = LoadNewDataFile(hObject, handles, path, filename);
-    
-    keepLimits = 0; % reset Y-limits
-    handles = PlotData(hObject, handles, keepLimits); % Plot the data
-    
-end
-    
-% Update handles structure
-guidata(hObject, handles);
-
-
-
-function FrameLength_Callback(hObject, ~, handles)
-
-FrameTime = str2double(get(handles.FrameLength, 'string'))/1000; % in sec
-handles.t = 0:FrameTime:(length(handles.PSD1Data_Long)-1)*FrameTime;
-% if isfield(handles,'time')
-%     if ~isempty(handles.time)
-%         handles.t = handles.time;
-%     end
-% end
-
-keepLimits = 0; % reset Y-limits
-handles = PlotData(hObject, handles, keepLimits); % Plot the data
-% Update handles structure
-guidata(hObject, handles);
-
-% --- Executes on button press in RePlot.
-function RePlot_Callback(hObject, eventdata, handles) %#ok
-
-keepLimits = 0; % Reset limits
-handles = PlotData(hObject, handles, keepLimits); % Re-plot data
-% Save the handles structure.
-guidata(hObject,handles)
-
-% --- Executes on selection change in LinesOrDots. 
-function LinesOrDots_Callback(hObject, eventdata, handles) %#ok
-
-keepLimits = 2; % keep previous limits strictly
-handles = PlotData(hObject, handles, keepLimits); %Plot data
-% Save the handles structure.
-guidata(hObject,handles)
-
-% --- Executes on selection change in YScaleMenu.
-function YScaleMenu_Callback(hObject, eventdata, handles) %#ok
-
-
-contents = get(hObject,'String');
-currSelection = contents{get(hObject,'Value')};
-
-switch currSelection
-    case 'nm and rotated'
-        set(handles.GridDiv, 'String', '16 nm');
-    case 'Force (pN)'
-        set(handles.GridDiv, 'String', '0.5 pN');
-    otherwise
-        set(handles.GridDiv, 'String', '0.01');
+function app = onReplot(app)
+    app = getappdata(app.fig, 'app');
+    app = updateMainPlot(app);
+    setappdata(app.fig, 'app', app);
 end
 
-keepLimits = 0; % do not keep limits
-handles = PlotData(hObject, handles, keepLimits); %Plot data
-% Save the handles structure.
-guidata(hObject,handles)
 
-
-
-% --- Executes on button press in newSpringConstButton.
-function newSpringConstButton_Callback(hObject, eventdata, handles) %#ok
-
-% Ask the user for new Kx and Ky:
-parastr=inputdlg({'Kx' 'Ky'}, ...
-    'Obtaining the Trap Stiffness parameters',1,{'0.05' '0.05'});
-
-if length(parastr) == 2 % user successfully provided two parameters
+function app = onFilter(app, btn)
+    app = getappdata(app.fig, 'app');
     
-    for i=1:2
-        
-        paras(i)=str2double(parastr(i)); %#ok
-        
+    if ~isfield(btn.UserData, 'pressed') || ~btn.UserData.pressed
+        % Button is now pressed
+        btn.BackgroundColor = [0.92 1 1];  % light cyan
+        btn.UserData.pressed = true;
+        app = FilterData(app);
+    else
+        % Button is now released 
+        btn.BackgroundColor = [1 1 1];      % default
+        btn.UserData.pressed = false;
+        app.Data.FilteredFlag = 0;
     end
     
-    set(handles.Kx,'string',num2str(paras(1)));
-    set(handles.Ky,'string',num2str(paras(2)));
+    app = updateMainPlot(app);
+    % app = updateMainPlot(app);
+    setappdata(app.fig, 'app', app);
+end
+
+
+% Main click callback function
+function [nearestX, nearestY] = AxMainClick(app, src, event)
+    % disp('click fired')
+    app = getappdata(app.fig, 'app');
+    figure(app.fig) % 1. Focus the figure
     
-    handles.KX = paras(1);
-    handles.KY = paras(2);
+        % 2. Then find nearest point
+    % Check if zoom OR pan mode is active
+    if strcmp(zoom(app.fig).Enable, 'on') || strcmp(pan(app.fig).Enable, 'on')
+        return   % <-- Skip the click behavior
+    end
     
-    keepLimits = 1; % keep previous limits
-    handles = PlotData(hObject, handles, keepLimits); %Plot data
+    % Otherwise run your nearest-point logic
+    cp = event.IntersectionPoint;     % [x y z]
+    xclick = cp(1);
+    yclick = cp(2);
     
-end
-
-% Save the handles structure.
-guidata(hObject,handles)
-
-
-% --- Executes on button press in ZoomOut.
-function ZoomOut_Callback(hObject, eventdata, handles) %#ok
-
-axes(handles.axes1) %#ok<MAXES>
-pan off
-zoom(0.5)
-
-zoom on
-
-
-
-% --- Executes on button press in Pan.
-function Pan_Callback(hObject, eventdata, handles) %#ok
-
-axes(handles.axes1) %#ok<MAXES>
-panOrZoom=get(handles.Pan,'string');
-
-panOrZoom=panOrZoom(1,:);
-
-if strcmp(panOrZoom, 'Pan')
-
-    zoom off
-    pan on
-
-    set(handles.Pan,'string','Zoom');
-
-elseif strcmp(panOrZoom, 'Zoom')
-
-    zoom on
-
-    pan off
-
-    set(handles.Pan,'string','Pan')
-
-end
-
-
-% --- Executes on button press in SaveCurrentView.
-function SaveCurrentView_Callback(hObject, eventdata, handles) %#ok
-% Creates an export figure containing a copy of the primary axes
-
-ExportFig = figure('visible','off');
-newax = copyobj(handles.axes1, ExportFig);
-set(newax, 'units', 'normalized', 'position', [0.1 0.1 0.8 0.8]);
-set(ExportFig, 'visible', 'on')
-% JS Edit 2022/10/04 to allow for automatic saving of figs (less hastle)
-[path,name,~] = fileparts(get(handles.StepsFilename,'String'));
-if handles.xydisplayed
-    savefig(ExportFig, fullfile(path,strcat(name,'.fig')))
-else
-    name = name(1:end-6);
-    savefig(ExportFig, fullfile(path,strcat(name,'_yx_fiona.fig')))
-end
-close(ExportFig)
-
-
-
-% --- Executes on button press in SaveFile.
-function SaveFile_Callback(hObject, eventdata, handles) %#ok
-% Saves whatever is currently visible on the main plot as a space-delimited
-% file, with the first column storing time in seconds and the remaining
-% columns storing whatever else is currently plotted in whatever units it
-% is plotted. This info is not saved anywhere in the file, so the user
-% should be careful to note the units either in the file name or in their
-% lab notebook
-
-currFileName = get(handles.FileName, 'String');
-fileMask = [handles.currentPath, '*.txt'];
-
-% Add any additional information to the file name:
-addDetails = '_TXYdata.txt';
-
-proposedFileName = strrep(currFileName, 'PSDsignals.txt', addDetails);
-
-% Prompt user for save file name and location
-[file,path] = uiputfile(fileMask,'Choose location of new data file', ...
-    proposedFileName);
-
-% Create the final file name after the user has had the option to modify it
-finalFileName = strcat(path, file);
-
-% Get the data currently plotted on axes1:
-children = get(handles.axes1, 'Children');
-x = get(children, 'Xdata');
-y = get(children, 'Ydata');
-
-% Generate data matrix, with the first column being time and the remaining
-% columns being whatever else is currently plotted on the main graph:
-M = x{1,1}';
-lengthM = length(M);
-i = 1;
-while length(y{i,1}) == lengthM
-    M = [M, y{i,1}']; %#ok<AGROW>
-    i = i+1;
-end
-
-% Write the data matrix to file with spaces as delimiters:
-dlmwrite(finalFileName, M, ' ');
-
-disp('New file created successfully!');
-
-% Save the handles structure.
-guidata(hObject,handles)
-
-
-
-% --- Executes on button press in GridLines.
-function GridLines_Callback(hObject, eventdata, handles)%#ok
-
-Option = get(handles.GridLines,'string');
-
-switch Option
-
-    case 'Add Grid Lines'
-        
-        handles.display.gridLines = 1;
-        set(handles.GridLines,'string','Remove GridLines')
-
-    case 'Remove GridLines'
+    ax = app.AxMain;
+    xRange = diff(ax.XLim);
+    yRange = diff(ax.YLim);
     
-        handles.display.gridLines = 0;
-        set(handles.GridLines,'string','Add Grid Lines')
+    % Find the line (if only one line, just pick it)
+    if strcmp(app.FitPanelFields.DropFitAxis.Value,'Long-axis');
+        lineObj = findobj(ax, 'Type', 'Line', 'Tag', 'hFitLine'); %line to find nearest point to Long-axis
+    else
+        lineObj = findobj(ax, 'Type', 'Line', 'Tag', 'hFitShortLine'); %line to find nearest point to Short-axis fit
+    end
 
+    % If there is nothing there, just leave the function
+    if isempty(lineObj)
+        return
+    end
+    
+    xline = lineObj.XData;
+    yline = lineObj.YData;
+    
+    % Normalize both click and line points
+    xdataN = (xline - ax.XLim(1)) / xRange;
+    ydataN = (yline - ax.YLim(1)) / yRange;
+    xclickN = (xclick - ax.XLim(1)) / xRange;
+    yclickN = (yclick - ax.YLim(1)) / yRange;
+    
+    % Vectorized distance computation
+    dist = hypot(xdataN - xclickN, ydataN - yclickN);
+    
+    [~, idx] = min(dist);
+    
+    nearestX = xline(idx);
+    nearestY = yline(idx);
+
+    % FOR DEBUGGING
+    % Display the selected point (example action)
+    % fprintf('Nearest point: (%.3f, %.3f)\n', nearestX, nearestY);
+
+    % Optional: mark it 
+    % hold(app.AxMain, 'on');
+    % if isfield(app.DisplayPanelFields,'ClickMarker') && isvalid(app.DisplayPanelFields.ClickMarker)
+    %     delete(app.DisplayPanelFields.ClickMarker)
+    % end
+    % app.DisplayPanelFields.ClickMarker = plot(app.AxMain, nearestX, nearestY, 'ro', 'MarkerSize', 8, 'LineWidth', 1.5);
+    % hold(app.AxMain, 'off');
+    
+    % run a function (add/rm steps)
+    if app.FitPanelFields.BtnAdd.UserData.pressed || app.FitPanelFields.BtnDelete.UserData.pressed
+        app = AddRmvStepManually(app, nearestX, nearestY);
+    end
+    app = updateMainPlot(app);
+    setappdata(app.fig, 'app', app);
 end
 
-keepLimits = 2; % Keep the old limits strictly
-handles = PlotData(hObject, handles, keepLimits); % Plot new data
 
-% Save the handles structure.
-guidata(hObject,handles)
-
-
-% --- Executes on button press in DisplayStalls.
-function DisplayStalls_Callback(hObject, eventdata, handles) 
-%{
-x=handles.X;
-y=handles.Y;
-t=handles.t;
-
-Data=[x' y'];
-
-upper=str2double(get(handles.upper,'string'));
-lower=str2double(get(handles.lower,'string'));
-%
-% cd SubFns
-
-StallStats=display_stalls(100,upper,lower,handles.SR,Data);
-
-FilePath=handles.currentPath;
-
-NewFilePath=nameXYfilefromPSDsignals(FilePath,'Stalls',0);
-%
-% cd ..
-
-% t=StallStats.T;
-% x=StallStats.X;
-
-save(NewFilePath,'-STRUCT','StallStats')
-
-%  fit=StepStats.Fit;
-%
-% axes(handles.stallsaxes)
-%
-% ind=1;
-%
-% cumNP=0;
-%
-% length(t)
-% length(x)
-% length(fit)
-% StallStats.NumberStalls
-% StallStats.NPinStall
-%
-% for i=1:StallStats.NumberStalls
-%
-%     NP=StallStats.NPinStall;
-%
-%     cumNP+1
-%     cumNP+NP(i)
-%
-%     Tpause=t(cumNP+1:cumNP+NP(i));
-%     Xpause=x(cumNP+1:cumNP+NP(i));
-%     fitpause=fit(cumNP+1:cumNP+NP(i));
-%
-%     cumNP=cumNP+NP(i);
-%
-%     plot(Tpause,Xpause,'b.',Tpause,fitpause,'r-')
-%
-%     hold on
-%
+% HOTKEYS
+% function uifigureFocus(app)
+%     figure(app.fig); % give figure focus so that it knows to change something
 % end
-% xlabel('time (s)')
-% ylabel('position (nm)')
-%
-% hold off
-%
-% axes(handles.axes4)
-% hist(StepStats.Sizes,20)
-% xlabel('step sizes (nm)')
-
-%}
-
-
-
-
-% --- Executes on button press in FilterData.
-function FilterData_Callback(hObject, eventdata, handles) %#ok
-
-% handles = ResetStepFitter(handles);
-
-% JS Edit 2023/02/10 just to try and play around with a set filter spec
-handles = StepThresholdRemoval(hObject, handles);
-%FilterData code
-% End of JS Edit 2023/02/10
-
-% Uncomment to actually filter data
-% DisplayType=get(handles.FilterData,'string');
-% 
-% if strcmp(DisplayType,'Filter/Decimate Data') % Filter data
-% % if ~handles.display.filtered %it was at zero so switch it
-% 
-%     handles = FilterData(hObject, handles); %uncomment if want original
-% 
-%     % set(handles.FilterData,'string','Filter/Decimate Data')
-%     set(handles.FilterData,'string','Show Raw?')
-%     handles.display.filtered = 1;
-% % end
-% else % Display raw data
-%     % set(handles.FilterData,'string','Filter/Decimate Data')
-%     set(handles.FilterData,'string','Show Filtered?')
-%     handles.display.filtered = 0;
-% end
-
-keepLimits = 2; % Keep the old limits strictly
-handles = PlotData(hObject, handles, keepLimits); % Plot new data
-
-% Save the handles structure.
-guidata(hObject,handles)
-
-% --- Executes on selection change in Recording_Type.
-function Recording_Type_Callback(hObject, eventdata, handles) %#ok
-% Hints: contents = get(hObject,'String') returns Recording_Type contents as cell array
-%        contents{get(hObject,'Value')} returns selected item from Recording_Type
-
-contents = get(hObject,'String');
-currentSel = contents{get(hObject,'Value')};
-
-handles.recordingType = currentSel;
-
-keepLimits = 0; % Reset limits
-handles = PlotData(hObject, handles, keepLimits); % Plot new data
-
-% Save the handles structure.
-guidata(hObject,handles)
-
-% --- Executes on button press in TrapPositionToggle.
-function TrapPositionToggle_Callback(hObject, eventdata, handles) %#ok
-
-status=get(handles.TrapPositionToggle,'string');
-
-if strcmp(status,'Display Trap Position')
-
-    set(handles.TrapPositionToggle,'string','Remove Trap Position');
-    handles.display.trapPos = 1;
-
-elseif strcmp(status,'Remove Trap Position')
-
-    set(handles.TrapPositionToggle,'string','Display Trap Position')
-    handles.display.trapPos = 0;
+function onKeyPress(app, event)
+    key = event.Key;  % string of the key pressed, e.g., 'a', 'd', 'leftarrow'
+    mods = event.Modifier; % cell array of modifiers, e.g., {'control'}
     
-end
-
-keepLimits = 2; % Keep the old limits strictly
-handles = PlotData(hObject, handles, keepLimits); % Plot new data
-
-% Save the handles structure.
-guidata(hObject,handles)
-
-% --- Executes on button press in Load_Previous.
-function Load_Previous_Callback(hObject, eventdata, handles) %#ok
-% Loads the previous PSDsignals file in the current directory
-
-path = get(handles.FilePath, 'string');
-file = get(handles.FileName, 'string');
-
-% Obtain a list of all PSDsignals.txt files in the current directory
-filenameTemplate = [path, '*_fiona.mat'];
-dataFilesStruct = dir(filenameTemplate);
-% Convert the structure to cells 
-fileNames = cell(length(dataFilesStruct), 1);
-for i = 1:length(fileNames)
-    fileNames(i) = cellstr(dataFilesStruct(i).name);
-end
-
-% Find index of the current file
-currentIndex = strmatch(file, fileNames);
-% If on yx display, keep same index and switch to xy
-% If on xy display, then move to the previous if possible
-newIndex = currentIndex - handles.xydisplayed;
-
-% Do not allow the array to exceed bounds
-if newIndex > 0
-    newFilename = char(fileNames(newIndex));
-    % Load the new data file
-    handles = LoadNewDataFile(hObject, handles, path, newFilename);
-
-    keepLimits = 0; % reset Y-limits
-    handles = PlotData(hObject, handles, keepLimits); % Plot the data
-    
-    % JS Edit to set for next trace, which is usually a _xy file so save
-    % slightly differently
-    set(handles.StepsFilename, 'String', fullfile(path, strcat(newFilename)));
-%     if handles.xydisplayed
-%         set(handles.StepsFilename, 'String', fullfile(path, strcat(newFilename(1:end-10),'_xy.mat')));
-%     else
-%         set(handles.StepsFilename, 'String', fullfile(path, strcat(newFilename(1:end-10),'_yx.mat')));
-%     end
-else
-    disp('You''ve reached the beginning of the directory');
-end
-       
-% Update handles structure
-guidata(hObject, handles);
-
-
-% --- Executes on button press in OpenNext.
-function OpenNext_Callback(hObject, eventdata, handles) %#ok
-
-path = get(handles.FilePath, 'string');
-file = get(handles.FileName, 'string');
-
-% Obtain a list of all PSDsignals.txt files in the current directory
-filenameTemplate = [path, '*_fiona.mat'];
-dataFilesStruct = dir(filenameTemplate);
-% Convert the structure to cells 
-fileNames = cell(length(dataFilesStruct), 1);
-for i = 1:length(fileNames)
-    fileNames(i) = cellstr(dataFilesStruct(i).name);
-end
-
-% Find index of the current file
-currentIndex = strmatch(file, fileNames);
-% If on xy display, keep same index and switch to yx
-% If on yx display, then move to the next if possible
-newIndex = currentIndex + ~handles.xydisplayed;
-
-% Do not allow the array to exceed bounds
-if newIndex <= length(fileNames)
-    newFilename = char(fileNames(newIndex));
-    % Load the new data file
-    handles = LoadNewDataFile(hObject, handles, path, newFilename);
-
-    keepLimits = 0; % reset Y-limits
-    handles = PlotData(hObject, handles, keepLimits); % Plot the data
-    % JS Edit to set for next trace, which is usually a _yx file so save
-    % slightly differently
-    set(handles.StepsFilename, 'String', fullfile(path, strcat(newFilename)));
-%     if handles.xydisplayed
-%         set(handles.StepsFilename, 'String', fullfile(path, strcat(newFilename(1:end-10),'_xy.mat')));
-%     else
-%         set(handles.StepsFilename, 'String', fullfile(path, strcat(newFilename(1:end-10),'_yx.mat')));
-%     end
-else
-    disp('You''ve reached the end of the directory');
-end
-       
-% Update handles structure
-guidata(hObject, handles);
-
-
-% --- Executes on button press in ShowX.
-function ShowX_Callback(hObject, eventdata, handles) %#ok
-
-keepLimits = 1; % keep Y-limits
-handles = PlotData(hObject, handles, keepLimits); % Re-plot data
-% Save the handles structure.
-guidata(hObject,handles)
-
-
-% --- Executes on button press in ShowY.
-function ShowY_Callback(hObject, eventdata, handles) %#ok
-
-keepLimits = 2; % keep Y-limits strictly
-handles = PlotData(hObject, handles, keepLimits); % Re-plot data
-% Save the handles structure.
-guidata(hObject,handles)
-
-function GridDiv_Callback(hObject, eventdata, handles) %#ok
-% Hints: get(hObject,'String') returns contents of GridDiv as text
-%        str2double(get(hObject,'String')) returns contents of GridDiv as a double
-
-keepLimits = 2; % keep Y-limits strictly
-handles = PlotData(hObject, handles, keepLimits); % Re-plot data
-% Save the handles structure.
-guidata(hObject,handles)
-
-
-% --- Executes on button press in PrintFilenames.
-function PrintFilenames_Callback(~, ~, handles)
-
-path = get(handles.FilePath, 'string');
-fileNames = ListFileNames(path);
-disp(fileNames);
-
-
-
-% --- Executes on button press in PrintPSDCoeffs.
-function PrintPSDCoeffs_Callback(~, ~, handles)
-
-path = get(handles.FilePath, 'string');
-PrintPSDResponses(path);
-
-
-% ----- Centering-related callbacks ---------------------------------------
-function uipanel9_SelectionChangeFcn(hObject, eventdata, handles) %#ok
-
-% determine new centering parameters
-handles = DetermineCentering (hObject, handles);
-
-% Reset step fitter
-handles = ResetStepFitter(handles);
-
-keepLimits = 0; % reset Y-limits
-handles = PlotData(hObject, handles, keepLimits); % Re-plot data
-
-% Save the handles structure.
-guidata(hObject,handles)
-
-function XOffset_Callback(hObject, eventdata, handles) %#ok
-
-% determine new centering parameters
-handles = DetermineCentering (hObject, handles);
-
-% Reset step fitter
-handles = ResetStepFitter(handles);
-
-keepLimits = 0; % reset Y-limits
-handles = PlotData(hObject, handles, keepLimits); % Re-plot data
-
-% Save the handles structure.
-guidata(hObject,handles)
-
-function YOffset_Callback(hObject, eventdata, handles) %#ok
-
-% determine new centering parameters
-handles = DetermineCentering (hObject, handles);
-
-% Reset step fitter
-handles = ResetStepFitter(handles);
-
-keepLimits = 0; % reset Y-limits
-handles = PlotData(hObject, handles, keepLimits); % Re-plot data
-
-% Save the handles structure.
-guidata(hObject,handles)
-
-
-%%% Step-fitter callbacks %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-
-% --- Executes on button press in FitSteps.
-function FitSteps_Callback(hObject, eventdata, handles) %#ok<INUSL>
-
-currSelection = get(hObject, 'String');
-
-if strcmp(currSelection, 'FIT')
-    
-    %set(hObject, 'String', 'Erase');
-    set(handles.ManualStepFitting, 'Visible', 'on');
-    set(handles.SaveSteps, 'Visible', 'on');
-    set(handles.text72, 'Visible', 'on');
-    set(handles.AddDeleteStep, 'Visible', 'on');
-    
-    % Obtain all the parameters:
-    %most of these won't do anything going forward, because SIC don't give
-    %a fux
-    MaxNumSteps = str2double(get(handles.MaxNumSteps, 'String'));
-    ExpSqNoise = str2double(get(handles.ExpSqNoise, 'String'));
-    MinDeltaQ = str2double(get(handles.MinDeltaQ, 'String'));
-    MinPtsInStep = str2double(get(handles.MinPtsInStep, 'String'));
-    
-    Xlimits = get(handles.axes1, 'XLim');
-    
-    if handles.display.filtered
-        startTime =  find(handles.t_Filt > Xlimits(1), 1);
-        endTime = find(handles.t_Filt > (Xlimits(2)), 1)-1;
-
-        if isempty(startTime) 
-            startTime = 1; 
+    if ismember('control', mods)
+        switch key
+            case 's'
+                % disp('Ctrl+s pressed')
+                onSave(app)
+            case 'c'
+                % disp('Ctrl+e pressed')
+                onExportFigure(app)
         end
-        if isempty(endTime)
-            endTime = length(handles.t_Filt);
-        end
-        
-        % make array to fit steps to:
-        x = handles.PSD1Data_Long_Filt(startTime:endTime);
-        y = handles.PSD1Data_Short_Filt(startTime:endTime);
-        usage = zeros(1,length(startTime:endTime)) + 1;
 
     else
-    %determine start and end points
-    startTime =  find(handles.currentPlotT > Xlimits(1), 1);
-    endTime = find(handles.currentPlotT > (Xlimits(2)), 1)-1;
-    
-    if isempty(startTime) 
-        startTime = 1; 
-    end
-    if isempty(endTime)
-        endTime = length(handles.currentPlotT);
-    end
-    
-    % make array to fit steps to:
-    x = handles.currentPlotPSD_Long(startTime:endTime);
-    y = handles.currentPlotPSD_Short(startTime:endTime);
-    usage = zeros(1,length(startTime:endTime)) + 1;
-    end
-    %Note: NaNs removed in parser script
-    %x = RemoveNaNs(x);
-    
-    % fit the steps using my wrapper script to the SIC fitter
-    % this version of the wrapper won't fit the off-axis at all, and breaks
-    % the trace into subtraces according to usage. See pars_and_fit for
-    % more details.
-    % fitted_trace_6col = parse_and_fit_twosides(x,y,usage,1,500000);
-    fitted_trace_6col = parse_and_fit_twosides_vJS(x,y,usage,1,500000);
-    
-    % Build step vectors
-    
-    %handles.stepVector = NaN(1,length(handles.currentPlotPSD_Long));
-    handles.stepVector(startTime:endTime) = (fitted_trace_6col(:,3))';
-    handles.shortStepVector(startTime:endTime) = (fitted_trace_6col(:,4))';
-
-else
-   handles = ResetStepFitter(handles);
-end
-
-
-keepLimits = 2; % keep Y-limits strictly the same
-handles = PlotData(hObject, handles, keepLimits); % Re-plot data
-
-% Save the handles structure.
-guidata(hObject,handles)
-
-
-
-% This callback gets triggered if user clicks somewhere on the figure and
-% is used to add or remove steps manually
-function figure1_WindowButtonDownFcn(hObject, ~, handles)
-
-% Determine if the user is trying to add or remove steps manually:
-manualStepsButton = get(handles.ManualStepFitting, 'String');
-manuallyAdjust = strcmp(manualStepsButton, 'Exit'); 
-
-if manuallyAdjust
-    
-    % First, determine if the user clicked inside the axes:
-    clickCoords = get(handles.axes1, 'CurrentPoint'); % in axes units
-    clickX = clickCoords(1,1);
-    clickY = clickCoords(1,2);
-    
-    Xlims = get(handles.axes1, 'XLim');
-    Ylims = get(handles.axes1, 'YLim');
-    inBounds = clickX>Xlims(1) && clickX<Xlims(2) && clickY>Ylims(1) && ...
-        clickY<Ylims(2);
-    
-    if inBounds
-        % Add or remove step:        
-        handles = AddRmvStepManually(hObject, handles, clickX);
-    end
-end
-% Save the handles structure.
-guidata(hObject,handles)
-
-
-% --- Executes on button press in AddDeleteStep.
-function AddDeleteStep_Callback(hObject, ~, handles)
-
-currentString = get(hObject, 'String');
-
-if strcmp(currentString, 'Add')
-    set(hObject, 'String', 'Delete');
-else
-    set(hObject, 'String', 'Add');
-end
-% Save the handles structure.
-guidata(hObject,handles)
-
-% --- Executes on button press in ManualStepFitting.
-function ManualStepFitting_Callback(hObject, ~, handles)
-
-currentString = get(hObject, 'String');
-
-if strcmp(currentString, 'Adjust')
-    set(hObject, 'String', 'Exit');
-    
-    zoom off
-    pan off
-    
-else
-    set(hObject, 'String', 'Adjust');
-    set(handles.Pan,'string','Pan');
-    zoom on
-end
-% Save the handles structure.
-guidata(hObject,handles)
-
-
-
-% --- Executes on button press in ChangeStepFilename.
-function ChangeStepFilename_Callback(~, ~, handles)
-
-% extract the current directory from filename:
-currFullFileName = get(handles.StepsFilename, 'String');
-slashPositions = strfind(currFullFileName, '\');
-lastSlashPosition = slashPositions(end);
-currDir = currFullFileName(1:lastSlashPosition);
-
-filterSpec = [currDir, '*.mat'];
-DialogTitle = 'Please select a file to save step-fitting results';
-
-
-[fileName,pathName,filterIndex] = uiputfile(filterSpec,DialogTitle);  %#ok<NASGU>
-
-
-if ~isequal(fileName, 0) && ~isequal(pathName, 0)
-    set(handles.StepsFilename, 'String', [pathName, fileName]);
-end
-
-
-% --- Executes on button press in SaveSteps.
-function SaveSteps_Callback(~, ~, handles)
-
-fileName = get(handles.StepsFilename, 'String');
-WriteStepsToFile(handles, fileName);
-
-
-%%% Line-fitter callbacks %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% --- Executes on button press in FitLine.
-function FitLine_Callback(hObject, ~, handles)
-
-currSelection = get(hObject, 'String');
-if strcmp(currSelection, 'FIT')
-    
-    set(hObject, 'String', 'Erase');
-    set(handles.SaveLineFit, 'Visible', 'on');
-       
-    Xlimits = get(handles.axes1, 'XLim');
-    
-    %determine start and end points
-    startTime =  find(handles.currentPlotT > Xlimits(1), 1);
-    endTime = find(handles.currentPlotT >= (Xlimits(2)), 1)-1;
-    
-    % select to fit line to:
-    x = real(RemoveNaNs(handles.currentPlotPSD_Long(startTime:endTime)));
-    t = handles.currentPlotT(startTime:endTime);
-    
-    % fit to straight line
-    linFit = polyfit(t, x, 1);
-    handles.lineFitCoeffs = linFit;
-    
-    % Build line vector
-    handles.lineVector = NaN(1,length(handles.currentPlotPSD_Long));
-    handles.lineVector(startTime:endTime) = t*linFit(1) + linFit(2);
-
-else % Erase previously fitted line
-    handles.lineVector = 0;
-    set(handles.FitLine, 'String', 'FIT');
-    set(handles.SaveLineFit, 'Visible', 'off');
-end
-
-keepLimits = 2; % keep Y-limits strictly the same
-handles = PlotData(hObject, handles, keepLimits); % Re-plot data
-
-% Save the handles structure.
-guidata(hObject,handles)
-
-function lineFitFilename_Callback(~, ~, handles)
-
-% extract the current directory from filename:
-currFullFileName = get(handles.lineFitFilenameEdit, 'String');
-slashPositions = strfind(currFullFileName, '\');
-lastSlashPosition = slashPositions(end);
-currDir = currFullFileName(1:lastSlashPosition);
-
-filterSpec = [currDir, '*.mat'];
-DialogTitle = 'Please select a file to save line-fitting results';
-
-[fileName,pathName,filterIndex] = uiputfile(filterSpec,DialogTitle);  %#ok<NASGU>
-
-if ~isequal(fileName, 0) && ~isequal(pathName, 0) % check validity
-    set(handles.lineFitFilenameEdit, 'String', [pathName, fileName]);
-end
-
-
-% --- Executes on button press in SaveLineFit.
-function SaveLineFit_Callback(~, ~, handles)
-
-fileName = get(handles.lineFitFilenameEdit, 'String');
-WriteLineFitToFile(handles, fileName);
-
-%%% Unused calbacks %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% In all of the below callbacks:
-% hObject    handle to the object (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-
-function lambda_Callback(hObject, eventdata, handles) 
-% Hints: get(hObject,'String') returns contents of lambda as text
-%        str2double(get(hObject,'String')) returns contents of lambda as a double
-
-% --- Executes during object creation, after setting all properties.
-function lambda_CreateFcn(hObject, eventdata, handles) 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-% --- Executes during object deletion, before destroying properties.
-function figure1_DeleteFcn(hObject, eventdata, handles) 
-
-% --- Executes during object creation, after setting all properties.
-function Recording_Type_CreateFcn(hObject, eventdata, handles) 
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-function CutoffFreq_Callback(hObject, eventdata, handles) 
-% Hints: get(hObject,'String') returns contents of CutoffFreq as text
-%        str2double(get(hObject,'String')) returns contents of CutoffFreq as a double
-
-% --- Executes during object creation, after setting all properties.
-function CutoffFreq_CreateFcn(hObject, eventdata, handles) 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-% --- Executes on button press in CentreSignal.
-function CentreSignal_Callback(hObject, eventdata, handles) 
-% Hint: get(hObject,'Value') returns toggle state of CentreSignal
-
-% --- Executes during object creation, after setting all properties.
-function XOffset_CreateFcn(hObject, eventdata, handles) 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-% --- Executes during object creation, after setting all properties.
-function YOffset_CreateFcn(hObject, eventdata, handles) 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-% --- Executes on button press in checkbox7.
-function checkbox7_Callback(hObject, eventdata, handles) 
-% Hint: get(hObject,'Value') returns toggle state of checkbox7
-
-function FeedbackConversionPara_Callback(hObject, eventdata, handles) 
-% Hints: get(hObject,'String') returns contents of FeedbackConversionPara as text
-%        str2double(get(hObject,'String')) returns contents of FeedbackConversionPara as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function FeedbackConversionPara_CreateFcn(hObject, eventdata, handles) 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-function ExpStepSize_Callback(hObject, eventdata, handles) 
-% Hints: get(hObject,'String') returns contents of ExpStepSize as text
-%        str2double(get(hObject,'String')) returns contents of ExpStepSize as a double
-
-% --- Executes during object creation, after setting all properties.
-function ExpStepSize_CreateFcn(hObject, eventdata, handles) 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-function upper_Callback(hObject, eventdata, handles) 
-% Hints: get(hObject,'String') returns contents of upper as text
-%        str2double(get(hObject,'String')) returns contents of upper as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function upper_CreateFcn(hObject, eventdata, handles) 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-function edit9_Callback(hObject, eventdata, handles)  
-% Hints: get(hObject,'String') returns contents of edit9 as text
-%        str2double(get(hObject,'String')) returns contents of edit9 as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function edit9_CreateFcn(hObject, eventdata, handles) 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-% --- Executes on button press in PSD1.
-function PSD1_Callback(hObject, eventdata, handles) 
-% Hint: get(hObject,'Value') returns toggle state of PSD1
-
-% --- Executes on button press in PSD2.
-function PSD2_Callback(hObject, eventdata, handles) 
-% Hint: get(hObject,'Value') returns toggle state of PSD2
-
-% --- Executes on button press in TrapPos.
-function TrapPos_Callback(hObject, eventdata, handles) 
-% Hint: get(hObject,'Value') returns toggle state of TrapPos
-
-% --- Executes on button press in BFLogic.
-function BFLogic_Callback(hObject, eventdata, handles) 
-% Hint: get(hObject,'Value') returns toggle state of BFLogic
-
-function WindowLength_Callback(hObject, eventdata, handles) 
-% Hints: get(hObject,'String') returns contents of WindowLength as text
-%        str2double(get(hObject,'String')) returns contents of WindowLength as a double
-
-% --- Executes during object creation, after setting all properties.
-function WindowLength_CreateFcn(hObject, eventdata, handles) 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-function edit11_Callback(hObject, eventdata, handles) 
-% Hints: get(hObject,'String') returns contents of edit11 as text
-%        str2double(get(hObject,'String')) returns contents of edit11 as a double
-
-% --- Executes during object creation, after setting all properties.
-function edit11_CreateFcn(hObject, eventdata, handles) 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-function FilterOrder_Callback(hObject, eventdata, handles) 
-% Hints: get(hObject,'String') returns contents of FilterOrder as text
-%        str2double(get(hObject,'String')) returns contents of FilterOrder as a double
-
-% --- Executes during object creation, after setting all properties.
-function FilterOrder_CreateFcn(hObject, eventdata, handles) 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-% --- Executes during object creation, after setting all properties.
-function GridDiv_CreateFcn(hObject, eventdata, handles) 
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-% --- Executes on mouse press over stallsaxes background.
-function axes1_ButtonDownFcn(hObject, eventdata, handles) 
-get(hObject,'xlim')
-
-disp('You clicked on axis');
-
-% --- If Enable == 'on', executes on mouse press in 5 pixel border.
-% --- Otherwise, executes on mouse press in 5 pixel border or over newSpringConstButton.
-function newSpringConstButton_ButtonDownFcn(hObject, eventdata, handles) 
-
-% --- Executes on key press over newSpringConstButton with no controls selected.
-function newSpringConstButton_KeyPressFcn(hObject, eventdata, handles) 
-
-% --- Executes during object creation, after setting all properties.
-function LinesOrDots_CreateFcn(hObject, eventdata, handles) 
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-% --- Outputs from this function are returned to the command line.
-function varargout = FIONAviewer_OutputFcn(hObject, eventdata, handles)   %#ok<STOUT>
-% varargout  cell array for returning output args (see VARARGOUT);
-
-% --- Executes during object creation, after setting all properties.
-function YScaleMenu_CreateFcn(hObject, eventdata, handles) 
-% Hint: popupmenu controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-function LowF_Callback(hObject, eventdata, handles) 
-% Hints: get(hObject,'String') returns contents of LowF as text
-%        str2double(get(hObject,'String')) returns contents of LowF as a double
-
-% --- Executes during object creation, after setting all properties.
-function LowF_CreateFcn(hObject, eventdata, handles) %#ok
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-% Get default command line output from handles structure
-varargout{1} = handles.output; %#ok
-
-function edit17_Callback(hObject, eventdata, handles) 
-% Hints: get(hObject,'String') returns contents of edit17 as text
-%        str2double(get(hObject,'String')) returns contents of edit17 as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function edit17_CreateFcn(hObject, eventdata, handles)
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-% --- Executes on button press in MedianFilter.
-function MedianFilter_Callback(hObject, eventdata, handles) 
-% Hint: get(hObject,'Value') returns toggle state of MedianFilter
-
-% --- Executes during object creation, after setting all properties.
-function Decimate_Factor_CreateFcn(hObject, eventdata, handles) %#ok<*DEFNU,*INUSD>
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-function MaxNumSteps_Callback(hObject, eventdata, handles)
-% Hints: get(hObject,'String') returns contents of MaxNumSteps as text
-%        str2double(get(hObject,'String')) returns contents of MaxNumSteps as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function MaxNumSteps_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to MaxNumSteps (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-function ExpSqNoise_Callback(hObject, eventdata, handles)
-% Hints: get(hObject,'String') returns contents of ExpSqNoise as text
-%        str2double(get(hObject,'String')) returns contents of ExpSqNoise as a double
-
-% --- Executes during object creation, after setting all properties.
-function ExpSqNoise_CreateFcn(hObject, eventdata, handles)
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-function MinDeltaQ_Callback(hObject, eventdata, handles)
-% Hints: get(hObject,'String') returns contents of MinDeltaQ as text
-%        str2double(get(hObject,'String')) returns contents of MinDeltaQ as a double
-
-% --- Executes during object creation, after setting all properties.
-function MinDeltaQ_CreateFcn(hObject, eventdata, handles)
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-function MinPtsInStep_Callback(hObject, eventdata, handles)
-% Hints: get(hObject,'String') returns contents of MinPtsInStep as text
-%        str2double(get(hObject,'String')) returns contents of MinPtsInStep as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function MinPtsInStep_CreateFcn(hObject, eventdata, handles)
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-function StepsFilename_Callback(hObject, eventdata, handles)
-% Hints: get(hObject,'String') returns contents of StepsFilename as text
-%        str2double(get(hObject,'String')) returns contents of StepsFilename as a double
-
-% --- Executes during object creation, after setting all properties.
-function StepsFilename_CreateFcn(hObject, eventdata, handles)
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-
-function DecimationFactor_Callback(hObject, eventdata, handles)
-% Hints: get(hObject,'String') returns contents of DecimationFactor as text
-%        str2double(get(hObject,'String')) returns contents of DecimationFactor as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function DecimationFactor_CreateFcn(hObject, eventdata, handles)
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-% --- If Enable == 'on', executes on mouse press in 5 pixel border.
-% --- Otherwise, executes on mouse press in 5 pixel border or over PrintFilenames.
-function PrintFilenames_ButtonDownFcn(hObject, eventdata, handles)
-
-% --- Executes during object creation, after setting all properties.
-function NewParameters_CreateFcn(hObject, eventdata, handles)
-
-% --- Executes on mouse press over figure background.
-function figure1_ButtonDownFcn(hObject, eventdata, handles)
-% disp('You clicked on figure')
-
-% --- Executes during object creation, after setting all properties.
-function lineFitFilenameEdit_CreateFcn(hObject, eventdata, handles)
-
-function lineFitFilenameEdit_Callback(hObject, eventdata, handles)
-
-
-
-
-
-
-
-
-% --- Executes during object creation, after setting all properties.
-function FrameLength_CreateFcn(hObject, eventdata, handles)
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes on button press in ShowYFilt.
-function ShowYFilt_Callback(hObject, ~, handles)
-
-keepLimits = 2; % keep Y-limits strictly
-handles = PlotData(hObject, handles, keepLimits); % Re-plot data
-% Save the handles structure.
-guidata(hObject,handles)
-% hObject    handle to ShowYFilt (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of ShowYFilt
-
-
-% --- Executes on button press in ShowXFilt.
-function ShowXFilt_Callback(hObject, ~, handles)
-keepLimits = 2; % keep Y-limits strictly
-handles = PlotData(hObject, handles, keepLimits); % Re-plot data
-% Save the handles structure.
-guidata(hObject,handles)
-% hObject    handle to ShowXFilt (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hint: get(hObject,'Value') returns toggle state of ShowXFilt
-
-
-
-function FiltOffsetDistance_Callback(hObject, ~, handles)
-
- % Re-plot data
-% hObject    handle to FiltOffsetDistance (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of FiltOffsetDistance as text
-%        str2double(get(hObject,'String')) returns contents of FiltOffsetDistance as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function FiltOffsetDistance_CreateFcn(hObject, ~, handles)
-% hObject    handle to FiltOffsetDistance (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes on button press in loadmatfile.
-function loadmatfile_Callback(hObject, ~, handles)
-
-pathcat = get(handles.FilePath,'string');
-[filename, path, filterindex] = uigetfile(pathcat);
-if filename ~= 0 % user selected a name and didn't hit cancel
-    handles = LoadMatDataFile(hObject, handles, path, filename);
-    keepLimits = 0; % reset Y-limits
-    handles = PlotData(hObject, handles, keepLimits); % Plot the data
-end
-
-set(handles.FitSteps, 'String', 'Erase');
-set(handles.ManualStepFitting, 'Visible', 'on');
-set(handles.SaveSteps, 'Visible', 'on');
-set(handles.text72, 'Visible', 'on');
-set(handles.AddDeleteStep, 'Visible', 'on');
-    
-guidata(hObject, handles);
-% hObject    handle to loadmatfile (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-
-function UsageStart_Callback(hObject, ~, handles)
-% hObject    handle to UsageStart (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of UsageStart as text
-%        str2double(get(hObject,'String')) returns contents of UsageStart as a double
-
-
-
-% --- Executes during object creation, after setting all properties.
-function UsageStart_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to UsageStart (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function UsageStopField_Callback(hObject, eventdata, handles)
-% hObject    handle to UsageStopField (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of UsageStopField as text
-%        str2double(get(hObject,'String')) returns contents of UsageStopField as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function UsageStopField_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to UsageStopField (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-
-function UsageValue_Callback(hObject, eventdata, handles)
-% hObject    handle to UsageValue (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-% Hints: get(hObject,'String') returns contents of UsageValue as text
-%        str2double(get(hObject,'String')) returns contents of UsageValue as a double
-
-
-% --- Executes during object creation, after setting all properties.
-function UsageValue_CreateFcn(hObject, eventdata, handles)
-% hObject    handle to UsageValue (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    empty - handles not created until after all CreateFcns called
-
-% Hint: edit controls usually have a white background on Windows.
-%       See ISPC and COMPUTER.
-if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
-    set(hObject,'BackgroundColor','white');
-end
-
-
-% --- Executes on button press in SetUsage.
-function SetUsage_Callback(hObject, ~, handles)
-% hObject    handle to SetUsage (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-start = str2double(get(handles.UsageStart,'String'));
-finish = str2double(get(handles.UsageStopField,'String'));
-if finish > length(handles.currentPlotPSD_Long)
-    finish = length(handles.currentPlotPSD_Long);
-end
-value = str2double(get(handles.UsageValue,'String'));
-
-handles.usageVector(start:finish) = value;
-disp (['setting uage from ' num2str(start) 'to '  num2str(finish) ' to ' num2str(value)' ])
-guidata(hObject, handles);
-
-
-
-
-
-
-
-% --- Executes on button press in pushbutton33.
-function pushbutton33_Callback(hObject, eventdata, handles)
-% hObject    handle to pushbutton33 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-% --- Executes on button press in addUsageAndFit.
-function addUsageAndFit_Callback(hObject, eventdata, handles)
-%runs the stepFitter, but only for specified usage limits
-%vs using the FIT button which fits the entire windowed trace
-
-%first set the usage over the specified region
-startTime = str2double(get(handles.UsageStart,'String'));
-endTime = str2double(get(handles.UsageStopField,'String'));
-value = str2double(get(handles.UsageValue,'String'));
-
-handles.usageVector(startTime:endTime) = value;
-disp (['setting uage from ' num2str(startTime) 'to '  num2str(endTime) ' to ' num2str(value)' ])
-
-%then fit the trace, this is mostly taken from the "FIT" button callback
-
-
-    set(handles.ManualStepFitting, 'Visible', 'on');
-    set(handles.SaveSteps, 'Visible', 'on');
-    set(handles.text72, 'Visible', 'on');
-    set(handles.AddDeleteStep, 'Visible', 'on');
-    
-    if handles.display.filtered
-        startTime =  find(handles.t_Filt > Xlimits(1), 1);
-        endTime = find(handles.t_Filt > (Xlimits(2)), 1)-1;
-
-        if isempty(startTime) 
-            startTime = 1; 
+        switch key
+            case 'a' %a trigger onAdd button
+                onAdd(app, app.FitPanelFields.BtnAdd);
+            
+            case 'd' %d trigger onDelete button
+                onDelete(app, app.FitPanelFields.BtnDelete);
+            
+            % case 'p'
+            %     app.AxMain.Interactions = app.PanI;
+            % 
+            % case 'z'
+            %     app.AxMain.Interactions = [app.ZoomI app.PanI];
+            %
+            % case 'r'     % Reset view
+            %     % Reset the axes limits (you can customize initial limits)
+            %     app.AxMain.XLimMode = 'auto';
+            %     app.AxMain.YLimMode = 'auto';
+            % You can add more hotkeys here
         end
-        if isempty(endTime)
-            endTime = length(handles.t_Filt);
-        end
-        
-        % make array to fit steps to:
-        x = handles.PSD1Data_Long_Filt(startTime:endTime);
-        y = handles.PSD1Data_Short_Filt(startTime:endTime);
-        usage = zeros(1,length(startTime:endTime)) + 1;
-
-    else
-    
-    % make array to fit steps to:
-    x = handles.currentPlotPSD_Long(startTime:endTime);
-    y = handles.currentPlotPSD_Short(startTime:endTime);
-    usage = handles.usageVector(startTime:endTime);
-    %Note: NaNs removed in parser script
-    %x = RemoveNaNs(x);
     end
-    
-    % fit the steps using my wrapper script to the SIC fitter
-    % this version of the wrapper won't fit the off-axis at all, and breaks
-    % the trace into subtraces according to usage. See parse_and_fit for
-    % more details.
-    
-    % fitted_trace_6col = parse_and_fit_twosides(x,y,usage,1,500000);
-    fitted_trace_6col = parse_and_fit_twosides_vJS(x,y,usage,1,500000);
-    
-    % Build step vectors
-    
-    %handles.stepVector = NaN(1,length(handles.currentPlotPSD_Long));
-    handles.stepVector(startTime:endTime) = (fitted_trace_6col(:,3))';
-    handles.shortStepVector(startTime:endTime) = (fitted_trace_6col(:,4))';
-    keepLimits = 2; % keep Y-limits strictly the same
-    handles = PlotData(hObject, handles, keepLimits); % Re-plot data
-    
-guidata(hObject, handles);
-
-
-% hObject    handle to addUsageAndFit (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
-
-
-% --- Executes on key press with focus on SetUsage and none of its controls.
-
-% hObject    handle to SetUsage (see GCBO)
-% eventdata  structure with the following fields (see UICONTROL)
-%	Key: name of the key that was pressed, in lower case
-%	Character: character interpretation of the key(s) that was pressed
-%	Modifier: name(s) of the modifier key(s) (i.e., control, shift) pressed
-% handles    structure with handles and user data (see GUIDATA)
-
-
-% --- Executes on button press in pushbutton35.
-% this is the "fit only" button
-function pushbutton35_Callback(hObject, ~, handles)
-%runs the stepFitter, but only for specified usage limits
-%vs using the FIT button which fits the entire windowed trace
-
-%first set the usage over the specified region
-startTime = str2double(get(handles.UsageStart,'String'));
-endTime = str2double(get(handles.UsageStopField,'String'));
-
-disp (['fitting trace between ' num2str(startTime) 'and '  num2str(endTime) ])
-
-%then fit the trace, this is mostly taken from the "FIT" button callback
-
-
-    set(handles.ManualStepFitting, 'Visible', 'on');
-    set(handles.SaveSteps, 'Visible', 'on');
-    set(handles.text72, 'Visible', 'on');
-    set(handles.AddDeleteStep, 'Visible', 'on');
-    
-    if handles.display.filtered
-        startTime =  find(handles.t_Filt > Xlimits(1), 1);
-        endTime = find(handles.t_Filt > (Xlimits(2)), 1)-1;
-
-        if isempty(startTime) 
-            startTime = 1; 
-        end
-        if isempty(endTime)
-            endTime = length(handles.t_Filt);
-        end
-        
-        % make array to fit steps to:
-        x = handles.PSD1Data_Long_Filt(startTime:endTime);
-        y = handles.PSD1Data_Short_Filt(startTime:endTime);
-        usage = zeros(1,length(startTime:endTime)) + 1;
-
-    else
-    
-    % make array to fit steps to:
-    x = handles.currentPlotPSD_Long(startTime:endTime);
-    y = handles.currentPlotPSD_Short(startTime:endTime);
-    usage = ones(1,length(x));
-    %Note: NaNs removed in parser script
-    %x = RemoveNaNs(x);
-    end
-    
-    % fit the steps using my wrapper script to the SIC fitter
-    % this version of the wrapper won't fit the off-axis at all, and breaks
-    % the trace into subtraces according to usage. See parse_and_fit for
-    % more details.
-    
-    % fitted_trace_6col = parse_and_fit_twosides(x,y,usage,1,500000);
-    fitted_trace_6col = parse_and_fit_twosides_vJS(x,y,usage,1,500000);
-    
-    % Build step vectors
-    
-    %handles.stepVector = NaN(1,length(handles.currentPlotPSD_Long));
-    handles.stepVector(startTime:endTime) = (fitted_trace_6col(:,3))';
-    handles.shortStepVector(startTime:endTime) = (fitted_trace_6col(:,4))';
-    keepLimits = 2; % keep Y-limits strictly the same
-    handles = PlotData(hObject, handles, keepLimits); % Re-plot data
-    
-guidata(hObject, handles);
-
-% hObject    handle to pushbutton35 (see GCBO)
-% eventdata  reserved - to be defined in a future version of MATLAB
-% handles    structure with handles and user data (see GUIDATA)
+end

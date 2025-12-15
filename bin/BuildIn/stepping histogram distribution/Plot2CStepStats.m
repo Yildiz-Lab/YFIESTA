@@ -938,7 +938,7 @@ for j = 1:length(molidx)-1
     % could also add a buffer for separation. i.e. if the sep is too small,
     % say 5nm, then let's just say it is the same sign as the previous.
     % This isn't doing anything though...weirdly
-    buffer_dist = 3.5;
+    buffer_dist = 3;
     deltatxystep = [deltatxystep(1,:); deltatxystep]; %add first row for edge case
     too_small_idx = find(abs(deltatxystep(2:end,4)) < buffer_dist); too_small_idx = too_small_idx+1;
     for c = 1:length(too_small_idx) %have to do a for loop for iterative purposes

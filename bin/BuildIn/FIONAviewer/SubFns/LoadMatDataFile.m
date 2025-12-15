@@ -1,81 +1,59 @@
-function handles = LoadMatDataFile(~, handles, path, filename)
+function app = LoadMatDataFile(app, path, filename)
+% LoadMatDataFile  (modernized for UIFIGURE app)
+%
+% app      – struct containing UI handles + application data
+% path     – folder path
+% filename – file name to load
 
-tic % debug purposes only - optimizing load time
+% Reset step fitter
+app.Data.stepVector = [];
+app.Data.shortstepVector = [];
 
-% Turn off filtering
-set(handles.FilterData,'string','Filter/Decimate Data?');
-handles.display.filtered = 0;
-
-handles = ResetStepFitter(handles);
-
-% Reset line fitter
-handles.lineVector = 0;
-%set(handles.FitLine, 'String', 'FIT');
-%set(handles.SaveLineFit, 'Visible', 'off');
-
-DataFilePath=strcat(path,filename);
-handles.currentPath=DataFilePath;
-
-% JS Edit 2024/03/18 for new mat way to save data
+%% -----------------------------
+% Load MAT file
+% ------------------------------
+DataFilePath = fullfile(path, filename);
 trace_curr = load(DataFilePath);
+
+% New MAT format wrapper
 if isfield(trace_curr,'data')
-trace_curr = trace_curr.data;
+    trace_curr = trace_curr.data;
+end
+app.data = trace_curr; % just load everything for a template
+
+%% -----------------------------
+% Load raw coordinate traces
+% ------------------------------
+app.Data.PSD1Data_Long  = trace_curr.xy(:,1)';
+app.Data.PSD1Data_Short = trace_curr.xy(:,2)';
+app.Data.t = 1:length(trace_curr.xy(:,1));
+if isfield(trace_curr, 'time')
+    app.Data.t = trace_curr.time - trace_curr.time(1);
+    app.data.time = trace_curr.time;
+    app.time_bool = 1;
 end
 
-% data_xy_yx = trace_curr.trace; handles.xydisplayed = 1; %show xy
-% data_xy_yx = trace_curr.trace_yx; handles.xydisplayed = 0; %show yx
-
-% JS Edit 2025/01/17 to be able to load in even if not fit
-% load in initial raw coords
-handles.PSD1Data_Long = trace_curr.xy(:,1)';
-handles.PSD1Data_Short = trace_curr.xy(:,2)';
-handles.t = 1:length(trace_curr.xy(:,1));
-
+%% Step/vector data (optional depending on file contents)
 if isfield(trace_curr,'trace')
-% data_xy_yx = trace_curr.trace(:,[2,1,4,3,5,6]); handles.xydisplayed = 0; %Old data format, set to yx
-data_xy_yx = trace_curr.trace; handles.xydisplayed = 1; %set to xy
-handles.stepVector = data_xy_yx(:,3)';
-handles.shortStepVector = data_xy_yx(:,4)';
-handles.usageVector = data_xy_yx(:,6)';
+    app.data.trace = trace_curr.trace;
+    app.Data.stepVector       = app.data.trace(:,3)';
+    app.Data.shortstepVector  = app.data.trace(:,4)';
+else
+    app.Data.stepVector = [];
+    app.Data.shortstepVector = [];
 end
-% End of JS Edit
 
-% trace_curr = load (DataFilePath,'-mat','trace');
-
-% % bring to axis
-% handles.PSD1Data_Long = data_xy_yx(:,1)';
-% handles.PSD1Data_Short = data_xy_yx(:,2)';
-% handles.stepVector = data_xy_yx(:,3)';
-% handles.shortStepVector = data_xy_yx(:,4)';
-
-% % show yx axis
-% handles.xydisplayed = 0;
-% handles.PSD1Data_Long = trace_curr.trace_yx(:,2)';
-% handles.PSD1Data_Short = trace_curr.trace_yx(:,1)';
-% handles.stepVector = trace_curr.trace(:,4)';
-% handles.shortStepVector = trace_curr.trace(:,3)';
-
-% %make a new handle for the usage from the mat file...so we can save it
-% %right later.
-% handles.usageVector = data_xy_yx(:,6)';
-
-%FrameTime = str2double(get(handles.FrameLength, 'string'))/1000; % in sec
-% handles.t = 1:length(trace_curr.trace(:,1));
-
-% JS Edit 2024/03/18 for new mat way to save data
+%% Neighbors field
 if isfield(trace_curr,'neighbors')
-handles.neighbors = trace_curr.neighbors;
+    app.data.neighbors = trace_curr.neighbors;
 else
-    handles.neighbors = [];
+    app.data.neighbors = [];
 end
 
-% set all the things normally set in loading a new data file
+%% -----------------------------
+% Update UI labels
+% ------------------------------
+app.FileName.Text     = filename;
+app.FilePath.Text     = path;
+app.LeftPanelFields.StepsFilename.Text = fullfile(path,filename);
 
-if isfield(trace_curr,'time')
-    handles.time = trace_curr.time;
-else
-    handles.time = [];
-end
-set(handles.FileName,'string',filename);
-set(handles.FilePath,'string',path);
-set(handles.StepsFilename,'string',strcat(path,filename));

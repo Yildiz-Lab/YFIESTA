@@ -1,78 +1,76 @@
-function handles = LoadNewDataFile(hObject, handles, path, filename)
-% Reads data from a new file given by filename at the given path and saves 
-% all the appropriate new variables to the handles structure
+function LoadNewDataFile(app, path, filename)
+% Reads data from a new file and updates the app object
 %
-% Written by Vladislav Belyy
-% Last updated on 11/18/2011
+% Converted for App Designer/uifigure compatibility (2023+)
 
-%% Prepare for data reading
+    %----------------------------------------
+    % Turn off filtering
+    %----------------------------------------
+    app.FilterDataButton.Text = "Filter/Decimate Data?";
+    app.display.filtered = 0;
 
-%tic % debug purposes only - optimizing load time
+    % Reset step fitter
+    app = ResetStepFitter(app);
 
-% Turn off filtering
-set(handles.FilterData,'string','Filter/Decimate Data?')
-handles.display.filtered = 0;
+    % Reset any line-fitting state if applicable
+    % app.lineVector = 0;
 
-handles = ResetStepFitter(handles);
-
-% Reset line fitter
-% handles.lineVector = 0;
-% set(handles.FitLine, 'String', 'FIT');
-% set(handles.SaveLineFit, 'Visible', 'off');
-
-DataFilePath=strcat(path,filename);
-handles.currentPath=DataFilePath;
+    % Save full data path
+    DataFilePath = fullfile(path, filename);
+    app.currentPath = DataFilePath;
 
 
+    %----------------------------------------
+    % Read the data file (your custom function)
+    %----------------------------------------
+    FIONAData = ReadMatDataFile(DataFilePath);
+
+    if app.xydisplayed
+        Data = FIONAData.yx;   % used to be “flip each time”
+    else
+        Data = FIONAData.xy;
+    end
+
+    % Toggle which projection is displayed
+    app.xydisplayed = ~app.xydisplayed;
+
+    % Store neighbors & time if present
+    if isfield(FIONAData, "neighbors")
+        app.neighbors = FIONAData.neighbors;
+    else
+        app.neighbors = [];
+    end
+
+    if isfield(FIONAData, "time")
+        app.time = FIONAData.time;
+    else
+        app.time = [];
+    end
 
 
+    %----------------------------------------
+    % Update GUI display fields
+    %----------------------------------------
+    app.FileNameLabel.Text = filename;
+    app.FilePathLabel.Text = path;
 
-%% Read data
 
-% JS Edit 2022/____
-%Data=ReadDataFile(DataFilePath); % fast data read
-FIONAData=ReadMatDataFile(DataFilePath); % fast data read
-if handles.xydisplayed
-    Data = FIONAData.yx;
-else
-    Data = FIONAData.xy;
+    %----------------------------------------
+    % Load coordinate data
+    %----------------------------------------
+    app.PSD1Data_Long  = Data(:,1)';   % long-axis
+    app.PSD1Data_Short = Data(:,2)';   % short-axis
+
+    limit = length(Data(:,1));
+
+    % Initialize vectors
+    app.stepVector        = nan(1, limit);
+    app.shortStepVector   = nan(1, limit);
+    app.usageVector       = zeros(1, limit);
+    app.changepoints      = zeros(1, limit);
+
+    % Simple index time vector
+    app.t = 1:limit;
+
+    % Done
 end
-handles.xydisplayed = ~handles.xydisplayed;
-handles.neighbors = FIONAData.neighbors;
-handles.time = FIONAData.time;
-
-%tElapsed = toc; % debug purposes only - optimizing time
-
-
-set(handles.FileName,'string',filename)
-set(handles.FilePath,'string',path)
-
-
-
-%% Load data 
-
-%creates empty data for four of the columns in my 6-column trace files
-
-% Rotate and convert raw PSD1 signals: creates handles.PSD1Data_Long,
-% PSD1Data_Short, and handles.t
-handles.PSD1Data_Long = Data(:,1)';
-handles.PSD1Data_Short = Data(:,2)';
-limit = length(Data(:,1));
-handles.stepVector(1:limit) = NaN;
-handles.shortStepVector(1:limit) = NaN;
-% default usage instructions are zero for data loaded from two-column text
-handles.usageVector = 0;
-handles.usageVector(1,1:length(Data(:,1))) = 0;
-%also initialize a changepoints vector, for consistency
-handles.changepoints = 0;
-handles.changepoints(1,1:length(Data(:,1))) = 0;
-
-%initialize time vector as just the indices (if its even still used)
-handles.t = 1:length(Data(:,1));
-
-
-% debug purposes only:
-%disp(['Loaded in: ', num2str(tElapsed), ' seconds']);
-
-% Update handles structure
-guidata(hObject, handles);

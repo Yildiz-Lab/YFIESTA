@@ -156,19 +156,31 @@ for i = 1:length(step_idx)
         return_sigma = 1.0;
         % step_sign(i)
         if step_sign(i) > 0
-            bool1 = data.trace(sidx-10:sidx,1) > data.trace(sidx-10:sidx,3)-return_sigma*sigma;
-            idx1 = find(bool1 > 0);
-            if length(idx1) > 1
-                idx1 = idx1(end);
+            if sidx-10 > 1 % If the step happened immediately (in the first 10 frames), ignore it since it is probably not real
+            
+                bool1 = data.trace(sidx-10:sidx,1) > data.trace(sidx-10:sidx,3)-return_sigma*sigma;
+                idx1 = find(bool1 > 0);
+                if length(idx1) > 1
+                    idx1 = idx1(end);
+                end
+                idx1 = idx1-1+sidx-10;
+            
+            else
+                idx1 = [];
             end
-            idx1 = idx1-1+sidx-10;
         elseif step_sign(i) < 0
-            bool1 = data.trace(sidx:sidx+10,1) > data.trace(sidx:sidx+10,3)-return_sigma*sigma;
-            idx1 = find(bool1 > 0);
-            if length(idx1) > 1
-                idx1 = idx1(1);
+            
+            if sidx+10 < length(data.trace(:,1))
+                bool1 = data.trace(sidx:sidx+10,1) > data.trace(sidx:sidx+10,3)-return_sigma*sigma;
+                idx1 = find(bool1 > 0);
+                if length(idx1) > 1
+                    idx1 = idx1(1);
+                end
+                idx1 = idx1-1+sidx;
+            
+            else
+                idx1 = [];
             end
-            idx1 = idx1-1+sidx;
         end
 
     blip_idx = [blip_idx; idx1];
