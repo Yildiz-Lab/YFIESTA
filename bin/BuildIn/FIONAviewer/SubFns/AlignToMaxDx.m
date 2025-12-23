@@ -21,16 +21,20 @@ idx = find(cp)+2*window;
 newcp = zeros(length(idx),1);
 
 j=1;
-for j = 1:length(idx)
+for j = length(idx):-1:1
     i = idx(j);
     mn = i-window;
     mx = i+window;
     
-    [~,midx,~] = largestMeanedChange(x(mn-window:mx+window),window); %similar to changepoint
+    [mchange,midx,~] = largestMeanedChange(x(mn-window:mx+window),window); %similar to changepoint
     % [~, midx] = max(dx(mn:mx));
     % newcp(j) = i-window-1+midx;
-    newcp(j) = i-2*window-1+midx;
-    j=j+1;
+    if mchange > 5 %nm
+        newcp(j) = i-2*window-1+midx;
+    else
+        newcp(j) = [];
+    end
+    j=j-1;
 
 end
 
