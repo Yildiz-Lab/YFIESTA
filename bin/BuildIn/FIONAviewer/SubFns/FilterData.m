@@ -41,7 +41,14 @@ elseif strcmp(app.FilterPanelFields.FilterGroup.SelectedObject.Text,'Butterworth
     order = app.FilterPanelFields.FilterOrder.Value;  % filter order (4 is usually fine)
     Wn = 1 / WindowLength;  % normalized cutoff (1/downsample rate) so it is below new Nyquist
     
+    % Wn = fc / (fs/2); % for a low pass filter cutoff at 100 Hz and fs is
+    % 2000 Hz, then this becomes 1/10 or so, which is why it worked
+    % decently well with this setting for MINFLUX data.
+    % We should make window be a bit more transparent about taking
+    % frequency though.
+
     [b,a] = butter(order, Wn); % design lowpass
+    % h = filterAnalyzer(b,a);
     x_filt = filtfilt(b,a,x);  % zero-phase filtering
     y_filt = filtfilt(b,a,y);
     
@@ -50,6 +57,9 @@ elseif strcmp(app.FilterPanelFields.FilterGroup.SelectedObject.Text,'Butterworth
     FilteredX = x_filt(t_ds);
     FilteredY = y_filt(t_ds);
     
+    ts = mean(app.Data.t(2:end)-app.Data.t(1:end-1));
+    fs = 1/ts; fc = Wn * fs/2;
+    fprintf(strcat("Lowpass filter cutoff frequency: ", num2str(fc), " Hz \n"))
 
 
 elseif strcmp(app.FilterPanelFields.FilterGroup.SelectedObject.Text,'L1 Piecewise Constant') % L1 piecewise-constant filter
