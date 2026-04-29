@@ -2,8 +2,11 @@ function app = FIONAviewer(varargin)
     % Modern UIFIGURE-based recreation of the original FIONAviewer GUI
     % Works in MATLAB R2020+ (tested R2023, R2024)
     
-    % make sure to add dependencies
-    addpath('SubFns/')
+    % make sure to add dependencies if launching through Fiesta
+    addpath('bin/BuildIn/FIONAviewer/SubFns/')
+    % otherwise do a simpler version if already navigated to parent
+    % FIONAviewer
+    % addpath('SubFns/')
 
     app.fig = uifigure('Name','FIONAviewer', ...
                        'Position',[100 100 1400 800]);
@@ -24,6 +27,7 @@ function app = FIONAviewer(varargin)
     % app.EditNoise = [];
     % app.EditMinDelta = [];
         app.FitPanelFields.DropFitAxis = [];
+        app.FitPanelFields.DropFitString = [];
         app.FitPanelFields.BtnFit = [];
         app.FitPanelFields.BtnAdd = [];
         app.FitPanelFields.BtnDelete = [];
@@ -60,6 +64,7 @@ function app = FIONAviewer(varargin)
     app.Data.shortstepVector = [];
     app.Data.FilterData = [];
     app.Data.FilteredFlag = 0;
+    app.Data.StepChangesTable = [];
     app.time_bool = 0;
     app.display = struct();
     
@@ -150,6 +155,13 @@ function app = FIONAviewer(varargin)
         'Items',{'Long-axis','Short-axis'}, ...
         'Value','Long-axis');
 
+    % --- Create edit field left of the Fit Axis dropdown
+    app.FitPanelFields.DropFitString = uieditfield(app.FitPanel, 'text');
+    app.FitPanelFields.DropFitString.Position = [140 55 70 22]; % set proper coordinates
+    app.FitPanelFields.DropFitString.Tooltip = 'User string for step changes';
+    app.FitPanelFields.DropFitString.Value = 'user';
+
+
     app.FitPanelFields.BtnFit = uibutton(app.FitPanel, ...
         'Position',[10 15 120 30], ...
         'Text','Fit', ...
@@ -189,6 +201,20 @@ function app = FIONAviewer(varargin)
     % HOTKEYS
     app.fig.WindowKeyPressFcn = @(fig,event) onKeyPress(app, event);
     % app.AxMain.ButtonDownFcn = @(src,event) uifigureFocus(app);
+
+    %% Shortcut accelerators (Define all strings hear for continuity throughout the code)
+    % User defined shortcuts here
+    % app.shortcuts = dictionary("zoom","z", "zoom_out","x", "pan","v", ...
+    %     "add","a", "delete","d", "filter","f", "save","s", "export","c");
+
+    % Add menus with Accelerators
+    HKmenu = uimenu('Parent',app.fig,'Label','Hot Keys');
+    uimenu('Parent',HKmenu,'Label','Zoom','Accelerator','z','Callback',@(src,evt)zoom(app.fig,'toggle'));
+    uimenu('Parent',HKmenu,'Label','Reset','Accelerator','x','Callback',@(src,evt)zoom(app.fig,'out'));
+    uimenu('Parent',HKmenu,'Label','Pan','Accelerator','v','Callback',@(src,evt)pan(app.fig,'toggle'));
+
+    % uimenu('Parent',HKmenu,'Label','Save','Accelerator','s','Callback',@(src,evt)onSave(app));
+    % uimenu('Parent',HKmenu,'Label','Export Fig','Accelerator','c','Callback',@(src,evt)onExportFigure(app));
 
     %% -------------------------------------------
     % FILTER PANEL (Bottom-left)
@@ -235,7 +261,7 @@ function app = FIONAviewer(varargin)
     uilabel(app.DisplayPanel,'Position',[10 70 60 20],'Text','Plot marker:');
     app.DisplayPanelFields.DropLineStyle = uidropdown(app.DisplayPanel, ...
         'Position',[80 70 100 22], ...
-        'Items',{'Lines','Dots','None'}, ...
+        'Items',{'Lines','Dots','Both','None'}, ...
         'Value','Lines');
 
     app.DisplayPanelFields.BtnRefresh = uibutton(app.DisplayPanel, ...
@@ -250,7 +276,7 @@ function app = FIONAviewer(varargin)
 
     app.DisplayPanelFields.ChkGrid = uicheckbox(app.DisplayPanel, ...
         'Position',[10 25 120 30], ...
-        'Text','Grid Spacing','Value', 0);
+        'Text','Grid Spacing','Value', 1);
 
     % uilabel(app.DisplayPanelFields.GridSpacingText,'Position',[10 120 150 20],'Text','Grid Spacing (nm)');
     app.DisplayPanelFields.GridSpacing = uieditfield(app.DisplayPanel,'numeric', ...
@@ -374,6 +400,8 @@ function app = onFit(app)
             stepFit.StepFit = out(1:length(app.Data.t));
         end
         app.Data.stepVector = stepFit.StepFit; % Update step vector
+        cp = find(abs(app.Data.stepVector(2:end) - app.Data.stepVector(1:end-1)));
+        app = UserStepChangesTable(app, cp+1, 'fit');
     elseif strcmp(app.FitPanelFields.DropFitAxis.Value,'Short-axis')
         lineObj = findobj(app.AxMain, 'Type', 'Line', 'Tag', 'hShortAxis');
         stepFit = SICstepFinder(lineObj.YData);
@@ -383,6 +411,8 @@ function app = onFit(app)
             stepFit.StepFit = out(1:length(app.Data.t));
         end
         app.Data.shortstepVector = stepFit.StepFit; % Update step vector
+        cp = find(abs(app.Data.shortstepVector(2:end) - app.Data.shortstepVector(1:end-1)));
+        app = UserStepChangesTable(app, cp+1, 'fit');
     end
     app = updateMainPlot(app); %and replot
     % Then let buttons be visible again
@@ -499,7 +529,7 @@ function [nearestX, nearestY] = AxMainClick(app, src, event)
     yRange = diff(ax.YLim);
     
     % Find the line (if only one line, just pick it)
-    if strcmp(app.FitPanelFields.DropFitAxis.Value,'Long-axis');
+    if strcmp(app.FitPanelFields.DropFitAxis.Value,'Long-axis')
         lineObj = findobj(ax, 'Type', 'Line', 'Tag', 'hFitLine'); %line to find nearest point to Long-axis
     else
         lineObj = findobj(ax, 'Type', 'Line', 'Tag', 'hFitShortLine'); %line to find nearest point to Short-axis fit
@@ -556,14 +586,29 @@ function onKeyPress(app, event)
     key = event.Key;  % string of the key pressed, e.g., 'a', 'd', 'leftarrow'
     mods = event.Modifier; % cell array of modifiers, e.g., {'control'}
     
-    if ismember('control', mods)
+    % switch between control for pc and command for mac
+    if ispc && ismember('control', mods) || ismac && ismember('command', mods)
         switch key
             case 's'
                 % disp('Ctrl+s pressed')
                 onSave(app)
+
             case 'c'
                 % disp('Ctrl+e pressed')
                 onExportFigure(app)
+
+            % case 'v'
+            %     % disp('Ctrl+v pressed')
+            %     pan(app.fig,'toggle')
+            % 
+            % case 'z'
+            %     % disp('Ctrl+z pressed')
+            %     zoom(app.fig,'toggle')
+            % 
+            % case 'x'
+            %     % disp('Ctrl+x pressed')
+            %     zoom(app.fig,'out')
+
         end
 
     else
@@ -573,18 +618,21 @@ function onKeyPress(app, event)
             
             case 'd' %d trigger onDelete button
                 onDelete(app, app.FitPanelFields.BtnDelete);
-            
-            % case 'p'
-            %     app.AxMain.Interactions = app.PanI;
+
+            % case 'f' %f trigger onFilter button
+            %     onFilter(app, app.FilterPanelFields.BtnFilter);
+
+            % case 'v' %v triggers pan
+            %     pan(app.fig,'toggle') %toggle only will turn on, we can't access this in the active figure mode state
             % 
-            % case 'z'
-            %     app.AxMain.Interactions = [app.ZoomI app.PanI];
-            %
-            % case 'r'     % Reset view
-            %     % Reset the axes limits (you can customize initial limits)
-            %     app.AxMain.XLimMode = 'auto';
-            %     app.AxMain.YLimMode = 'auto';
+            % case 'z' %z triggers zoom in
+            %     zoom(app.fig,'toggle')
+            % 
+            % case 'x' %x triggers reset (zoom out)
+            %     zoom(app.fig,'out')
+
             % You can add more hotkeys here
         end
     end
 end
+

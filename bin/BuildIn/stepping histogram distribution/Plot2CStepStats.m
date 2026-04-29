@@ -1003,11 +1003,16 @@ for j = 1:length(molidx)-1
             % Now calculate outside the synchronity for a control
             not_runs(isnan(not_runs)) = [];
             breaks = find(not_runs(2:end) - not_runs(1:end-1) > 1); breaks = [0; breaks; length(not_runs)];
-            for m = 1:length(breaks)-1
-                midx = not_runs(breaks(m)+1:breaks(m+1));
-                chtot_notruns = [chtot_notruns; sum(deltatxystep(midx,:),1), mean(x(midx,:),1), length(midx)];
-                time_diff_notruns = [time_diff_notruns; deltatxystep(midx(end),2) - deltatxystep(midx(1),2)];
-            end
+            
+            
+            % Block only important for velocity and only works with merge
+            % If use uncomment this and lines 1070-1085
+            % for m = 1:length(breaks)-1
+            %     midx = not_runs(breaks(m)+1:breaks(m+1));
+            %     chtot_notruns = [chtot_notruns; sum(deltatxystep(midx,:),1), mean(x(midx,:),1), length(midx)];
+            %     time_diff_notruns = [time_diff_notruns; deltatxystep(midx(end),2) - deltatxystep(midx(1),2)];
+            % end
+            % End of block important for velocity in/out of runs
             
             % This tells us in the stretches, what is the position of the
             % relative heads
@@ -1063,20 +1068,20 @@ title('Mean separation during runs')
 plot_polar_conversion(r, theta, 24)
 
 %% get the velocities within or not in runs. Is there a difference?
-v1 = ch1sum(:,6)./time_diff;
-v2 = ch2sum(:,6)./time_diff;
-vnot = chtot_notruns(:,6)./time_diff_notruns;
-
-figure()
-subplot(1,2,1)
-hold on
-histogram(v1,'BinWidth',25)
-histogram(v2,'BinWidth',25)
-
-subplot(1,2,2)
-hold on
-histogram((v1+v2)/2,'BinWidth',25)
-histogram(vnot/2,'BinWidth',25)
+% v1 = ch1sum(:,6)./time_diff;
+% v2 = ch2sum(:,6)./time_diff;
+% vnot = chtot_notruns(:,6)./time_diff_notruns;
+% 
+% figure()
+% subplot(1,2,1)
+% hold on
+% histogram(v1,'BinWidth',25)
+% histogram(v2,'BinWidth',25)
+% 
+% subplot(1,2,2)
+% hold on
+% histogram((v1+v2)/2,'BinWidth',25)
+% histogram(vnot/2,'BinWidth',25)
 
 %% now let's just make a plot for average "autocorrelation" in every asset
 figure()

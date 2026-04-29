@@ -36,5 +36,6 @@ end
 stepidx = find(changepoints_x > 0);
 
 app.data.trace = trace;
+app.data.UserChanges = app.Data.StepChangesTable;
 
 end

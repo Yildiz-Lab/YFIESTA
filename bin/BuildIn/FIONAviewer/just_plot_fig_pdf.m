@@ -1,4 +1,4 @@
-function total_table = all_in_one_plot_fig_pdf(Molecule, inputArg1)
+function just_plot_fig_pdf()
 % Plot all stats from a selection of MATLAB traces as figures.
 % Options add the ability to make a png or pdf plot
 
@@ -10,9 +10,9 @@ function total_table = all_in_one_plot_fig_pdf(Molecule, inputArg1)
 % For purposes of coding, all subscript 1's go with Ch2 and all subscript
 % 2's go with Ch1. I mixed them up at some point.
 
-offset = -15;
-dx = -18; %dx = 75; %assume on-axis, horizontal MT
-dy = -27; %dy = 35; %assume off-axis, vertical MT
+offset = 0;
+dx = 0; %dx = 75; %assume on-axis, horizontal MT
+dy = 0; %dy = 35; %assume off-axis, vertical MT
 % Note, can instead use function offset_by_law_of_means(dir, fnames) below
 
 % Options
@@ -81,69 +81,21 @@ for i = 1:length(fnames)
     fname(ii:jj)
     fname(gg:j)
 
-    for k = length(Molecule):-1:1
-        % Have it go backwards so that it can only find the total fname.
-        % For example. if you were trying to find molecule 627, but there
-        % was also a molecule 66273, it would find the higher molecule
-        % first. But then upon crossing to 627, it would update m
-        % accordingly.
-
-        % Contrastly, if you are trying to find molecule 66273, it will not
-        % update when it reaches 627 since the str is not contained in
-        % Molecule 627 name. So you are safe. Genius move!
-        if ~isempty(strfind(Molecule(k).Name,fname(ii:jj)))
-            % Molecule(k).Name
-            % length(Molecule(k).Name)
-            % strfind(Molecule(k).Name, fname(ii:jj))
-            m = k;
-        end
-        if ~isempty(j)
-        if ~isempty(strfind(Molecule(k).Name,fname(gg:j)))
-            % Molecule(k).Name
-            % length(Molecule(k).Name)
-            % strfind(Molecule(k).Name, fname(1:j))
-            n = k;
-        end
-        end
-
-    end
 
     if ~isempty(j) %switch it
-        temp = m;
-        m = n;
-        n = temp;
 
         fname2 = fname;
 
         strstart = strfind(fname,'nbh');
         strend = strfind(fname,'fiona');
         fname1 = strcat(fname(1:strstart-1),fname(strend:end));
-        
-        fprintf(strcat("Channel ", num2str(Molecule(n).Channel), ": ", Molecule(n).Name, '\n'))
     else
         fname1 = fname;
     end
-    
-    fprintf(strcat("Channel ", num2str(Molecule(m).Channel), ": ", Molecule(m).Name, '\n'))
 
     % Now dissect filename connections
     totdata = load(fullfile(dir,fname1));
     ch1data = totdata.data;
-    
-    efo1 = [efo1; Molecule(m).Results(:,7)];
-    eco1 = [eco1; Molecule(m).Results(:,8)];
-
-    % % Make a figure to show the efo and eco
-    % figefco = figure();
-    % subplot(1+~isempty(j),2,1)
-    % histogram(Molecule(m).Results(:,7))
-    % title(strcat(fname(1:j), " efo"))
-    % legend(num2str(median(Molecule(m).Results(:,7))))
-    % subplot(1+~isempty(j),2,2)
-    % histogram(Molecule(m).Results(:,8))
-    % title(strcat(fname(1:j), " cnt"))
-    % legend(num2str(median(Molecule(m).Results(:,8))))
-    % % MOLECULE
 
     if isfield(ch1data, 'time')
         time1 = ch1data.time;
@@ -231,29 +183,6 @@ for i = 1:length(fnames)
 
             plot(time2-time1(1), ch2data.trace_yx(idx2,1)+dy,'Color',[0 0 0.7 0.45],'LineWidth',1)
             plot(time2-time1(1), ch2data.trace_yx(idx2,3)+dy,'blue','LineWidth',2)
-            
-            % MOLECULE
-            efo2 = [efo2; Molecule(n).Results(:,7)];
-            eco2 = [eco2; Molecule(n).Results(:,8)];
-            
-            figefco = figure();
-            subplot(1+~isempty(j),2,1)
-            histogram(Molecule(m).Results(:,7))
-            title(strcat(fname(ii:jj), " efo"))
-            legend(num2str(median(Molecule(m).Results(:,7))))
-            subplot(1+~isempty(j),2,2)
-            histogram(Molecule(m).Results(:,8))
-            title(strcat(fname(ii:jj), " cnt"))
-            legend(num2str(median(Molecule(m).Results(:,8))))
-            subplot(2,2,3)
-            histogram(Molecule(n).Results(:,7))
-            title(strcat(fname(1:j), " efo"))
-            legend(num2str(median(Molecule(n).Results(:,7))))
-            subplot(2,2,4)
-            histogram(Molecule(n).Results(:,8))
-            title(strcat(fname(1:j), " cnt"))
-            legend(num2str(median(Molecule(n).Results(:,8))))
-            % MOLECULE
 
         % catch
         %     fprintf("no associated neighbor file ... continuing with just a single channel \n")
@@ -266,17 +195,6 @@ for i = 1:length(fnames)
         fprintf("no associated neighbor file ... continuing with just a single channel \n")
 
         idx2 = [NaN];
-
-        figefco = figure();
-        subplot(1,2,1)
-        histogram(Molecule(m).Results(:,7))
-        title(strcat(fname(ii:jj), " efo"))
-        legend(num2str(median(Molecule(m).Results(:,7))))
-        subplot(1,2,2)
-        histogram(Molecule(m).Results(:,8))
-        title(strcat(fname(ii:jj), " cnt"))
-        legend(num2str(median(Molecule(m).Results(:,8))))
-
 
     end
     
@@ -309,9 +227,6 @@ for i = 1:length(fnames)
     
         fprintf(strcat("ch2 dx: ", num2str( round(st(2,1),2)), " nm \n"))
         fprintf(strcat("ch2 deltat: ", num2str( round(st(2,2),3) ), " ms \n"))
-
-        xycorrect = -[mean(Molecule(m).Results(:,3)) - mean(Molecule(n).Results(:,3)), mean(Molecule(m).Results(:,4)) - mean(Molecule(n).Results(:,4))];
-        fprintf(strcat('Mean x, y: (', num2str(round(xycorrect(1),3)) ,', ', num2str(round(xycorrect(2),3)), ')\n'))
     
     else
 
@@ -329,7 +244,7 @@ for i = 1:length(fnames)
     
     %Ch1 efo (x10^3), Ch1 eco, Ch1 time res, Ch1 r res, distance, time, V
     % total_table = [total_table; str2double(fname(ii:jj)), round(mean(efo1)/10000)*10, mean(eco1), st(1,2), st(1,1), round(ch1data.trace(end,1)-ch1data.trace(1,1),2), round(ch1data.time(end,1)-ch1data.time(1,1),2), round( (ch1data.trace(end,1)-ch1data.trace(1,1)) / (ch1data.time(end,1)-ch1data.time(1,1)), 0)];
-    total_table = [total_table; str2double(fname(ii:jj)), round(mean(efo1)/10000)*10, mean(eco1), st(1,2), st(1,1), round(max(ch1data.trace(:,3))-min(ch1data.trace(:,3)),2), round(ch1data.time(end,1)-ch1data.time(1,1),2), round( (max(ch1data.trace(:,3))-min(ch1data.trace(:,3))) / (ch1data.time(end,1)-ch1data.time(1,1)), 0)];
+    total_table = [total_table; str2double(fname(ii:jj)), st(1,2), st(1,1), round(max(ch1data.trace(:,3))-min(ch1data.trace(:,3)),2), round(ch1data.time(end,1)-ch1data.time(1,1),2), round( (max(ch1data.trace(:,3))-min(ch1data.trace(:,3))) / (ch1data.time(end,1)-ch1data.time(1,1)), 0)];
 
     fprintf(strcat("ch1 distance (nm): ", num2str( round(ch1data.trace(end,1)-ch1data.trace(1,1),2)), " nm \n"))
     fprintf(strcat("ch1 interaction time (s): ", num2str( round(ch1data.time(end,1)-ch1data.time(1,1),2)), " s \n"))
@@ -355,7 +270,6 @@ for i = 1:length(fnames)
         'YColor', 'k');
 
     saveas(figgs, strcat(dir,fname(1:end-4),"_plot"))
-    saveas(figefco, strcat(dir,fname(1:end-4),"_efco"))
     
     if write_pdf > 0
         % saveas(figgs, strcat(dir,fname(1:end-4),'.png'))
@@ -365,7 +279,6 @@ for i = 1:length(fnames)
     end
     
     close(figgs)
-    close(figefco)
 
 end
 
@@ -411,9 +324,6 @@ end
 % if ~isempty(get(ax, 'YLabel'))
 %     set(get(ax, 'YLabel'), 'FontName', 'Arial', 'FontSize', 10, 'Color', 'k');
 % end
-
-saveas(figtotefco, strcat(dir,"efco"))
-% MOLECULE
 
 
 function A = smooth_running_average(A, smooth_running_average_wdw)

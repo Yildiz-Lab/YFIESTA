@@ -328,11 +328,19 @@ Check = false(size(Object.Results,1),1);
 setappdata(0,'hDataGui',hDataGui);
 setappdata(hDataGui.fig,'Object',Object);
 setappdata(hDataGui.fig,'Check',Check);
+% try
+%     XAxisList(hDataGui);
+% catch
+%     delete(hDataGui.fig);
+%     Create(Type,idx);
+% end
+
 try
     XAxisList(hDataGui);
-catch
+catch ME
     delete(hDataGui.fig);
-    Create(Type,idx);
+    warning('fDataGui:Create','Failed to initialize XAxisList: %s\n%s', ME.message, ME.getReport);
+    return;
 end
 
 function Clear(h,~)
@@ -1602,8 +1610,24 @@ end
 function ReturnFocus(~,~)
 hDataGui=getappdata(0,'hDataGui');
 warning off MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame
-javaFrame = get(hDataGui.fig,'JavaFrame');
-javaFrame.getAxisComponent.requestFocus;
+% javaFrame = get(hDataGui.fig,'JavaFrame');
+% javaFrame.getAxisComponent.requestFocus;
+
+% JS Update 2026/01/23 for r2025 without JavaComponent
+try
+    % Prefer supported APIs
+    if isvalid(hDataGui.fig)
+        figure(hDataGui.fig);
+        % try to focus a specific control if present
+        if isfield(hDataGui,'editControl') && isvalid(hDataGui.editControl)
+            uicontrol(hDataGui.editControl);
+        end
+        drawnow;
+    end
+catch ME
+    % For debugging: show the real problem; don't try to use JavaFrame
+    warning('ReturnFocus:failed','Could not set focus: %s', ME.message);
+end
 
 function FitMissingPoints(hDataGui)
 global Filament;

@@ -407,10 +407,10 @@ if ~isempty(fOpenStruct)
                 elseif isempty(TimeInfo{n}) || length(unique(TimeInfo{n}))<length(TimeInfo{n}) 
                     Config.Time(n) = str2double(fInputDlg('No creation time  - Enter plane time difference in ms:','200'));  
                     if ~isnan(Config.Time(n))
-                        TimeInfo{n}=(0:nFrames-1)*Config.Time(n);
+                        TimeInfo{n}=(0:nFrames(n)-1)*Config.Time(n);
                     else
                         Config.Time(n) = 0;
-                        TimeInfo{n}=(0:nFrames-1);
+                        TimeInfo{n}=(0:nFrames(n)-1);
                     end
                 else
                     Config.Time(n) = -round(mean(TimeInfo{n}(2:end)-TimeInfo{n}(1:end-1)),2);

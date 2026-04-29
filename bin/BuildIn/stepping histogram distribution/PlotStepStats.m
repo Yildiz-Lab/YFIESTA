@@ -25,8 +25,10 @@ n = length(h);
 figure(n+1)
 subplot(2,3,1)
 hh = histogram(onsteps,'BinWidth',1.5,'FaceColor', 0.3*ones(1,3), 'EdgeColor', 'k');
-axis([-40,48,0,40]);
-set(gca, 'XTick', [-80 -32 -24 -16 -8 0 8 16 24 32 40 100]);
+% axis([-40,48,0,40]);
+axis([-52,68,0,40]);
+% set(gca, 'XTick', [-80 -32 -24 -16 -8 0 8 16 24 32 40 100]);
+set(gca, 'XTick', [-48 -40 -32 -24 -16 -8 0 8 16 24 32 40 48 56 64]);
 set(gca, 'ylim', [0 max(hh.Values)+5])
 xlabel('step size (nm)');
 title ('on-axis steps')
@@ -42,8 +44,9 @@ fprintf(strcat("Backwards / forward stepping ", num2str(round(m,4)), " (", num2s
 % Off-axis step histogram
 subplot(2,3,2)
 histogram(offsteps,'BinWidth',1.5,'FaceColor', 0.3*ones(1,3), 'EdgeColor', 'k');
-axis([-32,32,0,50]);
-set(gca, 'XTick', [-30 -25 -20 -15 -10 -5 0 5 10 15 20 25 30]);
+% axis([-32,32,0,50]);
+axis([-42,42,0,50]);
+set(gca, 'XTick', [-40 -35 -30 -25 -20 -15 -10 -5 0 5 10 15 20 25 30, 35, 40]);
 % ylim([0 70])
 xlabel('step size (nm)');
 title ('off-axis steps')
@@ -60,8 +63,6 @@ catch
 end
 % fittedmdl2 = fit(X,Y',mdl_gauss2,'start',[0.7,8.,20.])
 
-
-
 % use betacdf to get the 95% confidence intervals
 [m,c1,c2] = beta_confidence(length(offsteps),totalsteps-length(offsteps));
 fprintf(strcat("Side / total stepping ", num2str(round(m,4)), " (", num2str(round(c1,4)), ",", num2str(round(c2,4)), ") \n"))
@@ -74,7 +75,7 @@ fprintf(strcat("Side / forward stepping ", num2str(round(m,4)), " (", num2str(ro
 subplot(2,3,3)
 % histogram(dwells);
 histogram(dwells, 'BinWidth', 0.01,'FaceColor', 0.3*ones(1,3), 'EdgeColor', 'k');
-set(gca,'XLim',[-0.05,0.8])
+% set(gca,'XLim',[-0.05,0.8])
 xlabel('Time (s)');
 ylabel('Counts');
 title ('dwell times')
@@ -83,7 +84,7 @@ title ('dwell times')
 subplot(2,3,4)
 % histogram(dwells_for);
 histogram(dwells_for,'BinWidth',0.01,'FaceColor', 0.3*ones(1,3), 'EdgeColor', 'k');
-set(gca,'XLim',[-0.05,0.8])
+% set(gca,'XLim',[-0.05,0.8])
 xlabel('Time (s)');
 title ('forward dwell times')
 
@@ -91,7 +92,7 @@ title ('forward dwell times')
 subplot(2,3,6)
 % histogram(dwells_back);
 histogram(dwells_back,'BinWidth',0.01,'FaceColor', 0.3*ones(1,3), 'EdgeColor', 'k');
-set(gca,'XLim',[-0.05,0.8])
+% set(gca,'XLim',[-0.05,0.8])
 xlabel('Time (s)');
 title ('backward dwell times')
 

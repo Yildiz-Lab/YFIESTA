@@ -7,6 +7,7 @@ hMainGui=getappdata(0,'hMainGui');
 
 error_events=[];
 abort=0;
+sspix = get(0,'ScreenSize');
 
 params.bw_region = Config.Region;
 params.dynamicfil = 0;
@@ -108,68 +109,164 @@ end
 
 filestr = [FiestaDir.AppData 'logfile.txt'];
 logfile = fopen(filestr,'w');
+
+% % --- Begin: create transient archive folder only if parallel pool is active ---
+% pool = gcp('nocreate');           % returns [] if no pool
+% useArchive = ~isempty(pool);     % enable archive only for parallel execution
+% 
+% if useArchive
+%     try
+%         baseDir = Config.Directory;
+%         if ~exist(baseDir,'dir'), baseDir = DirCurrent; end
+%         timeStamp = datestr(now,'yyyymmddTHHMMSSFFF');
+%         tempArchiveDir = fullfile(baseDir, [sName '_archive_' timeStamp]);
+%         mkdir(tempArchiveDir);
+% 
+%         % Ensure cleanup on normal exit or error. Will try remove recursively.
+%         cleanupObj = onCleanup(@() safeRmdir(tempArchiveDir));
+% 
+%         % constant for parfor workers
+%         archiveDirForWorkers = tempArchiveDir;
+%     catch ME
+%         warning('Could not create archive directory. Archive disabled.\n%s', ME.message);
+%         useArchive = false;
+%         archiveDirForWorkers = '';
+%     end
+% end
+% % --- End: create transient archive folder ---
+
+
+% ---- Begin replacement block (uses parallel only if pool exists) ----
 if Config.FirstTFrame>0
     FramesT = Config.LastFrame-Config.FirstTFrame+1;
     if JobNr>0
         params.display = 0;
-        dirStatus = [DirCurrent 'Queue' filesep 'Job' int2str(JobNr) filesep 'Status' filesep];
+        dirStatus = fullfile(DirCurrent,'Queue',sprintf('Job%d',JobNr),'Status');
         TimeT = clock; %#ok<NASGU>
-        save([DirCurrent 'Queue' filesep 'Job' int2str(JobNr) filesep 'FiestaStatus.mat'],'TimeT','FramesT','-append');
+        save(fullfile(DirCurrent,'Queue',sprintf('Job%d',JobNr),'FiestaStatus.mat'),'TimeT','FramesT','-append');
+
         [y,x,z] = size(Stack{1});
-        nStack = length(Stack);
+        nStack = numel(Stack);
         for n = nStack:-1:1
             Stack(n,1:z) = mat2cell(Stack{n},y,x,ones(1,z));
         end
-        try
-            parfor n=Config.FirstTFrame:Config.LastFrame
-                Objects{n}=ScanImage(cat(3,Stack{:,n}),params,n);
-                fSave(dirStatus,n);
-            end
-        catch ME
-            save(fData,'-append','Objects','ME');
-            return;
-        end
-    elseif JobNr==-1    
-        params.display = 0;
-        dirStatus = [FiestaDir.AppData 'fiestastatus' filesep];  
-        [y,x,z] = size(Stack{1});
-        nStack = length(Stack);
-        for n = nStack:-1:1
-            Stack(n,1:z) = mat2cell(Stack{n},y,x,ones(1,z));
-        end
-        parallelprogressdlg('String',['Tracking on ' num2str(num_cores) ' cores'],'Max',Config.LastFrame-Config.FirstTFrame+1,'Parent',hMainGui.fig,'Directory',FiestaDir.AppData);
-        try
-            parfor (n=Config.FirstTFrame:Config.LastFrame,num_cores)
-                Objects{n}=ScanImage(cat(3,Stack{:,n}),params,n);
-                fSave(dirStatus,n);
-            end
-        catch ME
-            save(fData,'-append','Objects','ME');
-            return;
-        end  
-        parallelprogressdlg('close');
-    else
-        h=progressdlg('String',sprintf('Tracking - Frame: %d',Config.FirstTFrame),'Min',Config.FirstTFrame-1,'Max',Config.LastFrame,'Cancel','on','Parent',hMainGui.fig);
-        for n=Config.FirstTFrame:Config.LastFrame
-            Log(sprintf('Analysing frame %d',n),params);
+
+        N = Config.LastFrame-Config.FirstTFrame+1;
+        p = gcp('nocreate');
+        useParallel = ~isempty(p);
+
+        if useParallel
+            dq = parallel.pool.DataQueue;
+            fig = uifigure('Name','Tracking','Position',[0.35*sspix(3), 0.42*sspix(4), 0.29*sspix(3), 0.2*sspix(4)]);
+            pd = uiprogressdlg(fig,'Title','Processing','Message','Starting...','Cancelable','off','Indeterminate','off');
+            count = 0;
+            afterEach(dq,@(~) localUpdate());
             try
-                Objects{n}=ScanImage(fGetStackFrame(Stack,n),params,n);
+                parfor n = Config.FirstTFrame:Config.LastFrame
+                    Objects{n} = ScanImage(cat(3,Stack{:,n}),params,n);
+                    fSave(dirStatus,n);
+                    send(dq,n);
+                end
+            catch ME
+                save(fData,'-append','Objects','ME');
+                if isvalid(pd), close(pd); end
+                delete(fig);
+                return;
+            end
+            if isvalid(pd), close(pd); end
+            delete(fig);
+        else
+            try
+                for n = Config.FirstTFrame:Config.LastFrame
+                    Objects{n} = ScanImage(cat(3,Stack{:,n}),params,n);
+                    fSave(dirStatus,n);
+                end
             catch ME
                 save(fData,'-append','Objects','ME');
                 return;
             end
+        end
+
+    elseif JobNr==-1
+        params.display = 0;
+        dirStatus = fullfile(FiestaDir.AppData,'fiestastatus');
+        [y,x,z] = size(Stack{1});
+        nStack = numel(Stack);
+        for n = nStack:-1:1
+            Stack(n,1:z) = mat2cell(Stack{n},y,x,ones(1,z));
+        end
+
+        N = Config.LastFrame-Config.FirstTFrame+1;
+        p = gcp('nocreate');
+        useParallel = ~isempty(p);
+
+        if useParallel
+            % Respect existing pool size; do not request a specific worker count.
+            dq = parallel.pool.DataQueue;
+            fig = uifigure('Name','Tracking','Position',[0.35*sspix(3), 0.42*sspix(4), 0.29*sspix(3), 0.2*sspix(4)]);
+            pd = uiprogressdlg(fig,'Title',sprintf('Tracking on %d cores',p.NumWorkers),...
+                'Message','Starting...','Cancelable','off','Indeterminate','off');
+            count = 0;
+            afterEach(dq,@(~) localUpdate());
+            try
+                parfor n = Config.FirstTFrame:Config.LastFrame
+                    Objects{n} = ScanImage(cat(3,Stack{:,n}),params,n);
+                    fSave(dirStatus,n);
+                    send(dq,n);
+                end
+            catch ME
+                save(fData,'-append','Objects','ME');
+                if isvalid(pd), close(pd); end
+                delete(fig);
+                return;
+            end
+            if isvalid(pd), close(pd); end
+            delete(fig);
+        else
+            try
+                for n = Config.FirstTFrame:Config.LastFrame
+                    Objects{n} = ScanImage(cat(3,Stack{:,n}),params,n);
+                    fSave(dirStatus,n);
+                end
+            catch ME
+                save(fData,'-append','Objects','ME');
+                return;
+            end
+        end
+
+    else
+        % Serial processing with Cancel button (unchanged behavior)
+        fig = uifigure('Name','Tracking','Position',[0.35*sspix(3), 0.42*sspix(4), 0.22*sspix(3), 0.16*sspix(4)]);
+        total = Config.LastFrame-Config.FirstTFrame+1;
+        pd = uiprogressdlg(fig,'Title','Tracking',...
+            'Message',sprintf('Tracking - Frame: %d',Config.FirstTFrame),...
+            'Cancelable','off','Indeterminate','off','Value',0);
+        % btnW = 0.12; btnH = 0.07; margin = 0.03;
+        % btn = uibutton(fig,'Text','Units','Normalized','Cancel','Position',[1 - btnW - margin, margin, btnW, btnH],ButtonPushedFcn',@(~,~) setappdata(fig,'cancel',true));
+        setappdata(fig,'cancel',false);
+
+        cnt = 0;
+        for n = Config.FirstTFrame:Config.LastFrame
+            Log(sprintf('Analysing frame %d',n),params);
+            try
+                Objects{n} = ScanImage(fGetStackFrame(Stack,n),params,n);
+            catch ME
+                save(fData,'-append','Objects','ME');
+                close(fig);
+                return;
+            end
+
             if params.dynamicfil && ~isempty(Objects{n})
                 bw_region(:,:,2:end) = bw_region(:,:,1:end-1);
                 bw_region(:,:,1) = 0;
-                [y,x] = size(params.bw_region);
+                [yR,xR] = size(params.bw_region);
                 for m = 1:length(Objects{n}.data)
                     if Objects{n}.length(1,m)~=0
                         X = round(Objects{n}.data{m}(:,1)/params.scale);
                         Y = round(Objects{n}.data{m}(:,2)/params.scale);
-                        k = X<1 | X>x | Y<1 | Y>y;
-                        X(k) = [];
-                        Y(k) = [];
-                        idx = Y + (X - 1).*y;
+                        k = X<1 | X>xR | Y<1 | Y>yR;
+                        X(k) = []; Y(k) = [];
+                        idx = Y + (X - 1).*yR;
                         bw_region(idx) = 1;
                     end
                 end
@@ -177,24 +274,31 @@ if Config.FirstTFrame>0
                 bw_region(:,:,1) = imdilate(bw_region(:,:,1),SE);
                 params.bw_region = orig_region | sum(bw_region,3)>4;
             end
-            if Config.FirstCFrame>0
-                if ~isempty(Objects{n})
-                    s=sprintf('Tracking - Frame: %d - Objects found: %d',n+1,length(Objects{n}.center_x));
-                else
-                    s=sprintf('Tracking - Frame: %d - Objects found: %d',n+1,0);
-                end
-                if isempty(h)
-                    abort=1;
-                    save(fData,'-append','Objects');
-                    return
-                end
-                h=progressdlg(n,s);
+
+            cnt = cnt + 1;
+            if ~isempty(Objects{n})
+                found = length(Objects{n}.center_x);
+            else
+                found = 0;
             end
-            
+            pd.Value = cnt / total;
+            pd.Message = sprintf('Tracking - Frame: %d - Objects found: %d', n, found);
+            drawnow;
+
+            if getappdata(fig,'cancel')
+                save(fData,'-append','Objects');
+                close(fig);
+                return;
+            end
         end
-        progressdlg('close');
+        close(fig);
     end
 end
+
+
+% ---- End replacement block ----
+
+
 fclose(logfile);
 disp(Config.StackName)
 disp(error_events)
@@ -209,12 +313,20 @@ if ~isempty(Objects)
     MolTrack = [];
     FilTrack = [];
     if Config.ConnectMol.NumberVerification>0 && Config.ConnectFil.NumberVerification>0
-        try
-            [MolTrack,FilTrack,abort]=fFeatureConnect(Objects,Config,JobNr);     
-        catch ME
-            save(fData,'ME','-append');
-            return;
-        end
+        % try
+            [MolTrack,FilTrack,abort]=fFeatureConnect(Objects,Config,JobNr);
+            % Beta testing for better molecule connection
+            % Config.ConnectMol.EnableCrossingCheck = true;
+            % Config.ConnectMol.VelWindow = 3;
+            % Config.ConnectMol.StationarySpeedThresh = 300;  % nm/s
+            % Config.ConnectMol.RunnerSpeedThresh     = 300;
+            % Config.ConnectMol.StationaryPenalty     = 5.0;
+            % Config.ConnectMol.CrossingPenalty       = 5.0;
+            % [MolTrack,FilTrack,abort]=fFeatureConnect_v2(Objects,Config,JobNr);     
+        % catch ME
+        %     save(fData,'ME','-append');
+        %     return;
+        % end
         if abort==1
             return
         end
@@ -405,3 +517,31 @@ if ~isempty(Objects)
     end
     clear Molecule Filament Objects Config;
 end
+
+% delete any fiestastatus.m files
+d = dir(FiestaDir.AppData);
+deleted = {};
+for k = 1:numel(d)
+    if d(k).isdir, continue; end
+    fname = d(k).name;
+    if contains(fname, 'fiestastatusframe')   % case-sensitive substring match
+        fp = fullfile(d(k).folder, fname);
+        try
+            delete(fp);
+            deleted{end+1} = fp; %#ok<AGROW>
+        catch ME
+            warning('Could not delete %s: %s', fp, ME.message);
+        end
+    end
+end
+
+
+% ---- Local nested helper for DataQueue updates ----
+function localUpdate()
+    % uses count, pd, N from parent workspace
+    count = count + 1; %#ok<SEPEX>
+    if isvalid(pd)
+        pd.Value = count / N;
+        pd.Message = sprintf('Frame %d of %d', count, N);
+        drawnow;
+    end

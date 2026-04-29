@@ -1,151 +1,435 @@
 function [MolTrack,FilTrack,abort]=fFeatureConnect(Objects,Config,JobNr)
 global DirCurrent;
 
-Mol=[];
-Fil=[];
+% Mol=[];
+% Fil=[];
+% 
+% abort=0;
+% 
+% MolTrack=[];
+% FilTrack=[];
+% 
+% StartFrame=Config.FirstCFrame;
+% EndFrame=Config.LastFrame;
+% if ~isempty(Objects)
+%     EndFrame=min([EndFrame length(Objects)]);
+% end
+% 
+% if StartFrame==0
+%     nObj=Config.FirstTFrame;
+%     if ~isempty(Objects{nObj})
+%         lObjects=Objects{nObj}.length(1,:);
+%         pMol=1;
+%         pFil=1;
+%         for n=1:length(lObjects)
+%             if lObjects(n)==0
+%                 MolTrack{pMol}(1)=nObj;
+%                 MolTrack{pMol}(2)=n;
+%                 pMol=pMol+1;
+%             else
+%                 FilTrack{pFil}(1)=nObj;
+%                 FilTrack{pFil}(2)=n;
+%                 pFil=pFil+1;            
+%             end
+%         end
+%     end
+%     return;
+% else
+%     StartFrame=1;
+% end
+% s=sprintf('Connecting Tracks - Frame:  %d/%d',StartFrame,EndFrame);
+% if JobNr>0
+%     TimeC = clock;
+%     save([DirCurrent 'Queue' filesep 'Job' int2str(JobNr) filesep 'FiestaStatus.mat'],'TimeC','-append');
+% else
+%     hMainGui=getappdata(0,'hMainGui'); 
+%     % h=progressdlg('String',sprintf('Connecting Tracks - Frame:  %d',StartFrame),'Min',StartFrame-1,'Max',EndFrame+1,'Cancel','on','Parent',hMainGui.fig);
+% end
+% Data = cell(1,EndFrame-StartFrame+1);
+% for k=StartFrame:EndFrame+1
+%     if k<=EndFrame
+%         if isempty(Objects{k})
+%             Mol(k,:)=0;
+%             Fil(k,:)=0;
+%             Data{k}=[];
+%         else
+%             lObjects = Objects{k}.length(1,:);
+%             nObj = length(lObjects);
+%             if k==StartFrame
+%                 Mol(k,lObjects==0)=-Inf;
+%                 Fil(k,lObjects~=0)=-Inf;
+%             else
+%                 Mol(k,lObjects==0)=Inf;
+%                 Fil(k,lObjects~=0)=Inf;
+%             end
+%             Data{k}=zeros(nObj,5);
+%             Data{k}(:,1)=k;
+%             Data{k}(:,2)=Objects{k}.time*ones(nObj,1);
+%             Data{k}(:,3)=Objects{k}.center_x';
+%             Data{k}(:,4)=Objects{k}.center_y';
+%             int=Objects{k}.height(1,:)';
+%             len=Objects{k}.length(1,:)';
+%             if ~isempty(abs(Mol(k,:))==Inf)
+%                 Data{k}(abs(Mol(k,:))==Inf,5)=int(abs(Mol(k,:))==Inf);
+%             end
+%             if ~isempty(abs(Fil(k,:))==Inf)
+%                 Data{k}(abs(Fil(k,:))==Inf,5)=len(abs(Fil(k,:))==Inf);
+%             end
+%         end
+%     end
+%     if k>StartFrame+2
+%         Config.Connect=Config.ConnectMol;
+%         [MolTrack,Mol]=ConnectTrack(Data,MolTrack,Mol,k-2,Config);
+% 
+%         Config.Connect=Config.ConnectFil;
+%         [FilTrack,Fil]=ConnectTrack(Data,FilTrack,Fil,k-2,Config);
+% 
+%     end
+%     iTrack=k+1;
+%     s=sprintf('Connecting Tracks - Frame:  %d',k+1);
+%     if JobNr>0
+%         StatusC = (k-StartFrame+1)/(EndFrame-StartFrame+2);
+%         save([DirCurrent 'Queue' filesep 'Job' int2str(JobNr) filesep 'FiestaStatus.mat'],'StatusC','-append');
+%     else
+%         % if isempty(h)
+%         %     abort=1;
+%         %     return
+%         % end
+%         % h=progressdlg(k,s); 
+%         k
+%         s
+%     end
+% end
+% 
+% Mol=abs(Mol);
+% Fil=abs(Fil);
+% 
+% %postprocessing
+% if JobNr>0
+%     TimeP = clock; %#ok<NASGU>
+%     save([DirCurrent 'Queue' filesep 'Job' int2str(JobNr) filesep 'FiestaStatus.mat'],'TimeP','-append');
+% else
+%     % progressdlg('close');
+%     % h=progressdlg('String',sprintf('Postprocessing Tracks - Frame:  %d',StartFrame),'Min',StartFrame,'Max',EndFrame-1,'Cancel','on','Parent',hMainGui.fig);
+% end
+% for k=StartFrame+1:EndFrame-1
+%     if ~isempty(MolTrack)
+%         Config.Connect=Config.ConnectMol;
+%         [MolTrack,Mol]=ProcessTrack(MolTrack,Mol,k,Config);
+%     end
+%     if ~isempty(FilTrack)
+%         Config.Connect=Config.ConnectFil;
+%         [FilTrack,Fil]=ProcessTrack(FilTrack,Fil,k,Config);
+%     end
+%     s=sprintf('Postprocessing Tracks - Frame:  %d',k);
+%     if JobNr>0
+%         StatusP = (k-StartFrame)/(EndFrame-StartFrame-1);
+%         save([DirCurrent 'Queue' filesep 'Job' int2str(JobNr) filesep 'FiestaStatus.mat'],'StatusP','-append');
+%     else
+%         % if isempty(h)
+%         %     abort=1;
+%         %     return
+%         % end
+%         % h=progressdlg(k,s);
+%         k
+%         s
+%     end
+% end
+% if JobNr==0
+%     % progressdlg('close');
+% end
+% if EndFrame>0
+%     for i=length(MolTrack):-1:1
+%         if size(MolTrack{i},1)<Config.ConnectMol.MinLength
+%             MolTrack(i)=[];
+%         end
+%     end
+%     for i=length(FilTrack):-1:1
+%         if size(FilTrack{i},1)<Config.ConnectFil.MinLength
+%             FilTrack(i)=[];
+%         end
+%     end
+% end
 
-abort=0;
+% ---- Begin drop-in: connect & postprocess tracks, no automatic parallel ----
+Mol = [];
+Fil = [];
 
-MolTrack=[];
-FilTrack=[];
+sspix = get(0,'ScreenSize');
 
-StartFrame=Config.FirstCFrame;
-EndFrame=Config.LastFrame;
+abort = 0;
+
+MolTrack = [];
+FilTrack = [];
+
+StartFrame = Config.FirstCFrame;
+EndFrame = Config.LastFrame;
 if ~isempty(Objects)
-    EndFrame=min([EndFrame length(Objects)]);
+    EndFrame = min([EndFrame length(Objects)]);
 end
 
-if StartFrame==0
-    nObj=Config.FirstTFrame;
+% special-case when StartFrame==0 (unchanged)
+if StartFrame == 0
+    nObj = Config.FirstTFrame;
     if ~isempty(Objects{nObj})
-        lObjects=Objects{nObj}.length(1,:);
-        pMol=1;
-        pFil=1;
-        for n=1:length(lObjects)
-            if lObjects(n)==0
-                MolTrack{pMol}(1)=nObj;
-                MolTrack{pMol}(2)=n;
-                pMol=pMol+1;
+        lObjects = Objects{nObj}.length(1,:);
+        pMol = 1;
+        pFil = 1;
+        for n = 1:length(lObjects)
+            if lObjects(n) == 0
+                MolTrack{pMol}(1) = nObj;
+                MolTrack{pMol}(2) = n;
+                pMol = pMol + 1;
             else
-                FilTrack{pFil}(1)=nObj;
-                FilTrack{pFil}(2)=n;
-                pFil=pFil+1;            
+                FilTrack{pFil}(1) = nObj;
+                FilTrack{pFil}(2) = n;
+                pFil = pFil + 1;
             end
         end
     end
     return;
 else
-    StartFrame=1;
+    StartFrame = 1;
 end
-s=sprintf('Connecting Tracks - Frame:  %d/%d',StartFrame,EndFrame);
-if JobNr>0
+
+% Prevent automatic pool creation: only use parallel if a pool already exists
+p = gcp('nocreate');   % do NOT create a pool
+useParallel = ~isempty(p);
+
+% UI or Job status
+createdParent = false;
+parentFig = [];
+if JobNr > 0
     TimeC = clock;
-    save([DirCurrent 'Queue' filesep 'Job' int2str(JobNr) filesep 'FiestaStatus.mat'],'TimeC','-append');
+    save([DirCurrent filesep 'Queue' filesep 'Job' int2str(JobNr) filesep 'FiestaStatus.mat'],'TimeC','-append');
+    useUI = false;
 else
-    hMainGui=getappdata(0,'hMainGui'); 
-    h=progressdlg('String',sprintf('Connecting Tracks - Frame:  %d',StartFrame),'Min',StartFrame-1,'Max',EndFrame+1,'Cancel','on','Parent',hMainGui.fig);
+    % Try to reuse visible app UIFigure
+    hMainGui = getappdata(0,'hMainGui');
+    try
+        if exist('hMainGui','var') && isstruct(hMainGui) && isfield(hMainGui,'fig') && ...
+                isgraphics(hMainGui.fig,'figure') && isvalid(hMainGui.fig) && ...
+                strcmp(get(hMainGui.fig,'Type'),'uifigure') && ...
+                isprop(hMainGui.fig,'Visible') && strcmp(get(hMainGui.fig,'Visible'),'on')
+            parentFig = hMainGui.fig;
+            createdParent = false;
+        end
+    catch
+        parentFig = [];
+        createdParent = false;
+    end
+
+    % If none available, create a tiny visible UIFigure to own the dialog
+    if isempty(parentFig)
+        parentFig = uifigure('Name','Connecting','Position',[0.35*sspix(3), 0.42*sspix(4), 0.29*sspix(3), 0.2*sspix(4)]);
+        createdParent = true;
+    end
+
+    % Create the connecting progress dialog
+    d = uiprogressdlg(parentFig, 'Title', 'Connecting Tracks', ...
+        'Message', sprintf('Connecting Tracks - Frame: %d', StartFrame), ...
+        'Indeterminate', 'off', 'Cancelable', 'on');
+    d.Value = 0;
 end
-Data = cell(1,EndFrame-StartFrame+1);
-for k=StartFrame:EndFrame+1
-    if k<=EndFrame
+
+Data = cell(1, EndFrame - StartFrame + 1);
+totalSteps = EndFrame - StartFrame + 2;
+stepIndex = 0;
+
+for k = StartFrame:EndFrame+1
+    if k <= EndFrame
         if isempty(Objects{k})
-            Mol(k,:)=0;
-            Fil(k,:)=0;
-            Data{k}=[];
+            Mol(k,:) = 0;
+            Fil(k,:) = 0;
+            Data{k} = [];
         else
             lObjects = Objects{k}.length(1,:);
             nObj = length(lObjects);
-            if k==StartFrame
-                Mol(k,lObjects==0)=-Inf;
-                Fil(k,lObjects~=0)=-Inf;
+            if k == StartFrame
+                Mol(k, lObjects==0) = -Inf;
+                Fil(k, lObjects~=0) = -Inf;
             else
-                Mol(k,lObjects==0)=Inf;
-                Fil(k,lObjects~=0)=Inf;
+                Mol(k, lObjects==0) = Inf;
+                Fil(k, lObjects~=0) = Inf;
             end
-            Data{k}=zeros(nObj,5);
-            Data{k}(:,1)=k;
-            Data{k}(:,2)=Objects{k}.time*ones(nObj,1);
-            Data{k}(:,3)=Objects{k}.center_x';
-            Data{k}(:,4)=Objects{k}.center_y';
-            int=Objects{k}.height(1,:)';
-            len=Objects{k}.length(1,:)';
-            if ~isempty(abs(Mol(k,:))==Inf)
-                Data{k}(abs(Mol(k,:))==Inf,5)=int(abs(Mol(k,:))==Inf);
+            Data{k} = zeros(nObj,5);
+            Data{k}(:,1) = k;
+            Data{k}(:,2) = Objects{k}.time * ones(nObj,1);
+            Data{k}(:,3) = Objects{k}.center_x';
+            Data{k}(:,4) = Objects{k}.center_y';
+            int = Objects{k}.height(1,:)';
+            len = Objects{k}.length(1,:)';
+            if any(abs(Mol(k,:))==Inf)
+                Data{k}(abs(Mol(k,:))==Inf,5) = int(abs(Mol(k,:))==Inf);
             end
-            if ~isempty(abs(Fil(k,:))==Inf)
-                Data{k}(abs(Fil(k,:))==Inf,5)=len(abs(Fil(k,:))==Inf);
+            if any(abs(Fil(k,:))==Inf)
+                Data{k}(abs(Fil(k,:))==Inf,5) = len(abs(Fil(k,:))==Inf);
             end
         end
     end
-    if k>StartFrame+2
-        Config.Connect=Config.ConnectMol;
-        [MolTrack,Mol]=ConnectTrack(Data,MolTrack,Mol,k-2,Config);
 
-        Config.Connect=Config.ConnectFil;
-        [FilTrack,Fil]=ConnectTrack(Data,FilTrack,Fil,k-2,Config);
-       
+    if k > StartFrame + 2
+        Config.Connect = Config.ConnectMol;
+        [MolTrack, Mol] = ConnectTrack(Data, MolTrack, Mol, k-2, Config);
+
+        Config.Connect = Config.ConnectFil;
+        [FilTrack, Fil] = ConnectTrack(Data, FilTrack, Fil, k-2, Config);
     end
-    iTrack=k+1;
-    s=sprintf('Connecting Tracks - Frame:  %d',k+1);
-    if JobNr>0
-        StatusC = (k-StartFrame+1)/(EndFrame-StartFrame+2);
-        save([DirCurrent 'Queue' filesep 'Job' int2str(JobNr) filesep 'FiestaStatus.mat'],'StatusC','-append');
+
+    % update status/progress
+    stepIndex = stepIndex + 1;
+    if JobNr > 0
+        StatusC = (k - StartFrame + 1) / totalSteps;
+        save([DirCurrent filesep 'Queue' filesep 'Job' int2str(JobNr) filesep 'FiestaStatus.mat'],'StatusC','-append');
     else
-        if isempty(h)
-            abort=1;
+        if ~exist('d','var') || ~isvalid(d)
+            abort = 1;
+            if exist('createdParent','var') && createdParent && ishghandle(parentFig)
+                close(parentFig);
+            end
             return
         end
-        h=progressdlg(k,s); 
+        d.Value = stepIndex / totalSteps;
+        d.Message = sprintf('Connecting Tracks - Frame: %d', min(k+1, EndFrame));
+        drawnow;
+        if d.CancelRequested
+            abort = 1;
+            if exist('fData','var')
+                try
+                    save(fData,'-append','Objects');
+                catch
+                end
+            end
+            % close dialog and temporary parent
+            if exist('d','var') && isvalid(d)
+                close(d);
+            end
+            if exist('createdParent','var') && createdParent && ishghandle(parentFig)
+                close(parentFig);
+            end
+            return;
+        end
     end
 end
 
-Mol=abs(Mol);
-Fil=abs(Fil);
+Mol = abs(Mol);
+Fil = abs(Fil);
 
-%postprocessing
-if JobNr>0
+% close connecting dialog (but keep parent if it belongs to app)
+% if JobNr == 0
+    if exist('d','var') && isvalid(d)
+        close(d);
+    end
+    close(parentFig);
+% end
+
+% postprocessing (create new dialog, with its own parent flags)
+createdParent2 = false;
+parentFig2 = [];
+if JobNr > 0
     TimeP = clock; %#ok<NASGU>
-    save([DirCurrent 'Queue' filesep 'Job' int2str(JobNr) filesep 'FiestaStatus.mat'],'TimeP','-append');
+    save([DirCurrent filesep 'Queue' filesep 'Job' int2str(JobNr) filesep 'FiestaStatus.mat'],'TimeP','-append');
 else
-    progressdlg('close');
-    h=progressdlg('String',sprintf('Postprocessing Tracks - Frame:  %d',StartFrame),'Min',StartFrame,'Max',EndFrame-1,'Cancel','on','Parent',hMainGui.fig);
+    % Try to reuse visible app UIFigure
+    hMainGui = getappdata(0,'hMainGui');
+    try
+        if exist('hMainGui','var') && isstruct(hMainGui) && isfield(hMainGui,'fig') && ...
+                isgraphics(hMainGui.fig,'figure') && isvalid(hMainGui.fig) && ...
+                strcmp(get(hMainGui.fig,'Type'),'uifigure') && ...
+                isprop(hMainGui.fig,'Visible') && strcmp(get(hMainGui.fig,'Visible'),'on')
+            parentFig2 = hMainGui.fig;
+            createdParent2 = false;
+        end
+    catch
+        parentFig2 = [];
+        createdParent2 = false;
+    end
+
+    if isempty(parentFig2)
+        parentFig2 = uifigure('Name','Post-Processing','Position',[0.35*sspix(3), 0.42*sspix(4), 0.29*sspix(3), 0.2*sspix(4)]);
+        createdParent2 = true;
+    end
+
+    d = uiprogressdlg(parentFig2, 'Title', 'Postprocessing Tracks', ...
+        'Message', sprintf('Postprocessing Tracks - Frame: %d', StartFrame), ...
+        'Indeterminate', 'off', 'Cancelable', 'on');
+    d.Value = 0;
 end
-for k=StartFrame+1:EndFrame-1
+
+if EndFrame > 0
+    postTotal = max(1, (EndFrame - 1) - (StartFrame + 1) + 1);
+else
+    postTotal = 1;
+end
+postStep = 0;
+
+for k = StartFrame+1:EndFrame-1
     if ~isempty(MolTrack)
-        Config.Connect=Config.ConnectMol;
-        [MolTrack,Mol]=ProcessTrack(MolTrack,Mol,k,Config);
+        Config.Connect = Config.ConnectMol;
+        [MolTrack, Mol] = ProcessTrack(MolTrack, Mol, k, Config);
     end
     if ~isempty(FilTrack)
-        Config.Connect=Config.ConnectFil;
-        [FilTrack,Fil]=ProcessTrack(FilTrack,Fil,k,Config);
+        Config.Connect = Config.ConnectFil;
+        [FilTrack, Fil] = ProcessTrack(FilTrack, Fil, k, Config);
     end
-    s=sprintf('Postprocessing Tracks - Frame:  %d',k);
-    if JobNr>0
-        StatusP = (k-StartFrame)/(EndFrame-StartFrame-1);
-        save([DirCurrent 'Queue' filesep 'Job' int2str(JobNr) filesep 'FiestaStatus.mat'],'StatusP','-append');
+
+    postStep = postStep + 1;
+    if JobNr > 0
+        StatusP = (k - StartFrame) / max(1, EndFrame - StartFrame - 1);
+        save([DirCurrent filesep 'Queue' filesep 'Job' int2str(JobNr) filesep 'FiestaStatus.mat'],'StatusP','-append');
     else
-        if isempty(h)
-            abort=1;
-            return
+        if ~exist('d','var') || ~isvalid(d)
+            abort = 1;
+            if exist('createdParent2','var') && createdParent2 && ishghandle(parentFig2)
+                close(parentFig2);
+            end
+            return;
         end
-        h=progressdlg(k,s);
+        d.Value = postStep / postTotal;
+        d.Message = sprintf('Postprocessing Tracks - Frame: %d', k);
+        drawnow;
+        if d.CancelRequested
+            abort = 1;
+            if exist('fData','var')
+                try
+                    save(fData,'-append','Objects');
+                catch
+                end
+            end
+            if exist('d','var') && isvalid(d)
+                close(d);
+            end
+            if exist('createdParent2','var') && createdParent2 && ishghandle(parentFig2)
+                close(parentFig2);
+            end
+            return;
+        end
     end
 end
-if JobNr==0
-    progressdlg('close');
-end
-if EndFrame>0
-    for i=length(MolTrack):-1:1
-        if size(MolTrack{i},1)<Config.ConnectMol.MinLength
-            MolTrack(i)=[];
+
+% close postprocessing dialog
+% if JobNr == 0
+    if exist('d','var') && isvalid(d)
+        close(d);
+    end
+    close(parentFig2);
+% end
+
+% remove short tracks (unchanged)
+if EndFrame > 0
+    for i = length(MolTrack):-1:1
+        if size(MolTrack{i},1) < Config.ConnectMol.MinLength
+            MolTrack(i) = [];
         end
     end
-    for i=length(FilTrack):-1:1
-        if size(FilTrack{i},1)<Config.ConnectFil.MinLength
-            FilTrack(i)=[];
+    for i = length(FilTrack):-1:1
+        if size(FilTrack{i},1) < Config.ConnectFil.MinLength
+            FilTrack(i) = [];
         end
     end
 end
+% ---- End drop-in ----
+
 
 
 function [Track,Obj]=ConnectTrack(Data,Track,Obj,k,Config)

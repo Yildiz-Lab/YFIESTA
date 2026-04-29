@@ -29,7 +29,7 @@ for j = length(idx):-1:1
     [mchange,midx,~] = largestMeanedChange(x(mn-window:mx+window),window); %similar to changepoint
     % [~, midx] = max(dx(mn:mx));
     % newcp(j) = i-window-1+midx;
-    if mchange > 5 %nm
+    if mchange > 5
         newcp(j) = i-2*window-1+midx;
     else
         newcp(j) = [];
@@ -56,6 +56,7 @@ if strcmp(app.FitPanelFields.DropFitAxis.Value,'Long-axis')
 elseif strcmp(app.FitPanelFields.DropFitAxis.Value,'Short-axis')
     app.Data.shortstepVector = xfit'; % Update step vector
 end
+app = UserStepChangesTable(app, newcp, "align");
 app = updateMainPlot(app);
 
 stepFit.StepFit = xfit';

@@ -372,7 +372,7 @@ else
     Queue(idx).Check=get(gcbo,'Value');
 end
 fShared('ReturnFocus');
-
+NewKymoGraph
 function ListVisible(hMainGui,Mode)
 global Molecule;
 global Filament;
@@ -646,7 +646,7 @@ for k = stidx
 end
 dirStatus = [FiestaDir.AppData 'fiestastatus' filesep];  
 parallelprogressdlg('String','Creating KymoGraph','Max',sum(tN),'Parent',hMainGui.fig,'Directory',FiestaDir.AppData);
-KymoGraph = zeros(N,length(d),length(stidx)); 
+KymoGraph = zeros(N,length(d),length(stidx));
 if get(hMainGui.RightPanel.pTools.cKymoDrift,'Value')==1 && ~isempty(Drift)
     if get(hMainGui.RightPanel.pTools.mKymoMethod,'Value')==1
         for k = stidx
@@ -654,6 +654,7 @@ if get(hMainGui.RightPanel.pTools.cKymoDrift,'Value')==1 && ~isempty(Drift)
             D = Drift{k};
             nS = size(S,3);
             parfor(n = 1:nS,Config.NumCores)
+            % for n = 1:nS
                 fidx = min([n size(D,3)]);
                 T = D(:,:,fidx);
                 Det = T(1,1).*T(2,2) - T(1,2) .* T(2,1);
@@ -671,6 +672,7 @@ if get(hMainGui.RightPanel.pTools.cKymoDrift,'Value')==1 && ~isempty(Drift)
             D = Drift{k};
             nS = size(S,3);
             parfor(n = 1:nS,Config.NumCores)
+            % for n = 1:nS
                 fidx = min([n size(D,3)]);
                 T = D(:,:,fidx);
                 Det = T(1,1).*T(2,2) - T(1,2) .* T(2,1);
@@ -689,9 +691,14 @@ else
             S = Stack{k};
             nS = size(S,3);
             parfor(n = 1:nS,Config.NumCores)
+            % for n=1:nS
                 Z = interp2(double(S(:,:,n)),iX,iY,'nearest');
                 KymoGraph(n,:,k)=max(Z,[],1);
-                fSave(dirStatus,sum(tN(1:k-1))+n);
+                % disp(tN)
+                % disp(k-1)
+                % disp(n)
+                % sum(tN(1:k-1))+n
+                fSave(dirStatus, sum(tN(1:k-1))+n);
             end     
         end
     else
@@ -699,6 +706,7 @@ else
             S = Stack{k};
             nS = size(S,3);
             parfor(n = 1:nS,Config.NumCores)
+            % for n=1:nS
                 Z = interp2(double(S(:,:,n)),iX,iY);
                 KymoGraph(n,:,k)=mean(Z,1);
                 fSave(dirStatus,sum(tN(1:k-1))+n);
