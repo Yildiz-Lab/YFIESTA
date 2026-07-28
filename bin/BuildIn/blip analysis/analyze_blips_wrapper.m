@@ -1,0 +1,314 @@
+function [dt, dx, step] = analyze_blips_wrapper(directory)
+
+
+if nargin < 1
+    directory = uigetdir()
+end
+
+if isfile(directory)
+    fname = directory;
+    fnum = 1;
+else
+    % Gather steps and dwells all in one folder
+    cd = directory; %JS Edit 220207
+    f = dir(fullfile(cd,'*.mat')); %JS Edit 220207
+    fnum = length(f);
+end
+
+for i=fnum:-1:1
+    if contains(f(i).name,'._') %JS Edit to remove extra '._' that randomly show up sometimes
+    f(i) = [];
+    end
+end
+fnum = length(f);
+
+dt = [];
+dx = []; step = [];
+blipin = []; blipout = [];
+ptsin = []; ptsout = []; % this is so unnecessary, but for a ttest I have to do some stupid things
+totpts = 0; stepnum = 0;
+
+% some quick checks
+sigma = []; blips_percent = zeros(0,2); blips_confidence = zeros(0,2);
+total_lifetime = [];
+
+% compiled steps with modded means, define what histogram binsize you want
+% 
+time_mean_modded_bins = 0:0.0005:0.05;
+min_step_length = 0.05;
+% time_mean_modded_bins = 0:0.0005:0.03;
+% min_step_length = max(time_mean_modded_bins);
+% mean_modded = struct(0,2); % storage of forward and backward cells
+fwd_mean_modded = cell(0,1);
+bwd_mean_modded = cell(0,1);
+
+for i=1:fnum
+    
+    if isfile(directory)
+        [d,f,e] = fileparts(directory);
+        % if contains(f,'._') %JS Edit to delete extra ._ from an error
+        % f = f(3:end);
+        % end
+        steptrace = load(fullfile(d,strcat(f,e)));
+    else
+        fname = f(i).name;
+        % if contains(fname,'._') %JS Edit to delete extra ._ from an error
+        % fname = fname(3:end);
+        % end
+        steptrace = load(fullfile(cd,'/',fname));
+    end
+    
+    if isfield(steptrace,'data')
+
+        % % JS Edit 2025/01/29
+        % % Get changepoints back in. Should have been careful changing the
+        % % changepoint code.
+        % nnidx = find(~isnan(steptrace.data.trace(:,1)));
+        % 
+        % % on-axis
+        % steptrace.data.trace = steptrace.data.trace(nnidx,:);
+        % chp = find( abs(steptrace.data.trace(2:end,3) - steptrace.data.trace(1:end-1,3)) > 0);
+        % steptrace.data.trace(chp+1,5) = 1;
+        % 
+        % % off-axis
+        % steptrace.data.trace_yx = steptrace.data.trace_yx(nnidx,:);
+        % chp = find( abs(steptrace.data.trace_yx(2:end,3) - steptrace.data.trace_yx(1:end-1,3)) > 0);
+        % steptrace.data.trace_yx(chp+1,5) = 1;
+        % % End of JS Edit
+
+        % sum(steptrace.data.trace(:,5))
+        % fname
+
+    [dtprime, dxprime, stepprime, ~] = analyze_blips(steptrace.data);
+    dt = [dt, dtprime]; dx = [dx, dxprime]; step = [step, stepprime];
+    total_lifetime = [total_lifetime, steptrace.data.time(end)-steptrace.data.time(1)];
+    
+    if isfield(steptrace.data, 'sigma')
+        sigma = [sigma, steptrace.data.sigma];
+        [mu, s1, s2] = beta_confidence(length(steptrace.data.blips), sum(steptrace.data.trace(:,5)) - length(steptrace.data.blips));
+        blips_percent = [blips_percent; mu, sum(steptrace.data.trace(:,5))];
+        blips_confidence = [blips_confidence; s1, s2];
+    end
+
+%     [bin, bout, pin, pout, pts, num] = analyze_blips_vs(steptrace.data);
+%     blipin = [blipin; bin]; blipout = [blipout; bout];
+%     ptsin = [ptsin; pin]; ptsout = [ptsout; pout];
+%     totpts = totpts + pts; stepnum = stepnum + num;
+
+    % [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,5,1,1);
+    % [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,5,1,5);
+    % [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,15,3,6);
+    [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,20,4,10); % April - May 2025
+    % [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,20,6,15);
+    blipin = [blipin; bin]; blipout = [blipout; bout];
+    ptsin = [ptsin; pin]; ptsout = [ptsout; pout];
+    totpts = totpts + pts; stepnum = stepnum + num;
+
+    m = length(fwd_mean_modded);
+    [fwd_mean_modded{m+1}, bwd_mean_modded{m+1}] = align_to_step_mod_mean(steptrace.data,min_step_length);
+    
+    if mean(blipout) < -30
+        fprintf(fname)
+    end
+
+    end
+
+end
+
+length(blipin)
+length(ptsin)
+length(blipout)
+length(ptsout)
+
+plot_step_mod_mean(fwd_mean_modded,bwd_mean_modded,time_mean_modded_bins)
+
+[mu,s1,s2] = beta_confidence(length(blipin),length(ptsin));
+fprintf(strcat("Prob inside window (window size 3): ", num2str(round(mu,3)), " +/- [", num2str(round(s1,3)), ", ", num2str(round(s2,3)), "]", "\n"))
+fprintf(strcat("Size ",num2str(round(-mean(blipin),2))," +/- ",num2str(round(std(blipin),2)),"\n"))
+
+[mu0,s10,s20] = beta_confidence(length(blipout),length(ptsout));
+fprintf(strcat("Prob outside window: ", num2str(round(mu0,3)), " +/- [", num2str(round(s10,3)), ", ", num2str(round(s20,3)), "]", "\n"))
+fprintf(strcat("Size ",num2str(round(-mean(blipout),2))," +/- ",num2str(round(std(blipout),2)),"\n"))
+
+% length(blipin)
+% length(ptsin)
+% length(blipout)
+% length(ptsout)
+
+fn1 = figure();
+hold on
+c_on = bar(1:2,[mu,mu0]);
+er = errorbar(1:2,[mu,mu0],[s1-mu,s10-mu0],[s2-mu,s20-mu0],'Color',[0 0 0],'LineStyle','none','LineWidth',1);
+ax = gca;
+ax.YLim = [0,0.1];
+ax.XLim = [0.3,2.7];
+set(gcf,"Position",[250,250,200,300])
+
+% ttest2(ptsin,ptsout)
+
+% cdf
+mdl_exp_cdf = fittype('real(gammainc(k*x,1))','indep','x');
+xcdf = sort(dt(~isnan(dt)));
+% xcdf = xcdf(xcdf>0.003);
+ycdf = (1:length(xcdf))/length(xcdf);
+% weight matrix, goes as sqrt(time) since more time means more data points,
+% less variance by sqrt(time)
+w = xcdf; w(xcdf < 0.003) = 0; w = sqrt(w);
+cdffit = fit(xcdf',ycdf',mdl_exp_cdf,'start',[300],'Weights',w)
+f0 = figure();
+histogram(blipin,'BinWidth',2,'Normalization','probability','DisplayName','By step')
+hold on
+histogram(blipout,'BinWidth',2,'Normalization','probability','DisplayName','Away from step')
+legend('Location','northwest')
+% set(gcf,"Position",[360,360,600,260])
+
+
+f = figure();
+subplot(1,2,1)
+ax = gca;
+hh = histogram(dt);
+hh.BinWidth = 0.001;
+ax.YLim = [0,110];
+ax.XLim = [-0.002,0.024];
+hold on
+xlin = 0:0.0001:0.012;
+plot(xlin,2*max(hh.Values)*exp(-cdffit.k*xlin),'LineWidth',2,'Color','r')
+ax.LineWidth = 0.75; % Set the axes linewidth
+ax.XColor = 'k'; % Set the color of x-axis
+ax.YColor = 'k'; % Set the color of y-axis
+set(ax, 'XColor', 'k', 'YColor', 'k'); % Set font size for axis labels and ticks, and set color of axes lines
+set(findall(gca, 'Type', 'Text'), 'Color', 'k', 'FontName', 'Arial', 'FontSize', 10); % Set the color of all text objects to black
+
+subplot(1,2,2)
+hh = histogram(dx);
+ax = gca;
+hh.BinWidth = 2;
+ax.YLim = [0,48];
+ax.XLim = [-56,2];
+ax.LineWidth = 0.75; % Set the axes linewidth
+ax.XColor = 'k'; % Set the color of x-axis
+ax.YColor = 'k'; % Set the color of y-axis
+set(ax, 'FontName', 'Arial', 'FontSize', 10, 'XColor', 'k', 'YColor', 'k'); % Set font size for axis labels and ticks, and set color of axes lines
+set(findall(gca, 'Type', 'Text'), 'Color', 'k', 'FontName', 'Arial', 'FontSize', 10); % Set the color of all text objects to black
+set(gcf,"Position",[360,360,600,260])
+
+% f2 = figure();
+% % dt steps > 0
+% subplot(2,2,1)
+% ax = gca;
+% hh = histogram(dt(step > 0));
+% hh.BinWidth = 0.002;
+% ax.YLim = [0,90];
+% ax.XLim = [-0.002,0.024];
+% 
+% % dx steps > 0
+% subplot(2,2,2)
+% hh = histogram(dx(step > 0));
+% ax = gca;
+% hh.BinWidth = 2;
+% ax.YLim = [0,58];
+% ax.XLim = [-42,2];
+% 
+% % dt steps < 0
+% subplot(2,2,3)
+% ax = gca;
+% hh = histogram(dt(step < 0));
+% hh.BinWidth = 0.002;
+% ax.YLim = [0,90];
+% ax.XLim = [-0.002,0.024];
+% 
+% % dt steps < 0
+% subplot(2,2,4)
+% hh = histogram(dx(step < 0));
+% ax = gca;
+% hh.BinWidth = 2;
+% ax.YLim = [0,58];
+% ax.XLim = [-42,2];
+
+
+f3 = figure();
+% dt steps > 0
+subplot(1,2,1)
+hold on
+ax = gca;
+hh = histogram(dt(step > 0));
+hh2 = histogram(dt(step < 0));
+hh.BinWidth = 0.001; hh2.BinWidth = hh.BinWidth;
+ax.YLim = [0,90];
+ax.XLim = [-0.002,0.012];
+
+set(ax, ...
+        'FontName', 'Arial', ...
+        'FontSize', 10, ...
+        'TickDir', 'out', ...
+        'LineWidth', 1, ...
+        'Box', 'off', ...
+        'XColor', 'k', ...
+        'YColor', 'k');
+
+% dx steps > 0
+subplot(1,2,2)
+hold on
+hh = histogram(dx(step > 0),'DisplayName','Before forward');
+hh2 = histogram(dx(step < 0),'DisplayName','After backward');
+ax = gca;
+hh.BinWidth = 2; hh2.BinWidth = hh.BinWidth;
+ax.YLim = [0,85];
+ax.XLim = [-56,2];
+legend('Location','Northwest','FontName', 'Arial', 'FontSize', 10)
+
+set(ax, ...
+        'FontName', 'Arial', ...
+        'FontSize', 10, ...
+        'TickDir', 'out', ...
+        'LineWidth', 1, ...
+        'Box', 'off', ...
+        'XColor', 'k', ...
+        'YColor', 'k');
+
+set(gcf,"Position",[360,360,600,260])
+
+
+% blips_percent vs sigma and lifetime
+total_steps = blips_percent(:,2);
+blips_percent(:,2) = [];
+weighted_blip_percent = sum(blips_percent.*total_steps)/sum(total_steps)
+f7 = figure();
+subplot(1,2,1)
+hold on
+plot([min(sigma),max(sigma)], weighted_blip_percent*ones(1,2), 'r--')
+scatter(sigma, blips_percent, 50, 'k', 'filled')
+errorbar(sigma, blips_percent, blips_confidence(:,1)-blips_percent, blips_confidence(:,2)-blips_percent, 'k', 'LineStyle', 'none')
+xlabel("\sigma (nm)")
+ylabel("Dip Percent")
+
+% Nature formatting
+ax = gca;
+set(ax, ...
+        'FontName', 'Arial', ...
+        'FontSize', 10, ...
+        'TickDir', 'out', ...
+        'LineWidth', 1, ...
+        'Box', 'off', ...
+        'XColor', 'k', ...
+        'YColor', 'k');
+
+subplot(1,2,2)
+hold on
+plot([min(total_lifetime),max(total_lifetime)], weighted_blip_percent*ones(1,2), 'r--')
+scatter(total_lifetime, blips_percent, 50, 'k', 'filled')
+errorbar(total_lifetime, blips_percent, blips_confidence(:,1)-blips_percent, blips_confidence(:,2)-blips_percent, 'k', 'LineStyle', 'none')
+xlabel("Total Lifetime (s)")
+
+% Nature formatting
+ax = gca;
+set(ax, ...
+        'FontName', 'Arial', ...
+        'FontSize', 10, ...
+        'TickDir', 'out', ...
+        'LineWidth', 1, ...
+        'Box', 'off', ...
+        'XColor', 'k', ...
+        'YColor', 'k');
+
+end

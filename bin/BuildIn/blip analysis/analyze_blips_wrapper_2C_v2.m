@@ -1,0 +1,334 @@
+function [dt, dx, step] = analyze_blips_wrapper_2C_v2(directory)
+
+% wrapper to analyze blips in 2C form
+
+if nargin < 1
+    directory = uigetdir()
+end
+
+if isfile(directory)
+    fname = directory;
+    fnum = 1;
+else
+    % Gather steps and dwells all in one folder
+    cd = directory; %JS Edit 220207
+    f = dir(fullfile(cd,'*.mat')); %JS Edit 220207
+    fnum = length(f);
+end
+
+for i=fnum:-1:1
+    if contains(f(i).name,'._') %JS Edit to remove extra '._' that randomly show up sometimes
+    f(i) = [];
+    end
+end
+fnum = length(f);
+
+dt = [];
+dx = []; step = [];
+relsep2C = [];
+blipin = []; blipout = [];
+ptsin = []; ptsout = []; % this is so unnecessary, but for a ttest I have to do some stupid things
+totpts = 0; stepnum = 0;
+
+% compiled steps with modded means, define what histogram binsize you want
+% 
+time_mean_modded_bins = 0:0.0005:0.05;
+min_step_length = 0.05;
+% mean_modded = struct(0,2); % storage of forward and backward cells
+fwd_mean_modded = cell(0,1);
+bwd_mean_modded = cell(0,1);
+
+for i=1:fnum
+    
+    if isfile(directory)
+        [d,f,e] = fileparts(directory);
+        % if contains(f,'._') %JS Edit to delete extra ._ from an error
+        % f = f(3:end);
+        % end
+        steptrace = load(fullfile(d,strcat(f,e)));
+    else
+        fname = f(i).name;
+        % if contains(fname,'._') %JS Edit to delete extra ._ from an error
+        % fname = fname(3:end);
+        % end
+        steptrace = load(fullfile(cd,'/',fname));
+    end
+    
+    if isfield(steptrace,'data')
+
+        % fname
+
+        % % JS Edit 2025/01/29
+        % % Get changepoints back in. Should have been careful changing the
+        % % changepoint code.
+        % nnidx = find(~isnan(steptrace.data.trace(:,1)));
+        % 
+        % % on-axis
+        % steptrace.data.trace = steptrace.data.trace(nnidx,:);
+        % chp = find( abs(steptrace.data.trace(2:end,3) - steptrace.data.trace(1:end-1,3)) > 0);
+        % steptrace.data.trace(chp+1,5) = 1;
+        % 
+        % % off-axis
+        % steptrace.data.trace_yx = steptrace.data.trace_yx(nnidx,:);
+        % chp = find( abs(steptrace.data.trace_yx(2:end,3) - steptrace.data.trace_yx(1:end-1,3)) > 0);
+        % steptrace.data.trace_yx(chp+1,5) = 1;
+        % % End of JS Edit
+
+        % sum(steptrace.data.trace(:,5))
+        % fname
+
+        % Need to find/load neighbor data if it exists
+
+        % JS Edit 2025/02/27  2-Color Statistics
+        % if the file is a neighbor file, then we will look in the same
+        % directory for its associated data file. Then we will send them both
+        % to extract the 2C stepping statistics
+    
+        % MOLECULE
+        % find the molecule in the data Molecule if loaded
+        jj = strfind(fname,'_fiona')-1; %nbh or initial
+        j = strfind(fname,'_nbh')-1; %if there is a neighbor
+        ii = 1;
+        % Basically, if isempty(j), then we should search for the file with _nbh
+        % Else, we should search for the removal of the _nbh
+        fileNames = {f.name};
+        if isempty(j)
+            %search for fname(1:jj) + '_nbh' file
+            fname1 = strcat(fname(1:jj), '_nbh');
+            matchingFiles = fileNames(contains(fileNames, fname1));
+            steptrace2 = load(fullfile(directory, matchingFiles{1}));
+        else
+            %truncate at lower and get that file
+            ii = j+6;
+            fname1 = strcat(fname(1:j), '_fiona');
+            matchingFiles = fileNames(contains(fileNames, fname1));
+            steptrace2 = load(fullfile(directory, matchingFiles{1}));
+        end
+    
+    % merge option so that we can do x and y simultaneous madness
+    steptrace.data = mergeSteps(steptrace.data);
+    steptrace2.data = mergeSteps(steptrace2.data);
+    % r = steptrace.data.r
+    % data = trace.trace_2d;
+    % data_yx = trace.trace_2d(:,[2,1,4,3,5,6]);
+
+    [dtprime, dxprime, stepprime, relsepprime] = analyze_blips(steptrace.data, steptrace2.data);
+    dt = [dt, dtprime]; dx = [dx, dxprime]; step = [step, stepprime]; relsep2C = [relsep2C, relsepprime];
+    
+%     [bin, bout, pin, pout, pts, num] = analyze_blips_vs(steptrace.data);
+%     blipin = [blipin; bin]; blipout = [blipout; bout];
+%     ptsin = [ptsin; pin]; ptsout = [ptsout; pout];
+%     totpts = totpts + pts; stepnum = stepnum + num;
+
+    % [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,5,1,1);
+    % [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,5,1,5);
+    % [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,15,3,6);
+    [bin, bout, pin, pout, pts, num] = analyze_blips_vs_multiple(steptrace.data,20,4,10);
+    blipin = [blipin; bin]; blipout = [blipout; bout];
+    ptsin = [ptsin; pin]; ptsout = [ptsout; pout];
+    totpts = totpts + pts; stepnum = stepnum + num;
+    
+    m = length(fwd_mean_modded);
+    % [fwd_mean_modded{m+1}, bwd_mean_modded{m+1}] = align_to_step_mod_mean(steptrace.data,min_step_length);
+    
+    if mean(blipout) < -30
+        fprintf(fname)
+    end
+
+    end
+
+end
+
+plot_step_mod_mean(fwd_mean_modded,bwd_mean_modded,time_mean_modded_bins)
+
+[mu,s1,s2] = beta_confidence(length(blipin),length(ptsin));
+fprintf(strcat("Prob inside window (window size 3): ", num2str(round(mu,3)), " +/- [", num2str(round(s1,3)), ", ", num2str(round(s2,3)), "]", "\n"))
+fprintf(strcat("Size ",num2str(round(-mean(blipin),2))," +/- ",num2str(round(std(blipin),2)),"\n"))
+
+[mu0,s10,s20] = beta_confidence(length(blipout),length(ptsout));
+fprintf(strcat("Prob outside window: ", num2str(round(mu0,3)), " +/- [", num2str(round(s10,3)), ", ", num2str(round(s20,3)), "]", "\n"))
+fprintf(strcat("Size ",num2str(round(-mean(blipout),2))," +/- ",num2str(round(std(blipout),2)),"\n"))
+
+fn1 = figure();
+hold on
+c_on = bar(1:2,[mu,mu0]);
+er = errorbar(1:2,[mu,mu0],[s1-mu,s10-mu0],[s2-mu,s20-mu0],'Color',[0 0 0],'LineStyle','none','LineWidth',1);
+ax = gca;
+ax.YLim = [0,0.1];
+ax.XLim = [0.3,2.7];
+set(gcf,"Position",[250,250,200,300])
+
+% ttest2(ptsin,ptsout)
+
+% cdf
+mdl_exp_cdf = fittype('real(gammainc(k*x,1))','indep','x');
+xcdf = sort(dt(~isnan(dt)));
+% xcdf = xcdf(xcdf>0.003);
+ycdf = (1:length(xcdf))/length(xcdf);
+% weight matrix, goes as sqrt(time) since more time means more data points,
+% less variance by sqrt(time)
+w = xcdf; w(xcdf < 0.003) = 0; w = sqrt(w);
+cdffit = fit(xcdf',ycdf',mdl_exp_cdf,'start',[300],'Weights',w)
+f0 = figure();
+histogram(blipin,'BinWidth',2,'Normalization','probability','DisplayName','By step')
+hold on
+histogram(blipout,'BinWidth',2,'Normalization','probability','DisplayName','Away from step')
+legend('Location','northwest')
+% set(gcf,"Position",[360,360,600,260])
+
+
+f = figure();
+subplot(1,2,1)
+ax = gca;
+hh = histogram(dt);
+hh.BinWidth = 0.001;
+ax.YLim = [0,110];
+ax.XLim = [-0.002,0.024];
+hold on
+xlin = 0:0.0001:0.012;
+plot(xlin,2*max(hh.Values)*exp(-cdffit.k*xlin),'LineWidth',2,'Color','r')
+ax.LineWidth = 0.75; % Set the axes linewidth
+ax.XColor = 'k'; % Set the color of x-axis
+ax.YColor = 'k'; % Set the color of y-axis
+set(ax, 'XColor', 'k', 'YColor', 'k'); % Set font size for axis labels and ticks, and set color of axes lines
+set(findall(gca, 'Type', 'Text'), 'Color', 'k', 'FontName', 'Arial', 'FontSize', 10); % Set the color of all text objects to black
+
+subplot(1,2,2)
+hh = histogram(dx);
+ax = gca;
+hh.BinWidth = 2;
+ax.YLim = [0,48];
+ax.XLim = [-56,2];
+ax.LineWidth = 0.75; % Set the axes linewidth
+ax.XColor = 'k'; % Set the color of x-axis
+ax.YColor = 'k'; % Set the color of y-axis
+set(ax, 'FontName', 'Arial', 'FontSize', 10, 'XColor', 'k', 'YColor', 'k'); % Set font size for axis labels and ticks, and set color of axes lines
+set(findall(gca, 'Type', 'Text'), 'Color', 'k', 'FontName', 'Arial', 'FontSize', 10); % Set the color of all text objects to black
+set(gcf,"Position",[360,360,600,260])
+
+% f2 = figure();
+% % dt steps > 0
+% subplot(2,2,1)
+% ax = gca;
+% hh = histogram(dt(step > 0));
+% hh.BinWidth = 0.002;
+% ax.YLim = [0,90];
+% ax.XLim = [-0.002,0.024];
+% 
+% % dx steps > 0
+% subplot(2,2,2)
+% hh = histogram(dx(step > 0));
+% ax = gca;
+% hh.BinWidth = 2;
+% ax.YLim = [0,58];
+% ax.XLim = [-42,2];
+% 
+% % dt steps < 0
+% subplot(2,2,3)
+% ax = gca;
+% hh = histogram(dt(step < 0));
+% hh.BinWidth = 0.002;
+% ax.YLim = [0,90];
+% ax.XLim = [-0.002,0.024];
+% 
+% % dt steps < 0
+% subplot(2,2,4)
+% hh = histogram(dx(step < 0));
+% ax = gca;
+% hh.BinWidth = 2;
+% ax.YLim = [0,58];
+% ax.XLim = [-42,2];
+
+
+f3 = figure();
+% dt steps > 0
+subplot(1,2,1)
+hold on
+ax = gca;
+hh = histogram(dt(step > 0));
+hh2 = histogram(dt(step < 0));
+hh.BinWidth = 0.001; hh2.BinWidth = hh.BinWidth;
+ax.YLim = [0,90];
+ax.XLim = [-0.002,0.012];
+ax.LineWidth = 0.75; % Set the axes linewidth
+ax.XColor = 'k'; % Set the color of x-axis
+ax.YColor = 'k'; % Set the color of y-axis
+ax.LineWidth = 0.75; % Set the axes linewidth
+ax.XColor = 'k'; % Set the color of x-axis
+ax.YColor = 'k'; % Set the color of y-axis
+set(ax, 'FontName', 'Arial', 'FontSize', 10, 'XColor', 'k', 'YColor', 'k'); % Set font size for axis labels and ticks, and set color of axes lines
+set(findall(gca, 'Type', 'Text'), 'Color', 'k', 'FontName', 'Arial', 'FontSize', 10); % Set the color of all text objects to black
+
+% dx steps > 0
+subplot(1,2,2)
+hold on
+hh = histogram(dx(step > 0),'DisplayName','Before forward');
+hh2 = histogram(dx(step < 0),'DisplayName','After backward');
+ax = gca;
+hh.BinWidth = 2; hh2.BinWidth = hh.BinWidth;
+ax.YLim = [0,85];
+ax.XLim = [-56,2];
+legend('Location','Northwest','FontName', 'Arial', 'FontSize', 10)
+ax.LineWidth = 0.75; % Set the axes linewidth
+ax.XColor = 'k'; % Set the color of x-axis
+ax.YColor = 'k'; % Set the color of y-axis
+set(ax, 'FontName', 'Arial', 'FontSize', 10, 'XColor', 'k', 'YColor', 'k'); % Set font size for axis labels and ticks, and set color of axes lines
+set(findall(gca, 'Type', 'Text'), 'Color', 'k', 'FontName', 'Arial', 'FontSize', 10); % Set the color of all text objects to black
+
+set(gcf,"Position",[360,360,600,260])
+
+% sum(relsep2C > 0)
+% sum(relsep2C < 0)
+figure()
+histogram(relsep2C)
+xlabel("Head Separation at dips (nm)")
+
+% figure()
+% scatter(relsep2C, dx, 20,'k', 'filled')
+% title("Dip size vs relative head separation")
+% xlabel("\Delta head separation (nm)")
+% ylabel("Dip size (nm)")
+
+% Next figure with line fits
+x = relsep2C;
+y = dx;
+mask = ~isnan(x .* y);
+x = x(mask); y = y(mask);
+
+% Fit a linear model (y = mx + b)
+coeffs = polyfit(x, y, 1); % First-degree polynomial fit
+m = coeffs(1);  % Slope
+b = coeffs(2);  % Intercept
+
+% Generate fitted y values
+y_fit = polyval(coeffs, x);  % Evaluate polynomial at original x values
+
+% Compute R-squared value
+SS_total = sum((y - mean(y)).^2);  % Total sum of squares
+SS_residual = sum((y - y_fit).^2);  % Residual sum of squares
+R2 = 1 - (SS_residual / SS_total);  % R-squared formula
+
+x_on = [x, y]; %assign variable for later use
+
+figure()
+scatter(x, y, 25, 'k', 'filled')
+hold on;
+plot(x, y_fit, 'r-', 'LineWidth', 2, ...
+    'DisplayName', sprintf('Fit: y = %.2fx + %.2f\nR^2 = %.3f', m, b, R2)); % Line of best fit
+legend('Location', 'best');  % Display legend
+hold off;
+title("Dip size vs relative head separation")
+xlabel("\Delta head separation (nm)")
+ylabel("Dip size (nm)")
+
+
+function merged_trace = mergeSteps(trace)
+    % merge_step_components in post
+    % automatically show polar plots
+    [rprime, thetaprime] = polar_conversion(trace,0); %second is opt to plot invdividual
+    % r = [r, rprime]; theta = [theta, thetaprime];
+
+    merged_trace = trace;
+    merged_trace = merge_step_components(trace);
+    merged_trace.r = rprime;
+    merged_trace.theta = thetaprime;
