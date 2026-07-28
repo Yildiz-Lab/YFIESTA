@@ -26,16 +26,39 @@ if nargin > 0
     prevopts.UseNeighborRegions = 0;
 else %defaults
     prevopts = struct();
-    prevopts.UseNeighborRegions = 0;
-    prevopts.XB = [0,100,200]; prevopts.XA = prevopts.XB;
-    prevopts.YB = [0,50,100]; prevopts.YA = prevopts.YB;
-    prevopts.OmitBlips = '0';
-    prevopts.TieDwells = 0; %0 is for normal, tie with ending step. Other is for before.
-    prevopts.Merge = 0; prevopts.k1 = 1; prevopts.k2=1; prevopts.k12=0; prevopts.FwdDwells = 0;
+    % DC260723 removed these defaults
+    % prevopts.UseNeighborRegions = 0;
+    % prevopts.XB = [0,100,200]; prevopts.XA = prevopts.XB;
+    % prevopts.YB = [0,50,100]; prevopts.YA = prevopts.YB;
+    % prevopts.OmitBlips = '0';
+    % prevopts.TieDwells = 0; %0 is for normal, tie with ending step. Other is for before.
+    % prevopts.Merge = 0; prevopts.k1 = 1; prevopts.k2=1; prevopts.k12=0; prevopts.FwdDwells = 0;
 end
-prevopts.XB(prevopts.XB == 0) = []; prevopts.XA(prevopts.XA == 0) = [];
-prevopts.YB(prevopts.YB == 0) = []; prevopts.YA(prevopts.YA == 0) = [];
+% DC260723 added defensive defaults, fill in any fields not present in prevopts (handles
+% both the fresh-defaults case above and older/renamed saved option sets)
+if ~isfield(prevopts,'UseNeighborRegions'), prevopts.UseNeighborRegions = 0; end
+if ~isfield(prevopts,'XB'), prevopts.XB = [0,100,200]; end
+if ~isfield(prevopts,'XA'), prevopts.XA = prevopts.XB; end
+if ~isfield(prevopts,'YB'), prevopts.YB = [0,50,100]; end
+if ~isfield(prevopts,'YA'), prevopts.YA = prevopts.YB; end
+if ~isfield(prevopts,'OmitBlips'), prevopts.OmitBlips = '0'; end
+if ~isfield(prevopts,'TieDwells'), prevopts.TieDwells = 0; end %0 is for normal, tie with ending step. Other is for before.
+if ~isfield(prevopts,'Merge'), prevopts.Merge = 0; end
+if ~isfield(prevopts,'FwdDwells'), prevopts.FwdDwells = 0; end
+if ~isfield(prevopts,'k1')
+    if isfield(prevopts,'Poissonk1'), prevopts.k1 = prevopts.Poissonk1; else, prevopts.k1 = 1; end
+end
+if ~isfield(prevopts,'k2')
+    if isfield(prevopts,'Poissonk2'), prevopts.k2 = prevopts.Poissonk2; else, prevopts.k2 = 1; end
+end
+if ~isfield(prevopts,'k12')
+    if isfield(prevopts,'DoubleExp'), prevopts.k12 = prevopts.DoubleExp; else, prevopts.k12 = 0; end
+end
 
+% prevopts.XB(prevopts.XB == 0) = []; prevopts.XA(prevopts.XA == 0) = [];
+% prevopts.YB(prevopts.YB == 0) = []; prevopts.YA(prevopts.YA == 0) = [];
+prevopts.XB(1) = []; prevopts.XA(1) = [];
+prevopts.YB(1) = []; prevopts.YA(1) = []; %DC260723 only trim first leading 0
 
 
 hNeighborRegion.cUseNeighborRegions = uicontrol('Parent',hNeighborRegion.fig,'Units','normalized','Position',[0.075 0.90 0.5 0.08],'Enable','on','FontSize',12,'Value',prevopts.UseNeighborRegions,...
@@ -197,9 +220,14 @@ global Config;
 hNeighborRegion = getappdata(0,'hNeighborRegionOpts');
 opts = PackageRegions();
 opts.Merge = hNeighborRegion.cMerge.Value;
-opts.Poissonk1 = hNeighborRegion.cPoissonk1.Value;
-opts.Poissonk2 = hNeighborRegion.cPoissonk2.Value;
-opts.DoubleExp = hNeighborRegion.cDoubleExp.Value;
+% DC260723 renamed so the loading works
+% opts.Poissonk1 = hNeighborRegion.cPoissonk1.Value;
+% opts.Poissonk2 = hNeighborRegion.cPoissonk2.Value;
+% opts.DoubleExp = hNeighborRegion.cDoubleExp.Value;
+opts.k1 = hNeighborRegion.cPoissonk1.Value;
+opts.k2 = hNeighborRegion.cPoissonk2.Value;
+opts.k12 = hNeighborRegion.cDoubleExp.Value;
+
 opts.FwdDwells = hNeighborRegion.cFwdDwells.Value;
 opts.TieDwells = hNeighborRegion.cTieDwells.Value;
 opts.OmitBlips = hNeighborRegion.eOmitBlips.String;
@@ -214,9 +242,14 @@ hNeighborRegion = getappdata(0,'hNeighborRegionOpts');
 opts = PackageRegions();
 opts.UseNeighborRegions = hNeighborRegion.cUseNeighborRegions.Value;
 opts.Merge = hNeighborRegion.cMerge.Value;
-opts.Poissonk1 = hNeighborRegion.cPoissonk1.Value;
-opts.Poissonk2 = hNeighborRegion.cPoissonk2.Value;
-opts.DoubleExp = hNeighborRegion.cDoubleExp.Value;
+% DC260723 renaming so the loading works
+% opts.Poissonk1 = hNeighborRegion.cPoissonk1.Value;
+% opts.Poissonk2 = hNeighborRegion.cPoissonk2.Value;
+% opts.DoubleExp = hNeighborRegion.cDoubleExp.Value;
+opts.k1 = hNeighborRegion.cPoissonk1.Value;
+opts.k2 = hNeighborRegion.cPoissonk2.Value;
+opts.k12 = hNeighborRegion.cDoubleExp.Value;
+
 opts.FwdDwells = hNeighborRegion.cFwdDwells.Value;
 opts.TieDwells = hNeighborRegion.cTieDwells.Value;
 opts.OmitBlips = hNeighborRegion.eOmitBlips.String;
@@ -250,36 +283,36 @@ for j = 1:stopidx % the first should always be zero
     else
         XB(j+1) = str2num(hNeighborRegion.eXB(j).String);
     end
-    if XB(j+1) < XB(j)
-        XB(j+1) = XB(j);
-    end
+    % if XB(j+1) < XB(j)
+    %     XB(j+1) = XB(j);
+    % end
     
     if isempty(str2num(hNeighborRegion.eXA(j).String))
         XA(j+1) = 0;
     else
         XA(j+1) = str2num(hNeighborRegion.eXA(j).String);
     end
-    if XA(j+1) < XA(j)
-        XA(j+1) = XA(j);
-    end
+    % if XA(j+1) < XA(j)
+    %     XA(j+1) = XA(j);
+    % end
     
     if isempty(str2num(hNeighborRegion.eYB(j).String))
         YB(j+1) = 0;
     else
         YB(j+1) = str2num(hNeighborRegion.eYB(j).String);
     end
-    if YB(j+1) < YB(j)
-        YB(j+1) = YB(j);
-    end
+    % if YB(j+1) < YB(j)
+    %     YB(j+1) = YB(j);
+    % end
     
     if isempty(str2num(hNeighborRegion.eYA(j).String))
         YA(j+1) = 0;
     else
         YA(j+1) = str2num(hNeighborRegion.eYA(j).String);
     end
-    if YA(j+1) < YA(j)
-        YA(j+1) = YA(j);
-    end
+    % if YA(j+1) < YA(j)
+    %     YA(j+1) = YA(j);
+    % end
 
 end
 

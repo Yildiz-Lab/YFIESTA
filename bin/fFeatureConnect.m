@@ -107,8 +107,13 @@ if JobNr>0
     TimeP = clock; %#ok<NASGU>
     save([DirCurrent 'Queue' filesep 'Job' int2str(JobNr) filesep 'FiestaStatus.mat'],'TimeP','-append');
 else
+    % DC260723 fixing progressdlg
     progressdlg('close');
-    h=progressdlg('String',sprintf('Postprocessing Tracks - Frame:  %d',StartFrame),'Min',StartFrame,'Max',EndFrame-1,'Cancel','on','Parent',hMainGui.fig);
+    if EndFrame-1 > StartFrame
+        h=progressdlg('String',sprintf('Postprocessing Tracks - Frame:  %d',StartFrame),'Min',StartFrame,'Max',EndFrame-1,'Value',StartFrame,'Cancel','on','Parent',hMainGui.fig);
+    else
+        h=[];
+    end
 end
 for k=StartFrame+1:EndFrame-1
     if ~isempty(MolTrack)
@@ -124,12 +129,14 @@ for k=StartFrame+1:EndFrame-1
         StatusP = (k-StartFrame)/(EndFrame-StartFrame-1);
         save([DirCurrent 'Queue' filesep 'Job' int2str(JobNr) filesep 'FiestaStatus.mat'],'StatusP','-append');
     else
-        if isempty(h)
-            abort=1;
-            return
-        end
+    if isempty(h) && EndFrame-1 > StartFrame % DC260723 fixing progressdlg
+        abort=1;
+        return
+    end
+    if ~isempty(h)
         h=progressdlg(k,s);
     end
+end
 end
 if JobNr==0
     progressdlg('close');

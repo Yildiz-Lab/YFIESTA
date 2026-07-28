@@ -1,0 +1,247 @@
+function fMenuOptions(func,varargin)
+switch func
+    case 'LoadConfig'
+        LoadConfig(varargin{1});
+    case 'SaveConfig'
+        SaveConfig;
+    case 'SetDefaultConfig'
+        SetDefaultConfig;
+     case 'SaveCorrections'
+        SaveCorrections(varargin{1});
+    case 'LoadCorrections'
+        LoadCorrections(varargin{1});
+    case 'SetMaskCorrections'
+        SetMaskCorrections(varargin{1})
+    case 'SetLinearMaskCorrections'
+        SetLinearMaskCorrections(varargin{1});
+    case 'ApplyMultiChannelCorrections'
+        ApplyMultiChannelCorrections(varargin{1});
+end
+
+function LoadConfig(hMainGui)
+global Config;
+[FileName, PathName] = uigetfile({'*.mat','FIESTA Config(*.mat)'},'Load FIESTA Config',fShared('GetLoadDir'));
+if FileName~=0
+    fShared('SetLoadDir',PathName);
+    tempConfig=fLoad([PathName FileName],'Config');
+    Config.ConnectMol=tempConfig.ConnectMol;
+    Config.ConnectFil=tempConfig.ConnectFil;    
+    Config.Threshold=tempConfig.Threshold;
+    Config.RefPoint=tempConfig.RefPoint;
+    Config.OnlyTrack=tempConfig.OnlyTrack;
+    Config.BorderMargin=tempConfig.BorderMargin;
+    Config.Model=tempConfig.Model;
+    Config.MaxFunc=tempConfig.MaxFunc;
+    Config.DynamicFil=tempConfig.DynamicFil;
+    Config.ReduceFitBox=tempConfig.ReduceFitBox;
+    Config.FilFocus=tempConfig.FilFocus;
+end
+fShow('Image',hMainGui);
+
+function SaveConfig
+global Config; %#ok<NUSED>
+[FileName, PathName] = uiputfile({'*.mat','MAT-File(*.mat)'},'Save FIESTA Config',fShared('GetSaveDir'));
+if FileName~=0
+    fShared('SetSaveDir',PathName);
+    file = [PathName FileName];
+    if isempty(findstr('.mat',file))
+        file = [file '.mat'];
+    end
+    save(file,'Config');
+end
+
+function SetDefaultConfig
+global Config;
+global DirCurrent
+button = fQuestDlg('Overwrite the default configuration?','FIESTA Warning',{'Overwrite','Cancel'},'Cancel');
+if strcmp(button,'Overwrite')==1
+    if isdeployed
+        if ismac
+            file_id = fopen('~/Library/Fiesta/fiesta.ini','w');
+        elseif ispc
+            file_id = fopen([winqueryreg('HKEY_CURRENT_USER','Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders','Local AppData') '\Fiesta\fiesta.ini'],'w');
+        end
+    else
+        file_id = fopen([DirCurrent 'fiesta.ini'],'w');
+    end
+    fwrite(file_id,jsonencode(Config));
+    fclose(file_id);
+end
+
+function LoadCorrections(hMainGui)
+global Stack;
+fRightPanel('CheckReference',hMainGui);
+[FileName, PathName] = uigetfile({'*.mat','FIESTA Transformation (*.mat)'},'Load FIESTA Reference Transformations',fShared('GetLoadDir'));
+if FileName~=0
+    fShared('SetLoadDir',PathName);    
+    Drift=fLoad([PathName FileName],'Drift');
+    if ~isempty(Drift)
+        if ~iscell(Drift)
+            fMsgDlg('References not compatible with this FIESTA version','error');
+            return;
+        end
+        if numel(Stack)>numel(Drift)
+            Drift{numel(Stack)} = [];
+        end
+        setappdata(hMainGui.fig,'Drift',Drift);
+    end
+    fShared('UpdateMenu',hMainGui);
+end
+setappdata(0,'hMainGui',hMainGui);
+
+% JS Edit 2022/09/03
+% Putting the ability to apply corrections to Ch2 Molecules
+function SetMaskCorrections(hMainGui)
+global Molecule;
+
+% If a previous correction is still applied, revert it first so we start
+% from clean/raw positions before computing the new one
+prevApplied = getappdata(hMainGui.fig,'MaskCorrectionApplied');
+if isequal(prevApplied,1)
+    prevDeltas = getappdata(hMainGui.fig,'MaskCorrectionDeltas');
+    prevChannels = getappdata(hMainGui.fig,'MaskCorrectChannels');
+    if ~isempty(prevDeltas) && ~isempty(prevChannels)
+        prevAdjChannel = prevChannels(2);
+        for i = 1:length(Molecule)
+            if Molecule(i).Channel == prevAdjChannel && i <= length(prevDeltas) && ~isempty(prevDeltas{i})
+                Molecule(i).Results(:,3) = Molecule(i).Results(:,3) + prevDeltas{i}(:,1);
+                Molecule(i).Results(:,4) = Molecule(i).Results(:,4) + prevDeltas{i}(:,2);
+                Molecule(i).Results(:,6) = sqrt( (Molecule(i).Results(:,3) - Molecule(i).Results(1,3)).^2 + (Molecule(i).Results(:,4) - Molecule(i).Results(1,4)).^2 );
+            end
+        end
+    end
+    setappdata(hMainGui.fig,'MaskCorrectionApplied',0);
+end
+
+refChannel = str2double(fInputDlg('Enter reference channel number (stays fixed):','1'));
+if isnan(refChannel)
+    return;
+end
+adjChannel = str2double(fInputDlg('Enter channel number to adjust:','2'));
+if isnan(adjChannel)
+    return;
+end
+
+LoadDir = fShared('GetLoadDir');
+[baseName, folder] = uigetfile({'*.mat','FIESTA Data(*.mat)'}, ...
+    sprintf('Load FIESTA Objects for Channel %d (reference)',refChannel),LoadDir,'MultiSelect','off');
+if isequal(baseName,0)
+    return;
+end
+ch1file = fullfile(folder, baseName);
+fShared('SetLoadDir',folder);
+
+[baseName, folder] = uigetfile({'*.mat','FIESTA Data(*.mat)'}, ...
+    sprintf('Load FIESTA Objects for Channel %d (to adjust)',adjChannel),folder,'MultiSelect','off');
+if isequal(baseName,0)
+    return;
+end
+ch2file = fullfile(folder, baseName);
+fShared('SetLoadDir',folder);
+
+F = fCalcAlignCorrection(ch1file, ch2file, refChannel, adjChannel);
+Fx = F{1}; Fy = F{2};
+
+deltas = cell(1,length(Molecule));
+for i = 1:length(Molecule)
+    if Molecule(i).Channel == adjChannel
+        rawXY = double(Molecule(i).Results(:,3:4));
+        dx = Fx(rawXY);
+        dy = Fy(rawXY);
+        deltas{i} = [dx, dy];
+        Molecule(i).Results(:,3) = Molecule(i).Results(:,3) - dx;
+        Molecule(i).Results(:,4) = Molecule(i).Results(:,4) - dy;
+        Molecule(i).Results(:,6) = sqrt( (Molecule(i).Results(:,3) - Molecule(i).Results(1,3)).^2 + (Molecule(i).Results(:,4) - Molecule(i).Results(1,4)).^2 );
+    end
+end
+
+setappdata(hMainGui.fig,'MaskCorrect',F);
+setappdata(hMainGui.fig,'MaskCorrectFiles',{ch1file, ch2file});
+setappdata(hMainGui.fig,'MaskCorrectChannels',[refChannel, adjChannel]);
+setappdata(hMainGui.fig,'MaskCorrectionDeltas',deltas);
+setappdata(hMainGui.fig,'MaskCorrectionApplied',1);
+
+set(hMainGui.Menu.mApplyMultiCorrections,'Enable','On');
+
+setappdata(0,'hMainGui',hMainGui);
+fShow('Tracks');
+
+
+function SetLinearMaskCorrections(hMainGui)
+[dx,dy] = offset_by_raw_means_v2(); %get straight correction
+
+% Now get limits of current view for application
+interpolation_factor = 200;
+xb = hMainGui.MidPanel.aView.XLim(1):interpolation_factor:hMainGui.MidPanel.aView.XLim(2);
+yb = hMainGui.MidPanel.aView.YLim(1):interpolation_factor:hMainGui.MidPanel.aView.YLim(2);
+[x,y] = meshgrid(xb, yb);
+x = reshape(x,[],1); y = reshape(y,[],1);
+Fx = scatteredInterpolant(x, y, double(dx)*ones(numel(x),1), 'natural'); %gotta make doubles for interpolant
+Fy = scatteredInterpolant(x, y, double(dy)*ones(numel(y),1), 'natural');
+F = {Fx, Fy};
+
+setappdata(hMainGui.fig,'MaskCorrect',F);
+setappdata(hMainGui.fig,'MaskCorrectionApplied',0);
+
+set(hMainGui.Menu.mApplyMultiCorrections,'Enable','On');
+
+setappdata(0,'hMainGui',hMainGui);
+
+
+function ApplyMultiChannelCorrections(hMainGui)
+global Stack;
+global Molecule;
+
+F = getappdata(hMainGui.fig,'MaskCorrect');
+Fx = F{1}; Fy = F{2};
+toggle = getappdata(hMainGui.fig,'MaskCorrectionApplied');
+
+if toggle %we already corrected, go back
+    % maybe a dialog box would be helpful
+    answer = questdlg('Transformation already applied, apply inverse transformation?');
+    if length(answer) < 3 % No
+        return
+    elseif length(answer) < 4 %Yes
+        pm = -1;
+    else %Cancel
+        return
+    end
+else %not corrected so do normal transformation
+    pm = 1;
+end
+
+for i = 1:length(Molecule)
+    if Molecule(i).Channel == 2
+        % for some reason it needs to be a double array
+        Molecule(i).Results(:,3) = Molecule(i).Results(:,3) - pm*Fx(double(Molecule(i).Results(:,3:4)));
+        Molecule(i).Results(:,4) = Molecule(i).Results(:,4) - pm*Fy(double(Molecule(i).Results(:,3:4)));
+        % Molecule(i).Results(:,3) = Molecule(i).Results(:,3) + pm*Fx(double(Molecule(i).Results(:,3:4)));
+        % Molecule(i).Results(:,4) = Molecule(i).Results(:,4) + pm*Fy(double(Molecule(i).Results(:,3:4)));
+        
+    end
+    
+    Molecule(i).Results(:,6) = sqrt( (Molecule(i).Results(:,3) - Molecule(i).Results(1,3)).^2 + (Molecule(i).Results(:,4) - Molecule(i).Results(1,4)).^2 );
+    
+end
+
+toggle = mod(toggle+1,2);
+setappdata(hMainGui.fig,'MaskCorrectionApplied',toggle)
+
+% the global variable enscribes that this change happens imediately in the
+% Results. But we still want it to plot again so use built in function to
+% show tracks
+
+fShow('Tracks')
+% End of JS Edit
+
+
+
+function SaveCorrections(hMainGui)
+Drift=getappdata(hMainGui.fig,'Drift'); %#ok<NASGU>
+[FileName, PathName] = uiputfile({'*.mat','MAT-files (*.mat)'},'Save FIESTA Reference Transformations',fShared('GetSaveDir'));
+if FileName~=0
+    fShared('SetSaveDir',PathName);
+    file = strtok(FileName,'.');
+    save([PathName file '.mat'],'Drift');  
+end
+

@@ -38,6 +38,26 @@ function app = updateMainPlot(app)
             hFitShort.PickableParts = 'none';
         end
         
+        % Plot neighbor traces from other nearby channels/particles
+        % (ported over from old PlotData.m, which was dropped in the
+        % App Designer conversion)
+        if isfield(app,'data') && isfield(app.data,'neighbors') && ~isempty(app.data.neighbors)
+            neighbors = app.data.neighbors;
+            colorlist = gray(2*length(neighbors)); % only use first half so it stays visible on white bg
+            for n = 1:length(neighbors)
+                nb = neighbors{n};
+                idxt  = find(~isnan(nb(:,1)));
+                idxxy = find(~isnan(nb(:,2)));
+                if length(idxt) > length(idxxy)
+                    idxt = idxt(2:end);
+                end
+                hNbLong  = plot(app.AxMain, nb(idxt,1), nb(idxxy,2), 'Color', colorlist(n,:), 'Tag', 'neighbors');
+                hNbShort = plot(app.AxMain, nb(idxt,1), nb(idxxy,3), '--', 'Color', colorlist(n,:), 'Tag', 'neighbors');
+                hNbLong.PickableParts = 'none';
+                hNbShort.PickableParts = 'none';
+            end
+        end
+        
         
         if app.time_bool
             xlabel(app.AxMain,'time (s)');

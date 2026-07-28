@@ -1,4 +1,8 @@
 function StepStatistics=SICstepFinder(x)
+
+% NOTE THAT IN FIESTA > FIONA this is unused. Instead look into parent
+% folder for same filename
+
 %% 
 %----Info------------------------------------------------------------------
 % Implementation of SIC Step-Finding Routine as published by B. Kalafut and 
@@ -47,12 +51,19 @@ R_N=1:1:length(x);
 L_N=length(x):-1:1;
 
 % calculate DeltaChi2 for each step location
-Metric = zeros(1,NP); % the last point is not used except for plotting
-Metric(1:end-1) = UpdateMetric( RCumx, LCumx, R_N, L_N );
+%DC260721 -- start of edit: last slot must be permanently ineligible, not 0
+Metric = Inf(1,NP); % the last point is not a valid split location (it's the
+    % fixed right endpoint), so it must never be selectable by min(Metric).
+    % It was previously initialized to 0, which is fine only as long as
+    % something else always ties or beats it -- once rejected candidates
+    % are properly excluded (see Inf fix below), this slot can become the
+    % accidental global minimum and StepInd=NP has no valid insertion point,
+    % causing "Index exceeds array bounds" at StepLoc=StepLocs(1).
+Metric(1:end-1) = UpdateMetric( RCumx, LCumx, R_N, L_N ); %DC260721 -- end of edit
 
 NoFittedSteps=1;    % current number of steps found =1
+rejectedStepCount=0; % JS/Claude Edit: track how many short-dwell candidates get rejected %DC260721
 
-% FitSquidual=(std(x))^2*NP; % Chi2 = Variance*NP = total noise
 FitSquidual=(std(x))^2*NP; % Chi2 = Variance*NP = total noise
 
 % need to get the first step running
@@ -63,7 +74,22 @@ SIC_new = (NoFittedSteps+2)*log(NP)+NP*log(FitSquidual/NP);
 SIC_old = SIC_new;
 
 %% Main stepfitter loop
+%DC260721 -- start of safety-valve block added to prevent hang/infinite loop
+maxIterations = 3*NP + 100; % JS/Claude Edit: hard safety valve -- this loop
+    % should never need more than ~NP iterations (each data point can only
+    % be accepted as a step or permanently excluded once), so if we ever
+    % blow past this it means something unexpected is happening and we
+    % should bail out with a clear error rather than hang indefinitely
+iterationCount = 0; %DC260721
  while(SIC_new <= SIC_old) 
+    
+    iterationCount = iterationCount + 1; %DC260721
+    if iterationCount > maxIterations %DC260721 -- start of hard abort check
+        error('SICstepFinder:tooManyIterations', ...
+            ['Step fitter exceeded %d iterations without converging. ', ...
+             'This usually means the trace has an unusually long flat/', ...
+             'degenerate region. Aborting instead of hanging.'], maxIterations);
+    end %DC260721 -- end of hard abort check
     
     SIC_old = SIC_new;
     
@@ -95,7 +121,7 @@ SIC_old = SIC_new;
         FitPos(PrevInd+1:StepInd)=mean(x(PrevInd+1:StepInd));
         FitPos(StepInd+1:NextInd)=mean(x(StepInd+1:NextInd));
 
-        Metric(StepInd)=0; % do not allow duplicate steps at the same point
+        Metric(StepInd)=Inf; % do not allow duplicate steps at the same point %DC260721 -- was 0, changed to Inf for the same reason as the rejection-branch fix below (guarantees permanent exclusion)
         
         NoFittedSteps=NoFittedSteps+1;  % increase valid step tally
         
@@ -246,9 +272,23 @@ SIC_old = SIC_new;
             StepsInd(2:end))).^2./R_N(StepsInd(2:end))).*CorrectionFactor);
         
     else  % Step is shorter than minimum allowed length; ignore it
-        Metric(StepInd)=0;
-        disp('a short-dwell step found and ignored')
-    end
+        %DC260721 -- start of edit: replaced "Metric(StepInd)=0" + unconditional disp()
+        % JS/Claude Edit: setting this to 0 is not safe -- across a long
+        % flat/degenerate stretch of data (e.g. a big NaN-filled region
+        % that got replaced with a single repeated value), the "true"
+        % metric value here can already be ~0, so this reset was a no-op
+        % and min(Metric) would pick the exact same index again on the
+        % next iteration, forever. Inf guarantees this candidate can
+        % never be re-selected, so the loop is guaranteed to make
+        % progress and terminate within NP iterations.
+        Metric(StepInd)=Inf;
+        rejectedStepCount = rejectedStepCount + 1;
+        if mod(rejectedStepCount, 500) == 1
+            % disp() itself is slow in a tight loop, so only print
+            % occasionally rather than on every single rejection
+            disp(['short-dwell steps found and ignored so far: ', num2str(rejectedStepCount)])
+        end
+    end %DC260721 -- end of edit
     
     % Update the Schwarz Information Criterion
     SIC_new = (NoFittedSteps+2)*log(NP)+NP*log(FitSquidual/NP);
@@ -283,5 +323,3 @@ newMetric = -RCumx(1:end-1).*RCumx(1:end-1)./R_N(1:end-1)...
             -LCumx(2:end  ).*LCumx(2:end  )./L_N(2:end  )...
             +(RCumx(1:end-1)+LCumx(2:end  )).*(RCumx(1:end-1)+ ...
             LCumx(2:end ))./(R_N(1:end-1)+L_N(2:end  ));
-
-

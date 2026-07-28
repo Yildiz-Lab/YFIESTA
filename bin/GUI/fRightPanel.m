@@ -626,19 +626,32 @@ iY=Scan.InterpY;
 d = Scan.InterpD;
 KymoPix = mean(d(2:end)-d(1:end-1));
 hMainGui=getappdata(0,'hMainGui'); 
+% if strcmp(get(hMainGui.ToolBar.ToolChannels(5),'State'),'off')
+%     stidx=hMainGui.Values.FrameIdx(1);
+%     if stidx>length(hMainGui.Values.MaxIdx)-1
+%         N = hMainGui.Values.MaxIdx(2);
+%     else
+%         N = hMainGui.Values.MaxIdx(stidx+1);
+%     end
+%     tN = N;
+% else
+%     stidx=1:numel(Stack);
+%     N = max(hMainGui.Values.MaxIdx(2:end));
+%     tN = hMainGui.Values.MaxIdx(2:end);
+% end
+
+% DC0717 kymographs weren't working for 3 channel
 if strcmp(get(hMainGui.ToolBar.ToolChannels(5),'State'),'off')
     stidx=hMainGui.Values.FrameIdx(1);
-    if stidx>length(hMainGui.Values.MaxIdx)-1
-        N = hMainGui.Values.MaxIdx(2);
-    else
-        N = hMainGui.Values.MaxIdx(stidx+1);
-    end
-    tN = N;
 else
     stidx=1:numel(Stack);
-    N = max(hMainGui.Values.MaxIdx(2:end));
-    tN = hMainGui.Values.MaxIdx(2:end);
 end
+tN = zeros(1,numel(stidx));
+for ii = 1:numel(stidx)
+    tN(ii) = size(Stack{stidx(ii)},3);
+end
+N = max(tN);
+
 for k = stidx
     if length(Drift)<k || isempty(Drift{k})
         Drift{k} = [ 1 0 0; 0 1 0; 0 0 1 ];

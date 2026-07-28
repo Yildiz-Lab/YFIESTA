@@ -1,4 +1,4 @@
-function fNeighborlyRegions(opts, framerate, actualdir, noplot, savedir)
+function HistVals = fNeighborlyRegions(opts, framerate, actualdir, noplot, savedir)
 %opts should have field mode and then any other parameters that specific
 %mode might require
 % Opts should include XA, XB, YA, YB
@@ -7,6 +7,7 @@ if nargin < 3
     actualdir = uigetdir();
 end
 f = dir(fullfile(actualdir,'*.mat'));
+f = f(~startsWith({f.name}, '._'));   % DC260721 filter out apple sidecard files
 fnum = length(f);
 %% Choose your regions in x and y to consider ranges of close interactions.
 % Regions are arrays defining distance away from mean MAP location.
@@ -25,7 +26,17 @@ end
 if nargin < 5
     savedir = [];
 end
-xb = opts.XB; xa = opts.XA; yb = opts.YB; ya = opts.YA;
+xb = opts.XB;
+xa = opts.XA;
+yb = opts.YB;
+ya = opts.YA;
+
+%DC260727 fixed on-axis size of each exclusive region, for pause distance calc
+region_size = zeros(1,length(xb));
+for k = 1:length(xb)-1
+    region_size(k) = (xb(k+1)-xb(k)) + (xa(k+1)-xa(k));
+end
+region_size(length(xb)) = Inf; %DC260727 catch-all region is unbounded
 
 % Storage for statistics in each region
 do = struct();
@@ -44,6 +55,10 @@ switch(opts.mode)
         RegionPauseStats = cell(1,length(xb));
         RegionPauseSideStats = cell(1,length(xb));
         RegionPauseBackStats = cell(1,length(xb));
+        RegionPauseStartTruncStats = cell(1,length(xb)); %DC260727
+        RegionPauseEndTruncStats = cell(1,length(xb)); %DC260727
+        RegionDistanceStats = cell(1,length(xb)); %DC260728
+        AllPauseVals = [];
     case 'regions'
         fprintf("Just finding regions")
 end
@@ -52,9 +67,11 @@ end
 ncount=0;
 
 %% Now load each MATLAB file and determine neighbor regions
+NearNeighborRegions = {};
 for i=1:fnum
     fname = f(i).name;
-    steptrace = load(strcat(actualdir,'\',fname));
+    % steptrace = load(strcat(actualdir,'\',fname));
+    steptrace = load(fullfile(actualdir,fname)); % DC260721 robust for OS
     data = steptrace.data;
     if ~isfield(data,'trace') || ~isfield(data,'trace_yx')
         fnum = fnum - 1;
@@ -180,12 +197,19 @@ for i=1:fnum
             % JS Edit 2023/01/09 Pause Stats based on DeWitt et al (2015)
             if ~isempty(NearNeighborRegions{k})
                 % Note we are always truncating off the last point
-                [pause_frequency, pause_fraction, ~, numpause, numside, numback] = fPauseAnalysis(trace, trace_yx, NearNeighborRegions{k}, opts.PauseThresh);
-                RegionPauseFreqStats{k} = [RegionPauseFreqStats{k}; pause_frequency];
-                RegionPauseFracStats{k} = [RegionPauseFracStats{k}; pause_fraction];
-                RegionPauseStats{k} = [RegionPauseStats{k}; numpause];
-                RegionPauseSideStats{k} = [RegionPauseSideStats{k}; numside];
-                RegionPauseBackStats{k} = [RegionPauseBackStats{k}; numback];
+                % DC260727 added truncation returns
+                [pause_frequency, pause_fraction, Values, numpause, numside, numback, numstarttrunc, numendtrunc, distance] = fPauseAnalysis(trace(1:end-1,:), trace_yx(1:end-1,:), NearNeighborRegions{k}, opts.PauseThresh, region_size(k));
+                if ~isnan(pause_frequency) %DC260727 skip degenerate calls (zero valid points after trimming the last frame)
+                    RegionPauseFreqStats{k} = [RegionPauseFreqStats{k}; pause_frequency];
+                    RegionPauseFracStats{k} = [RegionPauseFracStats{k}; pause_fraction];
+                    RegionPauseStats{k} = [RegionPauseStats{k}; numpause];
+                    RegionPauseSideStats{k} = [RegionPauseSideStats{k}; numside];
+                    RegionPauseBackStats{k} = [RegionPauseBackStats{k}; numback];
+                    RegionPauseStartTruncStats{k} = [RegionPauseStartTruncStats{k}; numstarttrunc];
+                    RegionPauseEndTruncStats{k} = [RegionPauseEndTruncStats{k}; numendtrunc];
+                    RegionDistanceStats{k} = [RegionDistanceStats{k}; distance]; 
+                    AllPauseVals = [AllPauseVals, Values];
+                end
             end
         end
     end
@@ -274,12 +298,24 @@ end
 
 if isfield(do,'pause')
     for k=1:length(NearNeighborRegions)
-        fprintf(strcat("Region ",num2str(k)," pause number: ", num2str(sum(RegionPauseStats{k})), "\n"))
-        fprintf(strcat("Region ",num2str(k)," pause density: ", num2str(mean(RegionPauseFreqStats{k})*1000), "\n"))
-        fprintf(strcat("Region ",num2str(k)," pause fraction: ", num2str(mean(RegionPauseFracStats{k})), "\n"))
-        fprintf(strcat("Region ",num2str(k)," pause-side fraction: ", num2str(sum(RegionPauseSideStats{k})/sum(RegionPauseStats{k})), " (", num2str(sum(RegionPauseSideStats{k})), "/", num2str(sum(RegionPauseStats{k})), ")", "\n"))
-        fprintf(strcat("Region ",num2str(k)," pause-back fraction: ", num2str(sum(RegionPauseBackStats{k})/sum(RegionPauseStats{k})), " (", num2str(sum(RegionPauseBackStats{k})), "/", num2str(sum(RegionPauseStats{k})), ")", "\n"))
+        fprintf(strcat("=== REGION ",num2str(k),": ===\n"));
+        fprintf(strcat("Pause Number: ", num2str(sum(RegionPauseStats{k})), "\n"))
+        fprintf(strcat("Pause Density: ", num2str(mean(RegionPauseFreqStats{k})*1000), "\n"))
+        fprintf(strcat("Pause Fraction: ", num2str(mean(RegionPauseFracStats{k})), "\n"))
+        fprintf(strcat("Pause-Side Fraction: ", num2str(sum(RegionPauseSideStats{k})/sum(RegionPauseStats{k})), " (", num2str(sum(RegionPauseSideStats{k})), "/", num2str(sum(RegionPauseStats{k})), ")", "\n"))
+        fprintf(strcat("Pause-Back Fraction: ", num2str(sum(RegionPauseBackStats{k})/sum(RegionPauseStats{k})), " (", num2str(sum(RegionPauseBackStats{k})), "/", num2str(sum(RegionPauseStats{k})), ")", "\n"))
+        fprintf(strcat("Start-Truncated Chunks: ", num2str(sum(RegionPauseStartTruncStats{k})), "\n"))
+        fprintf(strcat("End-Truncated Chunks: ", num2str(sum(RegionPauseEndTruncStats{k})), "\n"))
+        fprintf(strcat("Start Density: ", num2str(sum(RegionPauseStartTruncStats{k})/sum(RegionDistanceStats{k})*1000), "\n")) %DC260727
+        fprintf(strcat("End Density: ", num2str(sum(RegionPauseEndTruncStats{k})/sum(RegionDistanceStats{k})*1000), "\n")) %DC260727
+        fprintf("\n");
     end
+end
+
+if isfield(do,'pause')
+    HistVals = AllPauseVals;
+else
+    HistVals = [];
 end
 
 end

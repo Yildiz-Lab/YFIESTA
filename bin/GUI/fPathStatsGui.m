@@ -24,6 +24,8 @@ switch func
         Crop(varargin{1});
     case 'FIONA'
         FIONA(varargin{1});
+    case 'QuickQueueFIONA'
+        QuickQueueFIONA(varargin{1});
     case 'StepStats'
         StepStats(varargin{1});
 end
@@ -97,7 +99,7 @@ Index = [ find(MolSelect==1) find(FilSelect==1)*1i ];
 
 hPathsStatsGui.fig = figure('Units','normalized','DockControls','off','IntegerHandle','off','MenuBar','none','Name','Path Statistics',...
                       'NumberTitle','off','HandleVisibility','callback','Tag','hPathsStatsGui',...
-                      'Visible','off','Resize','off','WindowStyle','modal');
+                      'Visible','off','Resize','off','WindowStyle','normal'); %DC260720 modal -> normal
                   
 if ispc || ismac
     set(hPathsStatsGui.fig,'Color',[50 50 50]/255);
@@ -194,6 +196,17 @@ hPathsStatsGui.bPlotStepStats = uicontrol('Parent',hPathsStatsGui.fig,'Units','n
                             'Position',[0.1 0.01 0.175 0.03],'String','Compile Stepping Stats','Tag','bStepStats','BackgroundColor',cbutton,'ForegroundColor',ctext);
 % end of JS Edit 2022/06/03
 
+% DC260722: queues the selected path for background FIONA prep (no
+% options dialog, no neighbor-file generation, no viewer launch) so the
+% user can keep stepping through molecules without waiting
+hPathsStatsGui.bQuickFiona = uicontrol('Parent',hPathsStatsGui.fig,'Units','normalized',...
+                            'Callback','fPathStatsGui(''QuickQueueFIONA'',getappdata(0,''hPathsStatsGui''));uicontrol(getappdata(0,''hPathsStatsGui'').lAll);',...
+                            'Position',[0.285 0.01 0.14 0.03],'String','Quick Queue FIONA','Tag','bQuickFiona','BackgroundColor',cbutton,'ForegroundColor',ctext);
+
+hPathsStatsGui.tFionaQueue = uicontrol('Parent',hPathsStatsGui.fig,'Units','normalized',...
+                            'Position',[0.43 0.01 0.14 0.03],'String','FIONA queue: idle','Style','text',...
+                            'Tag','tFionaQueue','HorizontalAlignment','center','BackgroundColor',c,'ForegroundColor',ctext);
+
 hPathsStatsGui.bOk = uicontrol('Parent',hPathsStatsGui.fig,'Units','normalized','Callback','fPathStatsGui(''Ok'',getappdata(0,''hPathsStatsGui''));',...
                             'Position',[0.575 0.01 0.175 0.03],'String','Ok','Tag','bOk','BackgroundColor',cbutton,'ForegroundColor',ctext);
 
@@ -203,6 +216,13 @@ hPathsStatsGui.bCancel = uicontrol('Parent',hPathsStatsGui.fig,'Units','normaliz
 setappdata(0,'hPathsStatsGui',hPathsStatsGui);
 setappdata(hPathsStatsGui.fig,'PathStats',PathStats);
 setappdata(hPathsStatsGui.fig,'PathFilSelect',PathFilSelect);
+
+% DC260722
+setappdata(hPathsStatsGui.fig,'FionaQueue',parallel.FevalFuture.empty);
+fionaTimer = timer('ExecutionMode','fixedSpacing','Period',1,'Tag','tFionaQueueTimer',...
+                    'TimerFcn',@(~,~) UpdateFionaQueueStatus(getappdata(0,'hPathsStatsGui')));
+setappdata(hPathsStatsGui.fig,'FionaQueueTimer',fionaTimer);
+start(fionaTimer);
 
 if ~isempty(PathStats)
     if strcmp(options.mode,'filament')
@@ -387,11 +407,21 @@ for n=1:length(PathStats)
         Filament(idx).PathData = PathStats(n).PathData;
     end
 end
+StopFionaQueueTimer(hPathsStatsGui); % background FIONA jobs, if any, keep running and saving to disk
 close(hPathsStatsGui.fig);
 fShow('Tracks'); %JS Edit to immediately color recolored molecules
     
 function Cancel(hPathsStatsGui)
+StopFionaQueueTimer(hPathsStatsGui); % background FIONA jobs, if any, keep running and saving to disk
 close(hPathsStatsGui.fig);
+
+function StopFionaQueueTimer(hPathsStatsGui)
+% DC260722
+t = getappdata(hPathsStatsGui.fig,'FionaQueueTimer');
+if ~isempty(t) && isvalid(t)
+    stop(t);
+    delete(t);
+end
 
 function Load(hPathsStatsGui)
 PathStats=getappdata(hPathsStatsGui.fig,'PathStats');
@@ -1073,6 +1103,353 @@ FIONAviewer(fullfile(FFolderName,strcat(PathStats(n).Name(10:end),'_fiona.mat'))
 
 
 % JS Edit 2022/06/03 to compile plots with the click of a button
+% DC260722: fast, synchronous half of what the
+% FIONA stepping button does (path/molecule ID + recolor + frame-filled
+% xy trace), then hands the slow half (interpolation, neighbor search,
+% file save) to a background worker via parfeval and returns immediately
+% so the user can keep clicking through molecules.
+function QuickQueueFIONA(hPathsStatsGui)
+global Config;
+global Molecule;
+
+n = get(hPathsStatsGui.lAll,'Value');
+if isempty(n)
+    return;
+end
+n = n(1); % only queue one path per keypress, even if multiple are selected
+
+PathStats = getappdata(hPathsStatsGui.fig,'PathStats');
+if isempty(PathStats) || n > length(PathStats) || isempty(PathStats(n).PathData)
+    return;
+end
+xy = PathStats(n).PathData(:,4:5);
+
+% Identify + recolor the underlying molecule (same logic as FIONA())
+s = get(hPathsStatsGui.lAll,'String');
+molidx = [];
+for j = 1:length(Molecule)
+    if strcmp(Molecule(j).Name, s{n})
+        molidx = [molidx, j];
+    end
+end
+if length(molidx) > 1
+    meandist = 1e10; minj = 0;
+    for j = 1:length(molidx)
+        mm = molidx(j);
+        if size(Molecule(mm).Results,1) == size(PathStats(n).PathData,1)
+            dist = mean( sqrt( (Molecule(mm).Results(:,3) - PathStats(n).PathData(:,1)).^2 + (Molecule(mm).Results(:,3) - PathStats(n).PathData(:,2)).^2) );
+            if dist < meandist
+                meandist = dist; minj = molidx(j);
+            end
+        end
+    end
+else
+    minj = molidx;
+end
+if isempty(minj) || minj == 0
+    return;
+end
+Molecule(minj).Color = [0 1 1]; % shows up next time this path/molecule redraws
+
+% Same folder/filename convention as FIONA()
+FFolderName = fullfile(Config.Directory{1}, Config.StackName{1}(1:end-6));
+if ~isfolder(FFolderName)
+    mkdir(FFolderName);
+end
+fname = fullfile(FFolderName,PathStats(n).Name(10:end));
+
+if isfile(strcat(fname,'_fiona.mat')) % don't bother queuing, FIONA() won't overwrite it either
+    return;
+end
+
+% Frame-filled xy trace (NaN over gaps/blinks)
+frames = PathStats(n).Results(:,1);
+frame1 = frames(1); framef = frames(end);
+xynew = nan(framef-frame1+1,2);
+for i = 1:size(xy,1)
+    xynew(frames(i)-frame1+1,:) = xy(i,:);
+end
+
+% Defaults instead of popping fNeighborStepOptions; reuse last-saved
+% options if the user has run the dialog before, but always force
+% GenerateNeighbors off for the quick queue
+plotNeighbors = get(hPathsStatsGui.cNeighbor,'Value');
+if plotNeighbors == 1
+    if isfield(Config,'NeighborStepsOpts')
+        options = Config.NeighborStepsOpts;
+    else
+        options = DefaultNeighborStepOptions();
+    end
+else
+    options = struct();
+end
+options.GenerateNeighbors = 0;
+
+% Snapshot only what the worker needs -- never hand a global to parfeval
+PathStatsSnap = PathStats(n);
+if plotNeighbors == 1
+    MoleculeSnap = struct('Channel',{Molecule.Channel},'Results',{Molecule.Results},'Name',{Molecule.Name});
+else
+    MoleculeSnap = struct([]);
+end
+
+p = gcp; % same pool this GUI's Create already uses via Config.NumCores
+f = parfeval(p, @RunFionaBackground, 0, PathStatsSnap, options, xynew, fname, plotNeighbors, MoleculeSnap, minj);
+
+queue = getappdata(hPathsStatsGui.fig,'FionaQueue');
+queue(end+1) = f;
+setappdata(hPathsStatsGui.fig,'FionaQueue',queue);
+
+UpdateFionaQueueStatus(hPathsStatsGui);
+
+
+function options = DefaultNeighborStepOptions()
+% Mirrors the hardcoded defaults in fNeighborStepOptions.m so the quick
+% queue never has to pop that dialog
+options.XB = [0 200];
+options.XA = [0 200];
+options.ExcludeTime = 1;
+options.eExcludeTime = 0.5;
+options.ExistThresh = 0.2;
+options.InterpRes = 0.05;
+options.ShowPathExt = 0;
+options.GenerateNeighbors = 0;
+
+
+function RunFionaBackground(PathStats_n, options, xynew, fname, plotNeighbors, MoleculeSnap, minj)
+% Runs on a parfeval worker: no GUI, no globals -- everything it needs
+% is passed in. This is the "slow half" of FIONA(), unchanged in logic,
+% just stripped of GUI/global access and the GenerateNeighbors/viewer
+% calls.
+neighbor_txy = {};
+
+frames = PathStats_n.Results(:,1);
+frame1 = frames(1);
+
+if plotNeighbors == 1
+    if (PathStats_n.AverageDis == 0) || (PathStats_n.AverageDis == -5)
+        [~,resnorm1] = PathFitLinear(PathStats_n.PathData(:,1:3));
+        [~,resnorm2] = PathFitCurved(PathStats_n.PathData(:,1:3),3);
+        [~,resnorm3] = PathFitCurved(PathStats_n.PathData(:,1:3),4);
+        if all(resnorm1*1.1<[resnorm2 resnorm3])
+            PathStats_n.AverageDis = -1;
+        elseif resnorm2*1.1<resnorm3
+            PathStats_n.AverageDis = -2;
+        else
+            PathStats_n.AverageDis = -3;
+        end
+    end
+
+    path_extend = [options.XB(2), options.XA(2)];
+    pt_res = options.InterpRes;
+
+    [~,sort_idx] = sort(PathStats_n.PathData(:,4));
+    SortedPathData = PathStats_n.PathData(sort_idx,1:4);
+
+    Delta = SortedPathData(2:end,:)-SortedPathData(1:end-1,:);
+    InterpResults = SortedPathData(1,1:3);
+
+    for i = 1:size(Delta,1)
+        dstep = Delta(i,4);
+        if dstep < pt_res
+            xi = SortedPathData(i,1);
+            yi = SortedPathData(i,2);
+            zi = SortedPathData(i,3);
+        else
+            tot_pts = round(dstep/pt_res)+1;
+            step = Delta(i,1:3)/tot_pts;
+            xi = SortedPathData(i,1)*ones(1,tot_pts) + step(1)*(0:tot_pts-1);
+            yi = SortedPathData(i,2)*ones(1,tot_pts) + step(2)*(0:tot_pts-1);
+            zi = SortedPathData(i,3)*ones(1,tot_pts) + step(3)*(0:tot_pts-1);
+        end
+        InterpResults = [InterpResults; xi' yi' zi'];
+    end
+
+    mval = min(abs(((InterpResults(:,1)-InterpResults(1,1)).^2 + (InterpResults(:,2)-InterpResults(1,2)).^2)-path_extend(1)^2));
+    bidx2 = find(abs(((InterpResults(:,1)-InterpResults(1,1)).^2 + (InterpResults(:,2)-InterpResults(1,2)).^2)-path_extend(1)^2) == mval);
+    mval = min(abs(((InterpResults(:,1)-InterpResults(end,1)).^2 + (InterpResults(:,2)-InterpResults(end,2)).^2)-path_extend(2)^2));
+    eidx2 = find(abs(((InterpResults(:,1)-InterpResults(end,1)).^2 + (InterpResults(:,2)-InterpResults(end,2)).^2)-path_extend(2)^2) == mval);
+
+    dx = mean(InterpResults(2:bidx2,1) - InterpResults(1:bidx2-1,1));
+    dy = mean(InterpResults(2:bidx2,2) - InterpResults(1:bidx2-1,2));
+    slope = mean((InterpResults(2:bidx2,2) - InterpResults(1:bidx2-1,2)) ./ (InterpResults(2:bidx2,1) - InterpResults(1:bidx2-1,1)), 'omitnan');
+
+    ext_pts = round(path_extend(1)/pt_res);
+    xb = -pt_res * sign(dx)*cos(atan(slope)) * (1:ext_pts); xb = xb + InterpResults(1,1)*ones(1,ext_pts);
+    yb = -pt_res * sign(dy)*sin(atan(slope)) * (1:ext_pts); yb = yb + InterpResults(1,2)*ones(1,ext_pts);
+    zb = nan(ext_pts,1);
+    InterpResults = [xb', yb', zb; InterpResults];
+
+    dx = mean(InterpResults(end-eidx2+1:end,1) - InterpResults(end-eidx2:end-1,1));
+    dy = mean(InterpResults(end-eidx2+1:end,2) - InterpResults(end-eidx2:end-1,2));
+    slope = mean((InterpResults(end-eidx2+1:end,2) - InterpResults(end-eidx2:end-1,2)) ./ (InterpResults(end-eidx2+1:end,1) - InterpResults(end-eidx2:end-1,1)), 'omitnan');
+
+    ext_pts = round(path_extend(2)/pt_res);
+    xe = pt_res * sign(dx)*cos(atan(slope)) * (1:ext_pts); xe = xe + InterpResults(end,1)*ones(1,ext_pts);
+    ye = pt_res * sign(dy)*sin(atan(slope)) * (1:ext_pts); ye = ye + InterpResults(end,2)*ones(1,ext_pts);
+    ze = nan(ext_pts,1);
+    InterpResults = [InterpResults; xe', ye', ze];
+
+    if PathStats_n.AverageDis == -1
+        [param1,~] = PathFitLinear(PathStats_n.Results(:,3:5));
+        InterpPath = EvalLinearPath(param1,InterpResults);
+    elseif PathStats_n.AverageDis == -2
+        [param2,~] = PathFitCurved(PathStats_n.Results(:,3:5),3);
+        InterpPath = EvalCurvedPath(param2,InterpResults);
+    elseif PathStats_n.AverageDis == -3
+        [param3,~] = PathFitCurved(PathStats_n.Results(:,3:5),4);
+        InterpPath = EvalCurvedPath(param3,InterpResults);
+    else
+        InterpPath = PathStats_n.PathData;
+    end
+
+    if PathStats_n.Channel > 1
+        neighbors = findNeighborsSnapshot(MoleculeSnap, InterpPath(:,1:2), options, 1);
+    else
+        neighbors = findNeighborsSnapshot(MoleculeSnap, InterpPath(:,1:2), options);
+    end
+    neighbor_txy = cell(length(neighbors),1);
+
+    for m = length(neighbors):-1:1
+        Res = MoleculeSnap(neighbors(m)).Results;
+        neighbor_footprint = [Res(1,2) - options.eExcludeTime, Res(end,2) + options.eExcludeTime];
+        if Res(end,2)-Res(1,2) < options.ExistThresh % time is too short
+            neighbor_txy(m) = [];
+        elseif options.ExcludeTime && ( all( neighbor_footprint < MoleculeSnap(minj).Results(1,2)) || all( neighbor_footprint > MoleculeSnap(minj).Results(end,2)) )
+            neighbor_txy(m) = [];
+        else
+            txy_reorient = nan( Res(end,1)-Res(1,1) , 5);
+            B = [PathStats_n.Results(end,3) - PathStats_n.Results(1,3), PathStats_n.Results(end,4) - PathStats_n.Results(1,4),0];
+            for p = 1:size(Res,1)
+                [npos, nidx] = min( sqrt( (InterpPath(:,1) - Res(p,3)).^2 + (InterpPath(:,2) - Res(p,4)).^2) );
+                mpos = norm (InterpPath(nidx,1:2) - PathStats_n.PathData(1,1:2));
+
+                C = [Res(p,3) - InterpPath(nidx,1), Res(p,4) - InterpPath(nidx,2),0];
+                D = [Res(p,3) - PathStats_n.Results(1,3), Res(p,4) - PathStats_n.Results(1,4),0];
+                BXC = cross(B,C); npos = npos * sign(BXC(3));
+                theta = acos(dot(B,D)/norm(B)/norm(D)); mpos = mpos * sign(cos(theta));
+
+                txy_reorient(Res(p,1)-Res(1,1)+1,:) = [Res(p,1) - frame1 + 1, mpos, npos, str2double(MoleculeSnap(neighbors(m)).Name(10:end)), Res(p,2)];
+            end
+            neighbor_txy{m,1} = txy_reorient;
+            % GenerateNeighbors is always forced off for the quick queue,
+            % so fGenerateFIONA4Neighbors is intentionally never called here
+        end
+    end
+end
+
+if ~isfile(strcat(fname,'_fiona.mat')) % don't overwrite existing file
+    data.xy = xynew;
+    data.yx = xynew(:,[2,1]);
+    data.neighbors = neighbor_txy;
+    data.time = PathStats_n.Results(:,2);
+    save(strcat(fname,'_fiona.mat'),'data');
+end
+% Note: FIONAviewer is intentionally never launched from the background
+% job -- open it yourself once you're ready to review the queued files.
+
+
+function nbs = findNeighborsSnapshot(MoleculeSnap, MolXY, options, CheckChannel)
+% Same as findNeighbors(), but takes a Molecule snapshot argument
+% instead of reading the global -- required so this can run on a
+% parfeval worker, which doesn't share globals with the client.
+if nargin < 4
+    CheckChannel = 2;
+end
+
+nX=MolXY(:,1);
+nY=MolXY(:,2);
+ScanSize=max(options.XA(2), options.XB(2));
+d=[0; cumsum(sqrt((nX(2:end)-nX(1:end-1)).^2 + (nY(2:end)-nY(1:end-1)).^2))];
+dt=max(d)/round(max(d));
+id=(0:round(max(d)))'*dt;
+scan_length=length(id);
+idx = nearestpoint(id,d);
+X=zeros(scan_length,1);
+Y=zeros(scan_length,1);
+dis = id-d(idx);
+dis(1)=0;
+dis(end)=0;
+X(dis==0) = nX(idx(dis==0));
+Y(dis==0) = nY(idx(dis==0));
+X(dis>0) = nX(idx(dis>0))+(nX(idx(dis>0)+1)-nX(idx(dis>0)))./(d(idx(dis>0)+1)-d(idx(dis>0))).*dis(dis>0);
+Y(dis>0) = nY(idx(dis>0))+(nY(idx(dis>0)+1)-nY(idx(dis>0)))./(d(idx(dis>0)+1)-d(idx(dis>0))).*dis(dis>0);
+X(dis<0) = nX(idx(dis<0))+(nX(idx(dis<0)-1)-nX(idx(dis<0)))./(d(idx(dis<0)-1)-d(idx(dis<0))).*dis(dis<0);
+Y(dis<0) = nY(idx(dis<0))+(nY(idx(dis<0)-1)-nY(idx(dis<0)))./(d(idx(dis<0)-1)-d(idx(dis<0))).*dis(dis<0);
+iX=zeros(2*ScanSize+1,scan_length);
+iY=zeros(2*ScanSize+1,scan_length);
+n=zeros(scan_length,3);
+for i=1:length(X)
+    if i==1
+        v=[X(i+1)-X(i) Y(i+1)-Y(i) 0];
+        n(i,:)=[v(2) -v(1) 0]/norm(v);
+    elseif i==length(X)
+        v=[X(i)-X(i-1) Y(i)-Y(i-1) 0];
+        n(i,:)=[v(2) -v(1) 0]/norm(v);
+    else
+        v1=[X(i+1)-X(i) Y(i+1)-Y(i) 0];
+        v2=-[X(i)-X(i-1) Y(i)-Y(i-1) 0];
+        n(i,:)=v1/norm(v1)+v2/norm(v2);
+        if norm(n(i,:))==0
+            n(i,:)=[v1(2) -v1(1) 0]/norm(v1);
+        else
+            n(i,:)=n(i,:)/norm(n(i,:));
+        end
+        z=cross(v1,n(i,:));
+        if z(3)>0
+            n(i,:)=-n(i,:);
+        end
+    end
+    iX(:,i)=linspace(X(i)+ScanSize*n(i,1),X(i)-ScanSize*n(i,1),2*ScanSize+1)';
+    iY(:,i)=linspace(Y(i)+ScanSize*n(i,2),Y(i)-ScanSize*n(i,2),2*ScanSize+1)';
+end
+
+iX = reshape(iX,numel(iX),1);
+iY = reshape(iY,numel(iY),1);
+bd = boundary(iX,iY);
+
+nbs = [];
+for j = 1:length(MoleculeSnap)
+    if MoleculeSnap(j).Channel == CheckChannel
+        inbd = inpolygon(MoleculeSnap(j).Results(:,3), MoleculeSnap(j).Results(:,4), iX(bd), iY(bd));
+        if any(inbd > 0)
+            nbs = [nbs, j];
+        end
+    end
+end
+
+
+function UpdateFionaQueueStatus(hPathsStatsGui)
+% DC260722: refreshes the "FIONA queue: ..." label
+% and prunes finished futures out of the stored queue. Runs off a timer
+% so it updates even while the user isn't clicking anything.
+if isempty(hPathsStatsGui) || ~isfield(hPathsStatsGui,'fig') || ~ishandle(hPathsStatsGui.fig)
+    return;
+end
+queue = getappdata(hPathsStatsGui.fig,'FionaQueue');
+if isempty(queue)
+    set(hPathsStatsGui.tFionaQueue,'String','FIONA queue: idle');
+    return;
+end
+
+running = sum(strcmp({queue.State},'running'));
+queued  = sum(strcmp({queue.State},'queued'));
+finished = strcmp({queue.State},'finished');
+failed = finished & ~cellfun(@isempty,{queue.Error});
+nDone = sum(finished & ~failed);
+nFailed = sum(failed);
+
+if nFailed > 0
+    set(hPathsStatsGui.tFionaQueue,'String',sprintf('FIONA queue: %d running, %d done, %d FAILED',running+queued,nDone,nFailed));
+else
+    set(hPathsStatsGui.tFionaQueue,'String',sprintf('FIONA queue: %d running, %d done',running+queued,nDone));
+end
+
+% keep memory bounded: drop futures that are done and had no error
+queue(finished & ~failed) = [];
+setappdata(hPathsStatsGui.fig,'FionaQueue',queue);
+
+
 function StepStats(hPathsStatsGui)
 fStepStats()
 
@@ -1085,6 +1462,9 @@ set(hPathsStatsGui.aPlotXYZ,'Color',get(hPathsStatsGui.fig,'Color'));
 PathStats=getappdata(hPathsStatsGui.fig,'PathStats');
 idx=get(hPathsStatsGui.lAll,'Value');
 idx=idx(1);
+
+fprintf('%s: %d points\n', PathStats(idx).Name, size(PathStats(idx).Results,1));
+
 XPlotPath = PathStats(idx).PathData(:,1)-min(PathStats(idx).Results(:,3));
 YPlotPath = PathStats(idx).PathData(:,2)-min(PathStats(idx).Results(:,4));
 Dis = real(PathStats(idx).PathData(:,4));

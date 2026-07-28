@@ -1,11 +1,13 @@
 function progFigure = progressdlg(varargin)
 %progressdlg show/update progress dialog
 %
-% progressdlg creates or updates an existing progress dialog that reports on the 
-% progress of a task including the estimated time remaining as well as a button to 
-% cancel the task. It does not use drawnow in order to improve performance when using 
-% one or several other figures (drawnow refreshes all graphics objects in all figures).
-% 
+% progressdlg creates or updates an existing progress dialog that reports on the
+% progress of a task including the estimated time remaining as well as a button to
+% cancel the task. It is built entirely on documented, supported MATLAB graphics
+% (uifigure/uiprogressdlg), so unlike the previous version it does not need drawnow
+% to refresh the display: uifigure-based graphics update automatically whenever a
+% property is set.
+%
 % Syntax:
 %   progressdlg                 creates default progress dialog
 %
@@ -15,9 +17,9 @@ function progFigure = progressdlg(varargin)
 %                               or updates existing progress dialog to value n
 %
 %   progressdlg(n,'message');   creates default progress dialog with message and value n
-%                               or updates existing progress dialog to value n and message 
+%                               or updates existing progress dialog to value n and message
 %
-%   progressdlg('PropertyName',PropertyValue,...);  creates or updates progress dialog with 
+%   progressdlg('PropertyName',PropertyValue,...);  creates or updates progress dialog with
 %                                                   properties PropertyName/PropertyValue
 %
 %   handle = progressdlg(...);  returns the handle to the progress dialog
@@ -36,14 +38,15 @@ function progFigure = progressdlg(varargin)
 %  String        | Descriptive text above ProgressBar         | char           | 'Progress'
 %  Title         | Title of the dialog                        | char           | 'Progress'
 %  Value         | Current Value of ProgressBar               | double         | 0
-%  WindowStyle   | Normal or modal window behavior            | 'normal/modal' | 'modal'
-% 
+%  WindowStyle   | Normal or modal window behavior             | 'normal/modal' | 'modal'
+%
 %
 % Notes:
-%   1) Does not use drawnow to refresh the progress bar in order to improve performance, 
-%      especially when using one or several additional figures with many graphics objects.
-%   2) Performance is slightly decreased when using the remaining time estimation and/or
-%      cancel button
+%   1) Requires MATLAB R2017b or later for uiprogressdlg. The 'modal' WindowStyle
+%      option requires R2020b or later; on earlier releases it silently falls back
+%      to 'normal'.
+%   2) The host uifigure is created solely to contain the built-in progress dialog,
+%      mirroring the way the previous version created a dedicated figure.
 %
 % Examples:
 %   progressdlg('Calculating magic square');
@@ -73,23 +76,17 @@ function progFigure = progressdlg(varargin)
 %       end
 %   end
 %
-% Warning:
-%   This code heavily relies on undocumented and unsupported Matlab
-%   functionality. It works on Matlab 7+, but use at your own risk!
+% See also: UIPROGRESSDLG, WAITBAR
 %
-% Bugs and suggestions:
-%   Please send to Felix Ruhnow (felix.ruhnow at tu-dresden dot de)
-%
-% See also: WAITBAR, TIMEBAR, PROGRESSBAR (on the File Exchange)
-%
-% Adapted from: 
+% Adapted from:
 % Daniel Claxton's WORKBAR
 %
 % Inspired by:
 % Yair M. Altman's STATUSBAR
 %
 % Release history:
-%    1.0  2013-06-10: initial version
+%    1.0  2013-06-10: initial version (undocumented Java components)
+%    2.0  2026-07-17: rewritten on uifigure/uiprogressdlg for stability
 %
 % License to use and modify this code is granted freely to all interested, as long as the original author is
 % referenced and attributed as such. The original author maintains the right to be solely associated with this work.
@@ -97,55 +94,52 @@ function progFigure = progressdlg(varargin)
 % Programmed and Copyright by Felix Ruhnow: felix.ruhnow(at)tu-dresden.de
 
 
-    % keep variables for next call of progressdlg 
-    persistent p min max cancel progHandles showtime starttime;
+    % keep variables for next call of progressdlg
+    persistent p minv maxv cancelOn uiHandles showtime starttime msgLines;
     message = 'Progress';
     value = 0;
     text = [];
-    est_text = 'Estimated time remaining: ';  
+    est_text = 'Estimated time remaining: ';
 
     % check input arguments
-    if nargin < 1   
+    if nargin < 1
         % progressdlg; creates default progress dialog
-        progHandles = [];
+        uiHandles = [];
 
-    elseif nargin == 1 
-        if ischar(varargin{1})  
+    elseif nargin == 1
+        if ischar(varargin{1}) || (isstring(varargin{1}) && isscalar(varargin{1}))
             % progressdlg('close'); closes progress dialog
             if strcmp(varargin{1},'close')
-                if isfield(progHandles,'figure') && ishandle(progHandles.figure)
-                    close(progHandles.figure);
-                end
-                progHandles = [];
-                progFigure =[];
+                closeDialog();
+                progFigure = [];
                 return
             else
                 % progressdlg('message'); creates default progress dialog with custom message
-                message = varargin{1};
-                progHandles = [];
+                message = char(varargin{1});
+                uiHandles = [];
             end
 
-        elseif isnumeric(varargin{1}) 
+        elseif isnumeric(varargin{1})
             % progressdlg(n); creates default progress dialog with initial value n
             %                 or updates existing progress dialog to value n
             value = varargin{1};
         end
         varargin(:) = [];
 
-    elseif nargin == 2 && isnumeric(varargin{1}) 
-        % progressdlg(n,'message');                   
-        if isempty(progHandles)
-            % creates default progress dialog with message and value n     
+    elseif nargin == 2 && isnumeric(varargin{1})
+        % progressdlg(n,'message');
+        if isempty(uiHandles)
+            % creates default progress dialog with message and value n
             value = varargin{1};
             message = varargin{2};
             varargin(:) = [];
         else
-            % updates existing progress dialog to value n and message 
+            % updates existing progress dialog to value n and message
             value = varargin{1};
             text = varargin{2};
         end
 
-    elseif isfield(progHandles,'figure') && ishandle(progHandles.figure)
+    elseif isfield(uiHandles,'fig') && isvalid(uiHandles.fig)
         % progressdlg('PropertyName',PropertyValue,...); updates progress dialog
         parse(p,varargin{1:end});
         value = p.Results.value;
@@ -153,178 +147,194 @@ function progFigure = progressdlg(varargin)
 
     else
         % progressdlg('PropertyName',PropertyValue,...); creates progress dialog
-        progHandles = [];
+        uiHandles = [];
     end
 
-    if isempty(progHandles)
+    if isempty(uiHandles)
         % if handles are empty create new dialog
-        cancel = 0;
-        showtime = 0;
+        cancelOn = false;
+        showtime = false;
 
         % get initial input arguments
         p = checkInput(value,message);
         parse(p,varargin{1:end});
         prog = p.Results;
-        min = prog.min;
-        max = prog.max;
+        minv = prog.min;
+        maxv = prog.max;
 
-        % define height w/o estimated time remaining or cancel button
-        height = 90;
         if strcmp(prog.showtime,'on') && ~strcmp(prog.indeterminate,'on')
-            showtime = 1;
-            height = height + 20;
+            showtime = true;
         end
         if strcmp(prog.cancel,'on')
-            cancel = 1;
-            height = height + 30;
+            cancelOn = true;
         end
+
+        % size the host uifigure. uiprogressdlg has its own fixed internal layout
+        % (title, message lines, the progress bar itself, and the cancel button),
+        % and it is NOT scaled to fit a small host window - if the host figure is
+        % too small, the bar gets clipped and doesn't render. So we give it a
+        % generous minimum size and only grow it for extra message lines / cancel.
+        baseHeight = 200;
+        if showtime
+            baseHeight = baseHeight + 20;
+        end
+        if cancelOn
+            baseHeight = baseHeight + 30;
+        end
+        width = ceil(max(400,400*prog.size));
+        height = ceil(max(200,baseHeight*prog.size));
 
         % get position of progress dialog (middle of screen, if not otherwise)
         if isempty(prog.position)
             if isempty(prog.parent)
                 screen = get(0,'ScreenSize');
-                pos = ceil([(screen(3)-400*prog.size)/2 (screen(4)-height*prog.size)/2 400 height]);
+                pos = ceil([(screen(3)-width)/2 (screen(4)-height)/2 width height]);
             else
                 units = get(prog.parent,'Units');
-                set(prog.parent,'Units','Pixel');
+                try
+                    set(prog.parent,'Units','Pixels');
+                catch
+                    % uifigure parents always report Units in pixels and cannot be changed
+                end
                 pos_parent = get(prog.parent,'Position');
-                set(prog.parent,'Units',units);
-                pos = ceil([pos_parent(1)+(pos_parent(3)-400*prog.size)/2 pos_parent(2)+(pos_parent(4)-height*prog.size)/2 400 height]);
+                try
+                    set(prog.parent,'Units',units);
+                catch
+                end
+                pos = ceil([pos_parent(1)+(pos_parent(3)-width)/2 pos_parent(2)+(pos_parent(4)-height)/2 width height]);
             end
         else
-           pos = ceil([prog.position 400 height]); 
+            pos = ceil([prog.position width height]);
         end
 
-        % create dialog dialog
-        progFigure = figure('Menubar','none','Numbertitle','off','Resize','off','Tag','ProgressDlg',...
-                            'Units','pixels','Visible','off','DockControls','off','IntegerHandle','off',...
-                            'Name',prog.title,'Position',pos,'WindowStyle',prog.windowstyle);
-
-        % get background color of figure to adjust background of its children
-        uiColor = get(progFigure,'Color');
-        jColor = java.awt.Color(uiColor(1),uiColor(2),uiColor(3));
-    
-        if ispc   
-            barsize = 20;
-            buttonsize = 25;
-            buttonfont = 11;
-        else
-            barsize = 40;
-            buttonsize = 30;
-            buttonfont = 14;
-        end
-        
-        % create descriptive text from PropertyName 'String', use java for updating dialog
-        text1 = javaObjectEDT('javax.swing.JTextArea');
-        [jText(1),cText(1)] = javacomponent(text1,[20 height-30 300 20],progFigure);
-        set(jText(1),'Background',jColor,'Text',prog.string,...
-                     'Font',java.awt.Font('Helvetica',java.awt.Font.PLAIN,14*prog.size));
-        set(cText(1),'units','normalized');
-
-        % create text for estimated remaining time if 'ShowTime' is 'on', use java for updating dialog
-        if showtime
-            text2 = javaObjectEDT('javax.swing.JTextArea');
-            [jText(2),cText(2)] = javacomponent(text2,[20 height-90 300 20],progFigure);
-            set(jText(2),'Background',jColor,'Text',est_text,...
-                         'Font',java.awt.Font('Helvetica',java.awt.Font.PLAIN,14*prog.size));
-            set(cText(2),'Units','Normalized');   
-
-        end  
-
-        % create cancel button if 'Cancel' is 'on', Click on button closes the dialog
-        if cancel
-            button = javaObjectEDT('javax.swing.JToggleButton');
-            jButton = javacomponent(button,[120 10 160 buttonsize],progFigure);
-            set(jButton,'Text','cancel','Font',java.awt.Font('Helvetica',java.awt.Font.PLAIN,0.5*buttonsize*prog.size));
-        end    
-  
-        % create ProgressBar with java JProgressBar class
-        jProgressBar = javaObjectEDT('javax.swing.JProgressBar');
-        jProgressBar.setStringPainted(true);
+        % create the host uifigure that contains the progress dialog
+        fig = uifigure('Name',prog.title,'Position',pos,'Resize','off','Visible','off');
         try
-            set(jProgressBar,'Background',jColor,'Minimum',prog.min,'Maximum',prog.max,'Value',prog.value);
+            fig.WindowStyle = prog.windowstyle;
         catch
-            set(jProgressBar,'Minimum',prog.min,'Maximum',prog.max,'Value',prog.value);
+            % 'modal' WindowStyle for uifigure requires R2020b or later; ignore on older releases
         end
+        fig.CloseRequestFcn = @(src,~) delete(src);
+
+        % uiprogressdlg requires its parent uifigure to already be visible
+        fig.Visible = 'on';
+
+        % build the (optionally two-line) message: descriptive text + estimated time remaining
+        msgLines = {prog.string};
+        if showtime
+            msgLines{2} = est_text;
+        end
+
+        showPercentage = 'on';
         if strcmp(prog.indeterminate,'on')
-            jProgressBar.setIndeterminate(true);
-            showtime = 0;
+            showPercentage = 'off';
         end
-        [hProgressBar,cProgressBar] = javacomponent(jProgressBar,[20 height-65 360 barsize],progFigure);
-        set(cProgressBar,'units','normalized','Tag','ProgressBar');
 
-        % resize progress dialog according to PropertyName 'Size'
-        set(progFigure,'Position',[pos(1:2) pos(3:4)*prog.size],'Visible','on');
+        valueNorm = normalizeValue(prog.value,minv,maxv);
 
-        % save handles of the created objects 
-        progHandles.figure = progFigure;
-        progHandles.progress = hProgressBar;
-        progHandles.text = jText;
-        if cancel
-            progHandles.button = jButton;
-        end
-        
-        % update dialog (only once!)
+        dlg = uiprogressdlg(fig,'Title',prog.title,'Message',msgLines,...
+                             'Indeterminate',prog.indeterminate,...
+                             'Cancelable',prog.cancel,...
+                             'ShowPercentage',showPercentage,...
+                             'Value',valueNorm);
+
+        % save handles of the created objects
+        uiHandles.fig = fig;
+        uiHandles.dlg = dlg;
+
+        progFigure = fig;
+
+        % force the dialog's first paint. Without this, if the calling code goes
+        % straight into a tight loop with no other graphics/event activity, the
+        % dialog can remain visually blank (this mirrors MathWorks' own
+        % uiprogressdlg examples, which always call drawnow right after creation)
         drawnow;
 
-        %save start time for progress
+        % save start time for progress
         starttime = clock;
     else
         % if handles are present update progress dialog
-        progFigure = progHandles.figure;
+        fig = uiHandles.fig;
+        dlg = uiHandles.dlg;
+
+        if ~isvalid(fig) || ~isvalid(dlg)
+            % dialog was closed some other way (e.g. window close button)
+            uiHandles = [];
+            progFigure = [];
+            return
+        end
+
+        % check for cancel button before doing any further work
+        if cancelOn && dlg.CancelRequested
+            closeDialog();
+            progFigure = [];
+            return
+        end
 
         % update ProgressBar
-        set(progHandles.progress,'Value',value);  
+        dlg.Value = normalizeValue(value,minv,maxv);
 
         % update descriptive text if required
         if ~isempty(text)
-            set(progHandles.text(1),'Text',text);  
+            msgLines{1} = text;
         end
 
         % calculate and update remaining time if required
         if showtime
-            if value == min
-                starttime=clock;
+            if value == minv
+                starttime = clock;
             else
                 runtime = etime(clock,starttime);
-                timeleft = runtime*(max-min)/(value-min) - runtime;
+                timeleft = runtime*(maxv-minv)/(value-minv) - runtime;
                 timeleftstr = sec2timestr(timeleft);
-                set(progHandles.text(2),'Text',[est_text timeleftstr]);
+                msgLines{2} = [est_text timeleftstr];
             end
         end
 
-        % check event queue for callback of the 'cancel' button
-        if cancel
-            if ~ishandle(progHandles.button)
-                % if figure was delete via 'close' callback of 'cancel' button
-                progHandles = [];
-                progFigure = [];
-                return;   % return empty handle     
-            else
-               if progHandles.button.isSelected==1 || progHandles.button.isShowing==0
-                   % if figure was delete via 'cancel' button or 
-                   % 'close' button of dialog
-                    close(progHandles.figure);
-                    progHandles = [];
-                    progFigure = [];
-                    return;   % return empty handle  
-               end
-            end
+        if ~isempty(text) || showtime
+            dlg.Message = msgLines;
         end
+
+        % check again for cancel button after the update
+        if cancelOn && dlg.CancelRequested
+            closeDialog();
+            progFigure = [];
+            return
+        end
+
+        progFigure = fig;
     end
 
-    if value==max
+    if value == maxv
         % if 'Maximum' value reached close and reset progress dialog
-        close(progHandles.figure);
-        progHandles =[];
+        closeDialog();
         progFigure = [];
     end
- 
-function doHelloButtonClicked(~,~)
-        disp('bla');
+
+    function closeDialog()
+        if ~isempty(uiHandles) && isfield(uiHandles,'dlg') && isvalid(uiHandles.dlg)
+            close(uiHandles.dlg);
+        end
+        if ~isempty(uiHandles) && isfield(uiHandles,'fig') && isvalid(uiHandles.fig)
+            delete(uiHandles.fig);
+        end
+        uiHandles = [];
+    end
+
+end
+
+%% Clamp/normalize value into the [0,1] range expected by uiprogressdlg
+function valueNorm = normalizeValue(value,minv,maxv)
+    if maxv == minv
+        valueNorm = 0;
+    else
+        valueNorm = (value-minv)/(maxv-minv);
+    end
+    valueNorm = min(1,max(0,valueNorm));
+end
 
 %% Define input parameters and their default values
-function p = checkInput(value,message)   
+function p = checkInput(value,message)
     p = inputParser;
     states = {'on','off'};
     style = {'normal','modal'};
@@ -340,6 +350,7 @@ function p = checkInput(value,message)
     addParamValue(p,'showtime','on',@(x) any(validatestring(x,states)))
     addParamValue(p,'indeterminate','off',@(x) any(validatestring(x,states)))
     addParamValue(p,'windowstyle','normal',@(x) any(validatestring(x,style)))
+end
 
 %% Convert seconds to hh:mm:ss
 function timestr = sec2timestr(sec)
@@ -349,3 +360,4 @@ function timestr = sec2timestr(sec)
     sec = sec - m*60;
     s = floor(sec); % Seconds
     timestr = sprintf('%02d:%02d:%02d',h,m,s);
+end

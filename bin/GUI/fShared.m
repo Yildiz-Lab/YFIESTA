@@ -510,6 +510,8 @@ set(hMainGui.Menu.mFind,'Enable',enable);
 set(hMainGui.Menu.mSort,'Enable',enable);
 set(hMainGui.Menu.mFindMoving,'Enable',enable);
 set(hMainGui.Menu.mFindStatic,'Enable',enable);
+set(hMainGui.Menu.mFindRegion,'Enable',enable);   % DC260721
+set(hMainGui.Menu.mMergeTracks,'Enable',enable);  % DC260721
 set(hMainGui.Menu.mMergeTracks,'Enable',enable);
 set(hMainGui.Menu.mCombineTracks,'Enable',enable);
 set(hMainGui.Menu.mDeleteTracks,'Enable',enable);

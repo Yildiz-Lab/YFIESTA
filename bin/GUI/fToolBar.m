@@ -131,9 +131,11 @@ else
     set(hMainGui.ToolBar.ToolThreshImage,'State','off');
 end
 
+% DC 260717 made this a toggle button that goes back to ToolNormImage when
+% turned off
 function ToolKymoGraph(hMainGui)
 global Stack;
-if ~isempty(Stack)&&~isempty(hMainGui.KymoImage)
+if strcmp(get(hMainGui.ToolBar.ToolKymoGraph,'State'),'on') && ~isempty(Stack) && ~isempty(hMainGui.KymoImage)
     if strcmp(get(hMainGui.ToolBar.ToolChannels(5),'State'),'off')
         if length(hMainGui.KymoInfo)>1 || hMainGui.KymoInfo(1) ~= hMainGui.Values.FrameIdx(1)
             fRightPanel('ShowKymoGraph',hMainGui);
@@ -157,6 +159,18 @@ if ~isempty(Stack)&&~isempty(hMainGui.KymoImage)
     setappdata(0,'hMainGui',hMainGui);
 else
     set(hMainGui.ToolBar.ToolKymoGraph,'State','off');
+    if ~isempty(Stack)
+        set(hMainGui.ToolBar.ToolNormImage,'State','on');
+        fLeftPanel('NormPanel',hMainGui);
+        set(hMainGui.MidPanel.pView,'Visible','on');
+        set(hMainGui.MidPanel.pKymoGraph,'Visible','off');
+        set(get(hMainGui.MidPanel.pFrame,'Children'),'Enable','on');
+        hMainGui.CurrentAxes = 'View';
+        hMainGui=DeleteSelectRegion(hMainGui);
+        hMainGui.Values.CursorDownPos(:)=0;
+        setappdata(0,'hMainGui',hMainGui);
+        fShared('UpdateMenu',hMainGui);
+    end
 end
 
 function SwitchColors(nColor)

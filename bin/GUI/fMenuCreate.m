@@ -136,7 +136,16 @@ hMenu.mFindStatic = uimenu('Parent',hMenu.mEdit,'Callback','fMenuEdit(''FindMovi
                        
 hMenu.mFindReference = uimenu('Parent',hMenu.mEdit,'Callback','fMenuEdit(''FindReference'',getappdata(0,''hMainGui''));','Enable','off',...
                            'Label','Find best reference molecules','Tag','mFindReference','UserData','reference');                          
-                       
+
+% DC260721 added find molecules within region for easier selection
+hMenu.mFindRegion = uimenu('Parent',hMenu.mEdit,'Label','Find objects in Region','Tag','mFindRegion','Enable','off','Separator','on');
+
+hMenu.mFindRegionFreehand = uimenu('Parent',hMenu.mFindRegion,'Callback','fMenuEdit(''FindInRegion'',getappdata(0,''hMainGui''));',...
+                           'Label','Freehand','Tag','mFindRegionFreehand','UserData','freehand');
+
+hMenu.mFindRegionRect = uimenu('Parent',hMenu.mFindRegion,'Callback','fMenuEdit(''FindInRegion'',getappdata(0,''hMainGui''));',...
+                           'Label','Rectangle','Tag','mFindRegionRect','UserData','rect');                       
+
 hMenu.mMergeTracks = uimenu('Parent',hMenu.mEdit,'Callback','fShared(''MergeTracks'',getappdata(0,''hMainGui''));','Enable','off',...
                     'Label','Join selected tracks','Tag','mMergeTracks','Accelerator','J','Separator','on');
                 
@@ -220,6 +229,12 @@ hMenu.mSetLinearMaskCorrections = uimenu('Parent',hMenu.mOptions,'Callback','fMe
 
 hMenu.mApplyMultiCorrections = uimenu('Parent',hMenu.mOptions,'Callback','fMenuOptions(''ApplyMultiChannelCorrections'',getappdata(0,''hMainGui''));','Enable','off',...
                           'Label','Toggle Multichannel Corrections','Tag','mApplyMultiCorrections');       
+% DC260721 adding save / load for multi channel corrections
+hMenu.mSaveMaskCorrections = uimenu('Parent',hMenu.mOptions,'Callback','fMenuOptions(''SaveMaskCorrections'',getappdata(0,''hMainGui''));','Enable','off',...
+                          'Label','Save Multichannel Corrections','Tag','mSaveMaskCorrections');       
+
+hMenu.mLoadMaskCorrections = uimenu('Parent',hMenu.mOptions,'Callback','fMenuOptions(''LoadMaskCorrections'',getappdata(0,''hMainGui''));',...
+                          'Label','Load Multichannel Corrections','Tag','mLoadMaskCorrections');
                       
 %create Tools menu
 

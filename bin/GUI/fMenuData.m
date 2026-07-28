@@ -95,7 +95,7 @@ if PathName~=0
         Time = -round(mean(TimeInfo{1}(2:end)-TimeInfo{1}(1:end-1)),2);
     end
     if isempty(PixSize)
-        PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','160'));    
+        PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','106.7'));    
     else
         PixSize = str2double(fInputDlg('Enter Pixel Size in nm:',num2str(PixSize,4)));    
     end
@@ -189,7 +189,7 @@ if PathName~=0
         Time = -round(mean(TimeInfo{1}(2:end)-TimeInfo{1}(1:end-1)),2);
     end
     if isempty(PixSize)
-        PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','160'));    
+        PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','106.7'));    
     else
         PixSize = str2double(fInputDlg('Enter Pixel Size in nm:',num2str(PixSize,4)));    
     end
@@ -268,24 +268,30 @@ if ~isempty(fOpenStruct)
             Config.StackName{n}=FileName;
             Config.Directory{n}=PathName;
             Config.StackReadOptions = [];
-            nFrames(n)=size(Stack{n},3);
-            if nFrames == 1
-                Config.Time(n) = 0;
-                if nFrames(n)==1
-                    TimeInfo{n} = 0;
-                end
-            elseif isempty(TimeInfo{n}) || length(unique(TimeInfo{n}))<length(TimeInfo{n}) 
-                Config.Time(n) = str2double(fInputDlg('No creation time  - Enter plane time difference in ms:','200'));  
-                if ~isnan(Config.Time(n))
-                    TimeInfo{n}=(0:nFrames-1)*Config.Time(n);
-                else
-                    Config.Time(n) = 0;
-                    TimeInfo{n}=(0:nFrames-1);
-                end
-            else
-               Config.Time(n) = -round(mean(TimeInfo{n}(2:end)-TimeInfo{n}(1:end-1)),2);
-            end
+            % nFrames(n)=size(Stack{n},3);
+            % if nFrames == 1
+            %     Config.Time(n) = 0;
+            %     if nFrames(n)==1
+            %         TimeInfo{n} = 0;
+            %     end
+            % elseif isempty(TimeInfo{n}) || length(unique(TimeInfo{n}))<length(TimeInfo{n}) 
+            %     Config.Time(n) = str2double(fInputDlg('No creation time  - Enter plane time difference in ms:','200'));  
+            %     if ~isnan(Config.Time(n))
+            %         TimeInfo{n}=(0:nFrames-1)*Config.Time(n);
+            %     else
+            %         Config.Time(n) = 0;
+            %         TimeInfo{n}=(0:nFrames-1);
+            %     end
+            % else
+            %    Config.Time(n) = -round(mean(TimeInfo{n}(2:end)-TimeInfo{n}(1:end-1)),2);
+            % end
+            % nFrames(n) = size(Stack{n},3);
+
+            % DC 260717 edit: block doesn't work for multi-channel, change
+            % to helper function
             nFrames(n) = size(Stack{n},3);
+            [TimeInfo{n},Config.Time(n)] = fResolveChannelTime(Stack{n},TimeInfo{n});
+
             if strcmpi(FileName(end-3:end),'.stk')
                 filetype{n} = 'MetaMorph';
             elseif strcmpi(FileName(end-3:end),'.nd')
@@ -388,6 +394,7 @@ if ~isempty(fOpenStruct)
             Stack = {};
             TimeInfo = {};
         end
+        % DC 260717
         if ~isempty(Stack)
             nChannels = length(TimeInfo);
             nFrames = zeros(1,nChannels);
@@ -398,25 +405,9 @@ if ~isempty(fOpenStruct)
             Config.StackName{1}=FileName;
             Config.StackReadOptions = options;
             for n = 1:nChannels
-                nFrames(n) = size(Stack{n},3);
-                if nFrames == 1
-                    Config.Time(n) = 0;
-                    if nFrames(n)==1
-                        TimeInfo{n} = 0;
-                    end
-                elseif isempty(TimeInfo{n}) || length(unique(TimeInfo{n}))<length(TimeInfo{n}) 
-                    Config.Time(n) = str2double(fInputDlg('No creation time  - Enter plane time difference in ms:','200'));  
-                    if ~isnan(Config.Time(n))
-                        TimeInfo{n}=(0:nFrames-1)*Config.Time(n);
-                    else
-                        Config.Time(n) = 0;
-                        TimeInfo{n}=(0:nFrames-1);
-                    end
-                else
-                    Config.Time(n) = -round(mean(TimeInfo{n}(2:end)-TimeInfo{n}(1:end-1)),2);
-                end
+                [TimeInfo{n},Config.Time(n)] = fResolveChannelTime(Stack{n},TimeInfo{n});
             end
-        end
+        end 
     end
     if ~isempty(Stack)
         n = length(nFrames);
@@ -430,7 +421,7 @@ if ~isempty(fOpenStruct)
             end
         end
         if isempty(PixSize)
-            PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','160'));    
+            PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','106.7'));    
         else
             PixSize = str2double(fInputDlg('Enter Pixel Size in nm:',num2str(PixSize,4)));    
         end
@@ -499,24 +490,11 @@ if ~isempty(fOpenStruct)
             Config.StackName{n}=FileName;
             Config.Directory{n}=PathName;
             Config.StackReadOptions = [];
-            nFrames(n)=size(Stack{n},3);
-            if nFrames == 1
-                Config.Time(n) = 0;
-                if nFrames(n)==1
-                    TimeInfo{n} = 0;
-                end
-            elseif isempty(TimeInfo{n}) || length(unique(TimeInfo{n}))<length(TimeInfo{n}) 
-                Config.Time(n) = str2double(fInputDlg('No creation time  - Enter plane time difference in ms:','200'));  
-                if ~isnan(Config.Time(n))
-                    TimeInfo{n}=(0:nFrames-1)*Config.Time(n);
-                else
-                    Config.Time(n) = 0;
-                    TimeInfo{n}=(0:nFrames-1);
-                end
-            else
-               Config.Time(n) = -round(mean(TimeInfo{n}(2:end)-TimeInfo{n}(1:end-1)),2);
-            end
+            
+            % DC 260717
             nFrames(n) = size(Stack{n},3);
+            [TimeInfo{n},Config.Time(n)] = fResolveChannelTime(Stack{n},TimeInfo{n});
+            
             if strcmpi(FileName(end-3:end),'.stk')
                 filetype{n} = 'MetaMorph';
             elseif strcmpi(FileName(end-3:end),'.nd')
@@ -664,7 +642,7 @@ if ~isempty(fOpenStruct)
             end
         end
         if isempty(PixSize)
-            PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','160'));    
+            PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','106.7'));    
         else
             PixSize = str2double(fInputDlg('Enter Pixel Size in nm:',num2str(PixSize,4)));    
         end
@@ -732,7 +710,7 @@ if FileName~=0
     progressdlg('Title','Loading Stack','String','Reading stack from MATLAB file','Indeterminate','on');
     load([PathName FileName],'Stack','TimeInfo'); 
     progressdlg('close');
-    PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','160'));
+    PixSize = str2double(fInputDlg('Enter Pixel Size in nm:','106.7'));
     nFrames = zeros(size(Stack));
     for n = 1:length(Stack)
         nFrames(n) = size(Stack{n},3);
@@ -849,7 +827,22 @@ else
         return;
     end
 end
+% DC260721 correctly check for a gui cancel
 [FileName, PathName] = uigetfile({'*.mat','FIESTA Data(*.mat)'},'Load FIESTA Tracks',LoadDir,'MultiSelect','on');
+if isequal(FileName,0) || isequal(PathName,0)
+    % User cancelled the dialog - restore GUI state and bail out cleanly
+    set(hMainGui.fig,'Pointer','arrow');
+    if ~isempty(Stack)||~isempty(Molecule)||~isempty(Filament)
+        set(hMainGui.MidPanel.pView,'Visible','on');
+        set(hMainGui.MidPanel.pNoData,'Visible','off');
+        set(hMainGui.MidPanel.tNoData,'Visible','off');
+    else
+        set(hMainGui.MidPanel.pView,'Visible','off');
+        set(hMainGui.MidPanel.pNoData,'Visible','on');
+        set(hMainGui.MidPanel.tNoData,'String','No Stack or Tracks present','Visible','on');
+    end
+    return;
+end
 if ~iscell(FileName)
     FileName={FileName};
 end
@@ -1307,3 +1300,26 @@ Objects = [];
 hMainGui.File=[];
 fShared('UpdateMenu',hMainGui);  
 fShow('Image',hMainGui);
+
+function [TimeInfo_n,Time_n] = fResolveChannelTime(Stack_n,TimeInfo_n)
+%fRESOLVECHANNELTIME Determine per-channel TimeInfo vector and frame interval.
+%   [TimeInfo_n,Time_n] = fResolveChannelTime(Stack_n,TimeInfo_n) checks
+%   whether Stack_n's existing TimeInfo_n is usable (non-empty, no
+%   duplicate timestamps). If not, prompts the user for a manual plane
+%   time difference in ms and constructs a synthetic TimeInfo vector.
+%   Single-frame channels always get Time_n = 0.
+nFrames = size(Stack_n,3);
+if nFrames == 1
+    Time_n = 0;
+    TimeInfo_n = 0;
+elseif isempty(TimeInfo_n) || length(unique(TimeInfo_n)) < length(TimeInfo_n)
+    Time_n = str2double(fInputDlg('No creation time  - Enter plane time difference in ms:','52'));
+    if ~isnan(Time_n)
+        TimeInfo_n = (0:nFrames-1)*Time_n;
+    else
+        Time_n = 0;
+        TimeInfo_n = (0:nFrames-1);
+    end
+else
+    Time_n = -round(mean(TimeInfo_n(2:end)-TimeInfo_n(1:end-1)),2);
+end

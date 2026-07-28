@@ -2,8 +2,11 @@ function app = FIONAviewer(varargin)
     % Modern UIFIGURE-based recreation of the original FIONAviewer GUI
     % Works in MATLAB R2020+ (tested R2023, R2024)
     
-    % make sure to add dependencies
-    addpath('SubFns/')
+    % make sure to add dependencies if launching through Fiesta
+    addpath('bin/BuildIn/FIONAviewer/SubFns/')
+    % otherwise do a simpler version if already navigated to parent
+    % FIONAviewer
+    % addpath('SubFns/')
 
     app.fig = uifigure('Name','FIONAviewer', ...
                        'Position',[100 100 1400 800]);
@@ -30,6 +33,7 @@ function app = FIONAviewer(varargin)
         app.FitPanelFields.MeanSampleWindow = [];
         app.FitPanelFields.MinDeltaChange = [];
         app.FitPanelFields.BtnAutoAlign = [];
+        app.FitPanelFields.LblFitStatus = []; % DC260724 text error message
     % app.PanI = panInteraction; %Not functional will try again later
     % app.ZoomI = zoomInteraction;
     
@@ -174,6 +178,14 @@ function app = FIONAviewer(varargin)
     'Position',[220 55 70 30], ...
     'Text','Align', ...
     'ButtonPushedFcn',@(src,evt)onAlign(app));
+
+    % DC260724 error text message
+    app.FitPanelFields.LblFitStatus = uilabel(app.FitPanel, ...
+        'Position',[140 60 75 20], ...
+        'Text','', ...
+        'FontColor',[0.8 0 0], ...
+        'FontWeight','bold', ...
+        'HorizontalAlignment','center');
     
     % uilabel(app.FitPanel,'Position',[200 50 40 30],'Text','Window:');
     % app.FitPanelFields.MeanSampleWindow = uieditfield(app.FitPanel,'numeric', ...
@@ -189,6 +201,20 @@ function app = FIONAviewer(varargin)
     % HOTKEYS
     app.fig.WindowKeyPressFcn = @(fig,event) onKeyPress(app, event);
     % app.AxMain.ButtonDownFcn = @(src,event) uifigureFocus(app);
+
+    %% Shortcut accelerators (Define all strings hear for continuity throughout the code)
+    % User defined shortcuts here
+    % app.shortcuts = dictionary("zoom","z", "zoom_out","x", "pan","v", ...
+    %     "add","a", "delete","d", "filter","f", "save","s", "export","c");
+
+    % Add menus with Accelerators
+    HKmenu = uimenu('Parent',app.fig,'Label','Hot Keys');
+    uimenu('Parent',HKmenu,'Label','Zoom','Accelerator','z','Callback',@(src,evt)zoom(app.fig,'toggle'));
+    uimenu('Parent',HKmenu,'Label','Reset','Accelerator','x','Callback',@(src,evt)zoom(app.fig,'out'));
+    uimenu('Parent',HKmenu,'Label','Pan','Accelerator','v','Callback',@(src,evt)pan(app.fig,'toggle'));
+
+    % uimenu('Parent',HKmenu,'Label','Save','Accelerator','s','Callback',@(src,evt)onSave(app));
+    % uimenu('Parent',HKmenu,'Label','Export Fig','Accelerator','c','Callback',@(src,evt)onExportFigure(app));
 
     %% -------------------------------------------
     % FILTER PANEL (Bottom-left)
@@ -334,12 +360,14 @@ end
 function onNext(app, source)
     app = getappdata(app.fig, 'app');
     app = ScrollPrevNext(app, source);
+    app.FitPanelFields.LblFitStatus.Text = ''; % clear stale fit-status label from previous molecule
     setappdata(app.fig,'app',app);
 end
 
 function onPrev(app, source)
     app = getappdata(app.fig, 'app');
     app = ScrollPrevNext(app, source);
+    app.FitPanelFields.LblFitStatus.Text = ''; % clear stale fit-status label from previous molecule
     setappdata(app.fig,'app',app);
 end
 
@@ -362,27 +390,54 @@ function app = onSave(app)
     setappdata(app.fig, 'app', app);
 end
 
-
+% DC260724 wrapped try catch for text error
 function app = onFit(app)
     app = getappdata(app.fig, 'app');
-    if strcmp(app.FitPanelFields.DropFitAxis.Value,'Long-axis')
-        lineObj = findobj(app.AxMain, 'Type', 'Line', 'Tag', 'hLongAxis');
-        stepFit = SICstepFinder(lineObj.YData);
-        % reformat into size N so easily writeable later
-        if length(stepFit.StepFit) ~= length(app.Data.t)
-            out = repelem(stepFit.StepFit, app.FilterPanelFields.FilterWindow.Value);
-            stepFit.StepFit = out(1:length(app.Data.t));
+    try
+        if strcmp(app.FitPanelFields.DropFitAxis.Value,'Long-axis')
+            lineObj = findobj(app.AxMain, 'Type', 'Line', 'Tag', 'hLongAxis');
+            stepFit = SICstepFinder(lineObj.YData);
+            % reformat into size N so easily writeable later
+            if length(stepFit.StepFit) ~= length(app.Data.t)
+                out = repelem(stepFit.StepFit, app.FilterPanelFields.FilterWindow.Value);
+                stepFit.StepFit = out(1:length(app.Data.t));
+            end
+            app.Data.stepVector = stepFit.StepFit; % Update step vector
+        elseif strcmp(app.FitPanelFields.DropFitAxis.Value,'Short-axis')
+            lineObj = findobj(app.AxMain, 'Type', 'Line', 'Tag', 'hShortAxis');
+            stepFit = SICstepFinder(lineObj.YData);
+            % reformat into size N so easily writeable later
+            if length(stepFit.StepFit) ~= length(app.Data.t)
+                out = repelem(stepFit.StepFit, app.FilterPanelFields.FilterWindow.Value);
+                stepFit.StepFit = out(1:length(app.Data.t));
+            end
+            app.Data.shortstepVector = stepFit.StepFit; % Update step vector
         end
-        app.Data.stepVector = stepFit.StepFit; % Update step vector
-    elseif strcmp(app.FitPanelFields.DropFitAxis.Value,'Short-axis')
-        lineObj = findobj(app.AxMain, 'Type', 'Line', 'Tag', 'hShortAxis');
-        stepFit = SICstepFinder(lineObj.YData);
-        % reformat into size N so easily writeable later
-        if length(stepFit.StepFit) ~= length(app.Data.t)
-            out = repelem(stepFit.StepFit, app.FilterPanelFields.FilterWindow.Value);
-            stepFit.StepFit = out(1:length(app.Data.t));
+    catch ME
+        disp(['Fit failed: ' ME.message]);
+        try
+            if strcmp(app.FitPanelFields.DropFitAxis.Value,'Long-axis')
+                lineObj = findobj(app.AxMain, 'Type', 'Line', 'Tag', 'hLongAxis');
+            else
+                lineObj = findobj(app.AxMain, 'Type', 'Line', 'Tag', 'hShortAxis');
+            end
+            meanVal = mean(lineObj(1).YData, 'omitnan'); % lineObj(1) guards against duplicate/stale handles
+            if isempty(meanVal) || isnan(meanVal)
+                meanVal = 0;
+            end
+            % build directly at the target length -- no repelem/indexing mismatch possible
+            defaultFit = repmat(meanVal, 1, length(app.Data.t));
+        catch ME2
+            disp(['Default fit construction also failed, using zeros: ' ME2.message]);
+            defaultFit = zeros(1, length(app.Data.t));
         end
-        app.Data.shortstepVector = stepFit.StepFit; % Update step vector
+        if strcmp(app.FitPanelFields.DropFitAxis.Value,'Long-axis')
+            app.Data.stepVector = defaultFit;
+        else
+            app.Data.shortstepVector = defaultFit;
+        end
+        stepFit.StepFit = defaultFit;
+        app.FitPanelFields.LblFitStatus.Text = 'Defaulted';
     end
     app = updateMainPlot(app); %and replot
     % Then let buttons be visible again
@@ -396,6 +451,28 @@ function app = onFit(app)
     setappdata(app.fig, 'app', app);
 end
 
+% DC260724 for hot key
+function app = onFitBothAndSave(app)
+    app = getappdata(app.fig, 'app');
+
+    % Fit short-axis
+    app.FitPanelFields.DropFitAxis.Value = 'Short-axis';
+    app = onFit(app);
+
+    % Fit long-axis
+    app.FitPanelFields.DropFitAxis.Value = 'Long-axis';
+    app = onFit(app);
+    % if strcmp(app.FitPanelFields.LblFitStatus.Text, 'Fit failed')
+    %     return; % stop here — leaves the "Fit failed" label up, doesn't save
+    % end
+
+    % if strcmp(app.FitPanelFields.LblFitStatus.Text, 'Fit failed')
+    %     return; % stop here too — don't save on a short-axis failure either
+    % end
+
+    % Save the fiona file
+    app = onSave(app);
+end
 
 function app = onAdd(app, btn)
     app = getappdata(app.fig, 'app');
@@ -499,7 +576,7 @@ function [nearestX, nearestY] = AxMainClick(app, src, event)
     yRange = diff(ax.YLim);
     
     % Find the line (if only one line, just pick it)
-    if strcmp(app.FitPanelFields.DropFitAxis.Value,'Long-axis');
+    if strcmp(app.FitPanelFields.DropFitAxis.Value,'Long-axis')
         lineObj = findobj(ax, 'Type', 'Line', 'Tag', 'hFitLine'); %line to find nearest point to Long-axis
     else
         lineObj = findobj(ax, 'Type', 'Line', 'Tag', 'hFitShortLine'); %line to find nearest point to Short-axis fit
@@ -556,14 +633,29 @@ function onKeyPress(app, event)
     key = event.Key;  % string of the key pressed, e.g., 'a', 'd', 'leftarrow'
     mods = event.Modifier; % cell array of modifiers, e.g., {'control'}
     
-    if ismember('control', mods)
+    % switch between control for pc and command for mac
+    if ispc && ismember('control', mods) || ismac && ismember('command', mods)
         switch key
             case 's'
                 % disp('Ctrl+s pressed')
-                onSave(app)
+                onSave(app);
+
             case 'c'
                 % disp('Ctrl+e pressed')
-                onExportFigure(app)
+                onExportFigure(app);
+
+            % case 'v'
+            %     % disp('Ctrl+v pressed')
+            %     pan(app.fig,'toggle')
+            % 
+            % case 'z'
+            %     % disp('Ctrl+z pressed')
+            %     zoom(app.fig,'toggle')
+            % 
+            % case 'x'
+            %     % disp('Ctrl+x pressed')
+            %     zoom(app.fig,'out')
+
         end
 
     else
@@ -573,18 +665,28 @@ function onKeyPress(app, event)
             
             case 'd' %d trigger onDelete button
                 onDelete(app, app.FitPanelFields.BtnDelete);
-            
-            % case 'p'
-            %     app.AxMain.Interactions = app.PanI;
+
+            % DC260724 added hotkeys for fit, save, next
+            case 'f' %f fits long-axis + short-axis and saves
+                onFitBothAndSave(app);
+
+            case 'g' %. advances to next fiona file
+                onNext(app, app.LeftPanelFields.BtnNext);
+
+            % case 'f' %f trigger onFilter button
+            %     onFilter(app, app.FilterPanelFields.BtnFilter);
+
+            % case 'v' %v triggers pan
+            %     pan(app.fig,'toggle') %toggle only will turn on, we can't access this in the active figure mode state
             % 
-            % case 'z'
-            %     app.AxMain.Interactions = [app.ZoomI app.PanI];
-            %
-            % case 'r'     % Reset view
-            %     % Reset the axes limits (you can customize initial limits)
-            %     app.AxMain.XLimMode = 'auto';
-            %     app.AxMain.YLimMode = 'auto';
+            % case 'z' %z triggers zoom in
+            %     zoom(app.fig,'toggle')
+            % 
+            % case 'x' %x triggers reset (zoom out)
+            %     zoom(app.fig,'out')
+
             % You can add more hotkeys here
         end
     end
 end
+

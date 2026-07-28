@@ -95,7 +95,7 @@ if opts.UseNeighborRegions
     opts2.mode = 'pause';
     opts2.PauseThresh = opts.PauseThresh;
     opts2.UseNeighborRegions = 1;
-    fNeighborlyRegions(opts2,framerate,directory,0,foldername)
+    HistVals = fNeighborlyRegions(opts2,framerate,directory,0,foldername);
     
 else
     for i=1:fnum

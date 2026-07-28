@@ -9,7 +9,9 @@ switch func
     case 'FindMoving'
         FindMoving(varargin{1});
     case 'FindReference'
-        FindReference(varargin{1});        
+        FindReference(varargin{1});
+    case 'FindInRegion'
+        FindInRegion(varargin{1});
     case 'Normalize'
         Normalize(varargin{1});        
     case 'Filter'
@@ -393,6 +395,64 @@ if ~isempty(answer)
     setappdata(0,'hMainGui',hMainGui);
     fShow('Image');
 end
+
+% DC260721
+function FindInRegion(hMainGui)
+global Molecule;
+global Filament;
+global KymoTrackMol;
+global KymoTrackFil;
+
+shape = get(gcbo,'UserData'); % 'freehand' or 'rect'
+ax = hMainGui.MidPanel.aView;
+set(hMainGui.fig,'Pointer','crosshair');
+drawnow;
+
+try
+    if strcmp(shape,'rect')
+        h = drawrectangle(ax,'Color','y','FaceAlpha',0.1);
+        pos = h.Position; % [x y w h]
+        polyX = [pos(1) pos(1)+pos(3) pos(1)+pos(3) pos(1)];
+        polyY = [pos(2) pos(2) pos(2)+pos(4) pos(2)+pos(4)];
+    else
+        h = drawfreehand(ax,'Color','y','FaceAlpha',0.1);
+        polyX = h.Position(:,1)';
+        polyY = h.Position(:,2)';
+    end
+    delete(h);
+catch
+    set(hMainGui.fig,'Pointer','arrow');
+    fShared('ReturnFocus');
+    return; % user pressed Esc / cancelled
+end
+set(hMainGui.fig,'Pointer','arrow');
+
+addToSelection = strcmp(hMainGui.CurrentKey,'shift'); % Shift = add to current selection, otherwise replace it
+
+for n = 1:length(Molecule)
+    OX = Molecule(n).Results(:,3)/hMainGui.Values.PixSize;
+    OY = Molecule(n).Results(:,4)/hMainGui.Values.PixSize;
+    if any(inpolygon(OX,OY,polyX,polyY))
+        Molecule(n) = fShared('SelectOne',Molecule(n),KymoTrackMol,n,1);
+    elseif ~addToSelection
+        Molecule(n) = fShared('SelectOne',Molecule(n),KymoTrackMol,n,0);
+    end
+end
+
+for n = 1:length(Filament)
+    OX = Filament(n).Results(:,3)/hMainGui.Values.PixSize;
+    OY = Filament(n).Results(:,4)/hMainGui.Values.PixSize;
+    if any(inpolygon(OX,OY,polyX,polyY))
+        Filament(n) = fShared('SelectOne',Filament(n),KymoTrackFil,n,1);
+    elseif ~addToSelection
+        Filament(n) = fShared('SelectOne',Filament(n),KymoTrackFil,n,0);
+    end
+end
+
+fRightPanel('UpdateList',hMainGui.RightPanel.pData.MolList,Molecule,hMainGui.RightPanel.pData.sMolList,hMainGui.Menu.ctListMol);
+fRightPanel('UpdateList',hMainGui.RightPanel.pData.FilList,Filament,hMainGui.RightPanel.pData.sFilList,hMainGui.Menu.ctListFil);
+setappdata(0,'hMainGui',hMainGui);
+fShared('ReturnFocus');
 
 function FindReference(hMainGui)
 global Molecule;

@@ -98,10 +98,13 @@ else
     sName = Config.StackName;
 end
 try
-    fData=[Config.Directory sName '(' datestr(clock,'yyyymmddTHHMMSSFFF') ').mat'];
+    % DC260722 changed save format
+    % fData=[Config.Directory sName '(' datestr(clock,'yyyymmddTHHMMSSFFF') ').mat'];
+    fData=[Config.Directory sName '_' char(datetime('now','Format','yyMMdd-HHmmss')) '_ch' num2str(Config.Channel) '.mat'];
     save(fData,'Config');
 catch
-    fData=[DirCurrent sName '(' datestr(clock,'yyyymmddTHHMMSSFFF') ').mat'];
+    % fData=[DirCurrent sName '(' datestr(clock,'yyyymmddTHHMMSSFFF') ').mat'];
+    fData=[DirCurrent sName '_' char(datetime('now','Format','yyMMdd-HHmmss')) '_ch' num2str(Config.Channel) '.mat'];
     fMsgDlg(['Directory not accessible - File saved in FIESTA directory: ' DirCurrent],'warn');
     save(fData,'Config');
 end
@@ -201,7 +204,8 @@ disp(error_events)
 try
     save(fData,'-append','Objects');
 catch
-    fData=[DirCurrent sName '(' datestr(clock,'yyyymmddTHHMMSSFFF') ').mat'];
+    % fData=[DirCurrent sName '(' datestr(clock,'yyyymmddTHHMMSSFFF') ').mat'];
+    fData=[DirCurrent sName '_' char(datetime('now','Format','yyMMdd-HHmmss')) '_ch' num2str(Config.Channel) '.mat'];
     fMsgDlg(['Directory not accessible - File saved in FIESTA directory: ' DirCurrent],'warn');
     save(fData,'Objects','Config');
 end
@@ -399,7 +403,8 @@ if ~isempty(Objects)
     try
         save(fData,'-append','Molecule','Filament');
     catch ME
-        fData=[DirCurrent sName '(' datestr(clock,'yyyymmddTHHMMSSFFF') ').mat'];
+        % fData=[DirCurrent sName '(' datestr(clock,'yyyymmddTHHMMSSFFF') ').mat'];
+        fData=[DirCurrent sName '_' char(datetime('now','Format','yyMMdd-HHmmss')) '_ch' num2str(Config.Channel) '.mat'];
         fMsgDlg(['Directory not accessible - File saved in FIESTA directory: ' DirCurrent],'warn');
         save(fData,'Molecule','Filament','Objects','Config');
     end

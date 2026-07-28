@@ -1,6 +1,8 @@
 function output = fOpenStackSpecial
 
-c = 1.2*get(gcf,'Color');
+% c = 1.2*get(gcf,'Color');
+c = min(1.2*get(gcf,'Color'), 1);
+
 ctext = 0.9*ones(1,3);
 cbutton = [0.16,0.16,0.16];
 ctextbox = [0.12,0.12,0.12];
@@ -20,10 +22,10 @@ hOpenSpecial.rSeparateFiles = uicontrol('Parent',hOpenSpecial.pMode,'Units','nor
                                    'String','Separate files for each channel','Style','radiobutton','Tag','rSeparateFiles','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);
                                 
 hOpenSpecial.rSequentialSplitting = uicontrol('Parent',hOpenSpecial.pMode,'Units','normalized','Position',[0.05 0.375 0.9 0.25],'Enable','on','FontSize',12,...
-                                    'String','Separate frames for each channel','Style','radiobutton','Tag','rSequentialSplitting','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);  
+                                    'String','Separate frames for each channel','Style','radiobutton','Tag','rSequentialSplitting','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext, 'Value', 1);  
                                 
 hOpenSpecial.rSpatialSplitting = uicontrol('Parent',hOpenSpecial.pMode,'Units','normalized','Position',[0.05 0.075 0.9 0.25],'Enable','on','FontSize',12,...
-                                    'String','Separate areas for each channel','Style','radiobutton','Tag','rSpatialSplitting','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext,'Value',1);               
+                                    'String','Separate areas for each channel','Style','radiobutton','Tag','rSpatialSplitting','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);               
                   
 hOpenSpecial.pSeparateFiles = uipanel('Parent',hOpenSpecial.fig,'Units','normalized','Position',[0.05 0.275 0.9 0.4],'visible','off',...
                                   'Title','Separate Files','Tag','pSeparateFiles','FontSize',10,'BackgroundColor',c,'ForegroundColor',ctext);
@@ -72,14 +74,14 @@ hOpenSpecial.pSeparate.bChannel(4) = uicontrol('Parent',hOpenSpecial.pSeparateFi
                                 'String','Load','Style','pushbutton','Tag','4','HorizontalAlignment','center','BackgroundColor',cbutton,'ForegroundColor',ctext,...
                                 'Callback',@ChooseFile); 
      
-hOpenSpecial.pSequentialSplitting = uipanel('Parent',hOpenSpecial.fig,'Units','normalized','Position',[0.05 0.275 0.9 0.4],'visible','off',...
+hOpenSpecial.pSequentialSplitting = uipanel('Parent',hOpenSpecial.fig,'Units','normalized','Position',[0.05 0.275 0.9 0.4],'visible','on',...
                                      'Title','Sequential Frames','Tag','pSequentialSplitting','FontSize',10,'BackgroundColor',c,'ForegroundColor',ctext);
   
 hOpenSpecial.pSequential.tNumberChannels = uicontrol('Parent',hOpenSpecial.pSequentialSplitting,'Units','normalized','Position',[0.05 0.8 0.5 0.15],'Enable','on','FontSize',12,...
                                    'String','Number of channels:','Style','text','Tag','tNumberChannels','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);
                                
 hOpenSpecial.pSequential.mNumberChannels = uicontrol('Parent',hOpenSpecial.pSequentialSplitting,'Units','normalized','Position',[0.6 0.825 0.3 0.15],'Enable','on','FontSize',12,...
-                                   'String',{'2','3','4'},'Style','popupmenu','Tag','mNumberChannels','HorizontalAlignment','left','BackgroundColor',cbutton,'ForegroundColor',ctext,'Callback',@NumberSelect);
+                                   'String',{'2','3','4'},'Style','popupmenu','Tag','mNumberChannels','HorizontalAlignment','left','BackgroundColor',cbutton,'ForegroundColor',ctext,'Value',2,'Callback',@NumberSelect);
                                
 hOpenSpecial.pSequential.rAlternateFrames = uicontrol('Parent',hOpenSpecial.pSequentialSplitting,'Units','normalized','Position',[0.05 0.65 0.9 0.15],'Value',1,'Enable','on','FontSize',12,...
                                    'Callback',@SequentialSelect,'String','Alternating frames','Style','radiobutton','Tag','rAlternateFrames','HorizontalAlignment','left','BackgroundColor',c,'ForegroundColor',ctext);
@@ -114,7 +116,7 @@ hOpenSpecial.pSequential.tCh(4) = uicontrol('Parent',hOpenSpecial.pSequentialSpl
 hOpenSpecial.pSequential.eCh(4) = uicontrol('Parent',hOpenSpecial.pSequentialSplitting,'Units','normalized','Position',[0.825 0.05 0.1 0.15],'Enable','off','FontSize',10,...
                                 'String','','Style','edit','Tag','eCh4','HorizontalAlignment','center','BackgroundColor','white');         
                                                         
-hOpenSpecial.pSpatialSplitting = uibuttongroup('Parent',hOpenSpecial.fig,'Units','normalized','Position',[0.05 0.275 0.9 0.4],'visible','on',...
+hOpenSpecial.pSpatialSplitting = uibuttongroup('Parent',hOpenSpecial.fig,'Units','normalized','Position',[0.05 0.275 0.9 0.4],'visible','off',...
                                  'Title','Separate areas','Tag','pSpatialSplitting','FontSize',10,'BackgroundColor',c,'ForegroundColor',ctext);
 
 hOpenSpecial.pSpatial.rTwoHorizontal = uicontrol('Parent',hOpenSpecial.pSpatialSplitting,'Units','normalized','Position',[0.05 0.8 0.9 0.15],'Enable','on','FontSize',12,...
@@ -172,7 +174,7 @@ hOpenSpecial.pPost.rAntiblockCh2text = uicontrol('Parent',hOpenSpecial.pPostProc
                                         'String','Ch2','Style','text','Tag','rAntiblockCh2text','BackgroundColor',c,'ForegroundColor',ctext);
                                     
 hOpenSpecial.pPost.rAntiblockCh2 = uicontrol('Parent',hOpenSpecial.pPostProcessing,'Units','normalized','Position',[0.4 0.1 0.1 0.25],'Enable','on','FontSize',12,...
-                                        'String','5','Style','edit','Tag','rAntiblockCh2','BackgroundColor',c,'ForegroundColor',ctext);                                    
+                                        'String','1','Style','edit','Tag','rAntiblockCh2','BackgroundColor',c,'ForegroundColor',ctext);                                    
 
 hOpenSpecial.pPost.rAntiblockCh3text = uicontrol('Parent',hOpenSpecial.pPostProcessing,'Units','normalized','Position',[0.5 0.1 0.15 0.25],'Enable','on','FontSize',10,...
                                         'String','Ch3','Style','text','Tag','rAntiblockCh3text','BackgroundColor',c,'ForegroundColor',ctext);
@@ -286,6 +288,8 @@ elseif strcmp(output.Mode,'rSequentialSplitting')
         FiestaDir.Stack=PathName;
         output.Data = {FileName,PathName,get(hOpenSpecial.pSequential.mNumberChannels,'Value')+1,...
                    get(findobj('Parent',hOpenSpecial.pSequentialSplitting,'-and','Style','radiobutton'),'Value'),get(hOpenSpecial.pSequential.eCh,'String')};
+    else
+        return  % user cancelled the file browser - leave the dialog open instead of returning partial output
     end
 else
     [FileName,PathName] = uigetfile({'*.stk;*.nd;*.nd2;*.dv;*.zvi;*.tif;*.tiff','Image Stacks (*.stk,*.nd,*.nd2,*.dv,*.zvi,*.tif,*.tiff)'},'Select the Stack',FiestaDir.Stack,'MultiSelect','on'); %open dialog for *.stk files
@@ -296,6 +300,8 @@ else
         c=get(findobj('Parent',hOpenSpecial.pSpatialSplitting,'Tag','rTwoHorizontalCustom1'),'String');
         w=get(findobj('Parent',hOpenSpecial.pSpatialSplitting,'Tag','rTwoHorizontalCustom2'),'String');
         output.Data = {FileName,PathName,get(findobj('Parent',hOpenSpecial.pSpatialSplitting,'-and','Style','radiobutton'),'Value'),[str2double(c),str2double(w)]};
+    else
+        return  % user cancelled the file browser - leave the dialog open instead of returning partial output
     end
 end
 ch = get(hOpenSpecial.pPostProcessing,'Children');

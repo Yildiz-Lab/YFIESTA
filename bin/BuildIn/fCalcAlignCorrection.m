@@ -1,4 +1,4 @@
-function F = fCalcAlignCorrection(ch1file, ch2file)
+function F = fCalcAlignCorrection(ch1file, ch2file, refChannel, adjChannel, too_large_nm)
 %JS 2022/09/03
 % Description:
 %    function to correct mean offsets between two channels, ideally taken with
@@ -11,7 +11,12 @@ function F = fCalcAlignCorrection(ch1file, ch2file)
 %    to Ch1 coordinates in nm
 
 % too_large_nm = 1000; %FIONA using nanohole
-too_large_nm = 100; %sqrt(3^2 + 7^2) %MINFLUX using 2C gold beads
+% too_large_nm = 100; %sqrt(3^2 + 7^2) %MINFLUX using 2C gold beads
+
+% DC260721 made this a user input
+if nargin < 6 || isempty(too_large_nm)
+    too_large_nm = 450; 
+end
 
 % user choose option
 if nargin < 1
@@ -21,6 +26,12 @@ LoadDir = uigetdir; % Outside of FIESTA (since we haven't quite gotten it in yet
 ch1file = fullfile(folder, baseName);
 [baseName, folder] = uigetfile({'*.mat','FIESTA Data(*.mat)'},'Load FIESTA Objects for Channel 2',LoadDir,'MultiSelect','off');
 ch2file = fullfile(folder, baseName);
+end
+if nargin < 3
+    refChannel = 1;
+end
+if nargin < 4
+    adjChannel = 2;
 end
 
 ch1data = load(ch1file);
@@ -38,7 +49,7 @@ if ~isfield(ch1data,'Objects')
     xyc1 = nan(length(ch1data.Molecule),3);
     xyc2 = nan(length(ch2data.Molecule),3);
     for t = length(ch1data.Molecule):-1:1 %delete all ch1 files that don't belong to ch1
-        if ch1data.Molecule(t).Channel == 1
+        if ch1data.Molecule(t).Channel == refChannel
             xyc1(t,1:2) = median(ch1data.Molecule(t).Results(:,3:4)); % package arrays for easy result comparison
             xyc1(t,3) = ch1data.Molecule(t).Channel;
         else
@@ -47,7 +58,7 @@ if ~isfield(ch1data,'Objects')
         end
     end
     for t = length(ch2data.Molecule):-1:1 %delete all ch2 files that don't belong to ch2
-        if ch2data.Molecule(t).Channel == 2
+        if ch2data.Molecule(t).Channel == adjChannel
             xyc2(t,1:2) = median(ch2data.Molecule(t).Results(:,3:4)); % package arrays for easy result comparison
             xyc2(t,3) = ch2data.Molecule(t).Channel;
         else
@@ -159,6 +170,8 @@ for k = 1:length(ch2data.Objects)
     end
 
     %% Go through and try to pair each molecule with another
+    % DC260721 changed pairing so that it only matches when theres exactly
+    % one potential candidate, fixed k bug
     idx_store = nan(length(frobj1.center_x),1);
     val_store = nan(length(frobj1.center_x),1);
     dir_store = nan(length(frobj1.center_x),2);
@@ -169,10 +182,14 @@ for k = 1:length(ch2data.Objects)
         ybar = frobj1.center_y(i);
         Ch1(i,:) = [xbar, ybar];
 
-        % magnitude
-        [val, idx] = min(sqrt((Ch2(:,1)-xbar).^2 + (Ch2(:,2)-ybar).^2));
+        % find ALL candidates within the search radius, not just the nearest
+        dists = sqrt((Ch2(:,1)-xbar).^2 + (Ch2(:,2)-ybar).^2);
+        candidates = find(dists < too_large_nm);
 
-        if val < too_large_nm
+        if numel(candidates) == 1
+            % unambiguous match: exactly one Ch2 object within radius
+            idx = candidates;
+            val = dists(idx);
             % make sure this molecule hasn't already been paired
             if ~ismember(idx_store, idx)
                 idx_store(i) = idx;
@@ -180,19 +197,19 @@ for k = 1:length(ch2data.Objects)
                 dir_store(i,:) = [Ch2(idx,1)-xbar,Ch2(idx,2)-ybar]/val;
             % if it has, then is the new molecule closer. Else just keep it nan
             else
-                [~,k] = find(idx_store == idx);
-                if val < val_store(k)
+                [~,match_row] = find(idx_store == idx);
+                if val < val_store(match_row)
                     idx_store(i) = idx;
                     val_store(i) = val;
                     dir_store(i,:) = [Ch2(idx,1)-xbar,Ch2(idx,2)-ybar]/val;
-                    idx_store(k) = NaN;
-                    val_store(k) = NaN;
-                    dir_store(k,:) = nan(1,2);
+                    idx_store(match_row) = NaN;
+                    val_store(match_row) = NaN;
+                    dir_store(match_row,:) = nan(1,2);
                 end
             end
-
         end
-
+        % numel(candidates) == 0 -> no match within radius, leave as NaN
+        % numel(candidates) > 1  -> ambiguous, leave as NaN (excluded on purpose)
 
     end
     
