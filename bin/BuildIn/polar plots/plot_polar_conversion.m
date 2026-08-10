@@ -35,6 +35,7 @@ ax = gca;
 polarplot(median(theta(fwd_mask),'omitnan')*[1,1],[0,ax.RLim(2)],'r--')
 polarplot(median(theta(~fwd_mask),'omitnan')*[1,1],[0,ax.RLim(2)],'r--')
 fprintf(strcat("Mean fwd theta (deg): ", num2str(mean(theta(fwd_mask)*180/pi,'omitnan')), "+/-", num2str(std(theta(fwd_mask)*180/pi,'omitnan')), "\n"))
+fprintf(strcat("Mean bwd theta (deg): ", num2str(mean(theta(~fwd_mask)*180/pi,'omitnan')), "+/-", num2str(std(theta(~fwd_mask)*180/pi,'omitnan')), "\n"))
 set(gca,'ThetaZeroLocation','top')
 set(gca,'fontname','Arial');
 
@@ -58,8 +59,8 @@ y = r.*sin(theta); y = y(:);
 
 f2 = figure('Position',[300,300,600,1200]);
 % subplot(1,3,3)
-% hist3([y',x'], 'CDataMode','auto','Ctrs', {-20:5:20, -30:2:40});
-hist3([y, x], 'CDataMode','auto','Ctrs', {-20:5:20, -31.5:3:40.5});
+% hist3([y,x], 'CDataMode','auto','Ctrs', {-20:5:20, -31.5:2:40.5});
+hist3([y, x], 'CDataMode','auto','Ctrs', {-20:5:20, -31.5:3:40.5}); % Dynein parameters
 % hist3([y',x'], 'CDataMode','auto','Ctrs', {-21:1.5:21, -33:1.5:42});
 % hist3([y',x'], 'CDataMode','auto','Ctrs', {-21:3:21, -33:3:42});
 % hist3([y',x'], 'CDataMode','auto','Ctrs', {-20:2.5:20, -33:3:42})

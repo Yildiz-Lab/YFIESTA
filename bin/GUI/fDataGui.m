@@ -3,7 +3,10 @@ switch (func)
     case 'Create'
         try
             Create(varargin{1},varargin{2});
-        catch
+        catch ME
+            warning('FIESTA:fDataGui:CreateFailed', ...
+                    'Unable to create the Data GUI:\n%s', ...
+                    getReport(ME,'extended','hyperlinks','off'));
             return;
         end
     case 'SetAdvanced'
@@ -330,9 +333,13 @@ setappdata(hDataGui.fig,'Object',Object);
 setappdata(hDataGui.fig,'Check',Check);
 try
     XAxisList(hDataGui);
-catch
-    delete(hDataGui.fig);
-    Create(Type,idx);
+catch ME
+    % Do not recursively retry GUI creation. In particular, a user abort
+    % during graphics initialization used to restart Create indefinitely.
+    if isgraphics(hDataGui.fig,'figure')
+        delete(hDataGui.fig);
+    end
+    rethrow(ME);
 end
 
 function Clear(h,~)
@@ -522,14 +529,22 @@ XPlot=XList.data{x};
 y=get(hDataGui.lYaxis,'Value');
 YList=get(hDataGui.lYaxis,'UserData');
 YPlot{1}=YList(x).data{y};
-      
-cla(hDataGui.aPlot,'reset');
-%hDataGui.aPlot = axes('Parent',hDataGui.pPlotPanel,'OuterPosition',[0 0 1 1],'TickDir','out',...
-   %                   'XLimMode','manual','YLimMode','manual'); 
+
+% MATLAB R2025 can stall in the private graphics clo method called by
+% cla(ax,'reset'). Recreate this dedicated plot axes instead. This gives
+% Draw the same clean axes state, including removal of a prior yyaxis.
+plotUnits = get(hDataGui.aPlot,'Units');
+plotOuterPosition = get(hDataGui.aPlot,'OuterPosition');
+delete(hDataGui.aPlot);
+hDataGui.aPlot = axes('Parent',hDataGui.pPlotPanel, ...
+                      'Units',plotUnits, ...
+                      'OuterPosition',plotOuterPosition, ...
+                      'Tag','Plot','NextPlot','add', ...
+                      'TickDir','out','Layer','top');
 hDataGui.DataPlot = [];                  
 set(0,'CurrentFigure',hDataGui.fig);  %JS note, this probably requires this to be interacted with first                
 setappdata(0,'hDataGui',hDataGui);                 
-hold on     
+hold(hDataGui.aPlot,'on');
 xscale=1;
 yscale=1;
 
@@ -702,7 +717,7 @@ if ~isempty(XPlot)
         if length(XPlot)>1
             SetAxis(hDataGui.aPlot,XPlot/xscale,YPlot{n}/yscale(n),x,astr);
         else
-            axis auto;
+            axis(hDataGui.aPlot,'auto');
         end
         set(hDataGui.DataPlot(n),'Marker','.','MarkerSize',12);
     end
@@ -719,7 +734,7 @@ else
     set(hDataGui.aPlot,'XColor','white'); set(hDataGui.aPlot,'YColor','white');
     set(hDataGui.aPlot,'Color',cbc)
 end
-hold off;
+hold(hDataGui.aPlot,'off');
 if xy{1}(2)~=1&&xy{2}(2)~=1 && ax==-1
     set(hDataGui.aPlot,{'xlim','ylim'},xy);
 else
@@ -1601,9 +1616,12 @@ end
 
 function ReturnFocus(~,~)
 hDataGui=getappdata(0,'hDataGui');
-warning off MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame
-javaFrame = get(hDataGui.fig,'JavaFrame');
-javaFrame.getAxisComponent.requestFocus;
+% JavaFrame was removed in MATLAB R2025a. Activating the documented figure
+% handle restores focus without relying on the former Java implementation.
+if isstruct(hDataGui) && isfield(hDataGui,'fig') && ...
+        isgraphics(hDataGui.fig,'figure')
+    figure(hDataGui.fig);
+end
 
 function FitMissingPoints(hDataGui)
 global Filament;

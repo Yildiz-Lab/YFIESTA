@@ -2,8 +2,11 @@ function app = FIONAviewer(varargin)
     % Modern UIFIGURE-based recreation of the original FIONAviewer GUI
     % Works in MATLAB R2020+ (tested R2023, R2024)
     
-    % make sure to add dependencies
-    addpath('SubFns/')
+    % make sure to add dependencies if launching through Fiesta
+    addpath('bin/BuildIn/FIONAviewer/SubFns/')
+    % otherwise do a simpler version if already navigated to parent
+    % FIONAviewer
+    % addpath('SubFns/')
 
     app.fig = uifigure('Name','FIONAviewer', ...
                        'Position',[100 100 1400 800]);
@@ -190,6 +193,20 @@ function app = FIONAviewer(varargin)
     app.fig.WindowKeyPressFcn = @(fig,event) onKeyPress(app, event);
     % app.AxMain.ButtonDownFcn = @(src,event) uifigureFocus(app);
 
+    %% Shortcut accelerators (Define all strings hear for continuity throughout the code)
+    % User defined shortcuts here
+    % app.shortcuts = dictionary("zoom","z", "zoom_out","x", "pan","v", ...
+    %     "add","a", "delete","d", "filter","f", "save","s", "export","c");
+
+    % Add menus with Accelerators
+    HKmenu = uimenu('Parent',app.fig,'Label','Hot Keys');
+    uimenu('Parent',HKmenu,'Label','Zoom','Accelerator','z','Callback',@(src,evt)zoom(app.fig,'toggle'));
+    uimenu('Parent',HKmenu,'Label','Reset','Accelerator','x','Callback',@(src,evt)zoom(app.fig,'out'));
+    uimenu('Parent',HKmenu,'Label','Pan','Accelerator','v','Callback',@(src,evt)pan(app.fig,'toggle'));
+
+    % uimenu('Parent',HKmenu,'Label','Save','Accelerator','s','Callback',@(src,evt)onSave(app));
+    % uimenu('Parent',HKmenu,'Label','Export Fig','Accelerator','c','Callback',@(src,evt)onExportFigure(app));
+
     %% -------------------------------------------
     % FILTER PANEL (Bottom-left)
     % -------------------------------------------
@@ -208,7 +225,7 @@ function app = FIONAviewer(varargin)
     
     uilabel(app.FilterPanel,'Position',[145 120 80 25],'Text','Dec/Window:');
     app.FilterPanelFields.FilterWindow = uieditfield(app.FilterPanel,'numeric', ...
-        'Position',[225 120 50 25],'Value', 10);
+        'Position',[225 120 50 25],'Value', 5);
     
     uilabel(app.FilterPanel,'Position',[145 93 80 25],'Text','Filter Order:');
     app.FilterPanelFields.FilterOrder = uieditfield(app.FilterPanel,'numeric', ...
@@ -250,7 +267,7 @@ function app = FIONAviewer(varargin)
 
     app.DisplayPanelFields.ChkGrid = uicheckbox(app.DisplayPanel, ...
         'Position',[10 25 120 30], ...
-        'Text','Grid Spacing','Value', 0);
+        'Text','Grid Spacing','Value', 1);
 
     % uilabel(app.DisplayPanelFields.GridSpacingText,'Position',[10 120 150 20],'Text','Grid Spacing (nm)');
     app.DisplayPanelFields.GridSpacing = uieditfield(app.DisplayPanel,'numeric', ...
@@ -556,14 +573,29 @@ function onKeyPress(app, event)
     key = event.Key;  % string of the key pressed, e.g., 'a', 'd', 'leftarrow'
     mods = event.Modifier; % cell array of modifiers, e.g., {'control'}
     
-    if ismember('control', mods)
+    % switch between control for pc and command for mac
+    if ispc && ismember('control', mods) || ismac && ismember('command', mods)
         switch key
             case 's'
                 % disp('Ctrl+s pressed')
                 onSave(app)
+
             case 'c'
                 % disp('Ctrl+e pressed')
                 onExportFigure(app)
+
+            % case 'v'
+            %     % disp('Ctrl+v pressed')
+            %     pan(app.fig,'toggle')
+            % 
+            % case 'z'
+            %     % disp('Ctrl+z pressed')
+            %     zoom(app.fig,'toggle')
+            % 
+            % case 'x'
+            %     % disp('Ctrl+x pressed')
+            %     zoom(app.fig,'out')
+
         end
 
     else
@@ -573,18 +605,21 @@ function onKeyPress(app, event)
             
             case 'd' %d trigger onDelete button
                 onDelete(app, app.FitPanelFields.BtnDelete);
-            
-            % case 'p'
-            %     app.AxMain.Interactions = app.PanI;
+
+            % case 'f' %f trigger onFilter button
+            %     onFilter(app, app.FilterPanelFields.BtnFilter);
+
+            % case 'v' %v triggers pan
+            %     pan(app.fig,'toggle') %toggle only will turn on, we can't access this in the active figure mode state
             % 
-            % case 'z'
-            %     app.AxMain.Interactions = [app.ZoomI app.PanI];
-            %
-            % case 'r'     % Reset view
-            %     % Reset the axes limits (you can customize initial limits)
-            %     app.AxMain.XLimMode = 'auto';
-            %     app.AxMain.YLimMode = 'auto';
+            % case 'z' %z triggers zoom in
+            %     zoom(app.fig,'toggle')
+            % 
+            % case 'x' %x triggers reset (zoom out)
+            %     zoom(app.fig,'out')
+
             % You can add more hotkeys here
         end
     end
 end
+

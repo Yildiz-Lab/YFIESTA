@@ -163,7 +163,7 @@ for i = 1:length(fnames)
     
     % magenta fit with blue data
     % plot(time1-time1(1), ch1data.trace(idx1,1)+offset,'Color','blue','LineWidth',1.)
-    plot(time1-time1(1), ch1trace+offset,'Color','blue','LineWidth',1.)
+    plot(time1-time1(1), ch1trace+offset,'Color',[0 1 0],'LineWidth',1.)
     plot(time1-time1(1), ch1data.trace(idx1,3)+offset,'k','LineWidth',2)
 
     % plot(time1-time1(1), ch1data.trace_yx(idx1,1),'Color',[0 0 0.7],'LineWidth',1.)
@@ -226,10 +226,10 @@ for i = 1:length(fnames)
             % plot(time2-time1(1), ch2data.trace_yx(idx2,3)+dy,'k','LineWidth',2)
 
             % blue fit with more transparent blue data
-            plot(time2-time1(1), ch2data.trace(idx2,1)+offset+dx,'Color',[0 0 1 0.45],'LineWidth',0.4)
+            plot(time2-time1(1), ch2data.trace(idx2,1)+offset+dx,'Color',[0 0 1 0.45],'LineWidth',1)
             plot(time2-time1(1), ch2data.trace(idx2,3)+offset+dx,'blue','LineWidth',2)
 
-            plot(time2-time1(1), ch2data.trace_yx(idx2,1)+dy,'Color',[0 0 0.7 0.45],'LineWidth',0.4)
+            plot(time2-time1(1), ch2data.trace_yx(idx2,1)+dy,'Color',[0 0 0.7 0.45],'LineWidth',1)
             plot(time2-time1(1), ch2data.trace_yx(idx2,3)+dy,'blue','LineWidth',2)
             
             % MOLECULE
@@ -358,10 +358,10 @@ for i = 1:length(fnames)
     saveas(figefco, strcat(dir,fname(1:end-4),"_efco"))
     
     if write_pdf > 0
-        saveas(figgs, strcat(dir,fname(1:end-4),'.png'))
-        fprintf("Wrote " + strcat(fname(1:end-4)) + '.png' + '\n')
-        saveas(figgs, strcat(dir,fname(1:end-4),"_plot",'.pdf'))
-        fprintf("Wrote " + strcat(fname(1:end-4),"_plot") + '.pdf' + '\n')   
+        % saveas(figgs, strcat(dir,fname(1:end-4),'.png'))
+        % fprintf("Wrote " + strcat(fname(1:end-4)) + '.png' + '\n')
+        % saveas(figgs, strcat(dir,fname(1:end-4),"_plot",'.pdf'))
+        % fprintf("Wrote " + strcat(fname(1:end-4),"_plot") + '.pdf' + '\n')   
     end
     
     close(figgs)

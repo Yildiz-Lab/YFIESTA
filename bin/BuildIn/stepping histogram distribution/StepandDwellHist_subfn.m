@@ -69,7 +69,11 @@ for i=1:fnum
     end
     
     %% Processing Trace into steps
-    % Extract trace from data structure
+    % Extract trace from data structure. Batch output folders also contain
+    % bookkeeping MAT files (for example, FIONAviewer_SIC5_batch_report),
+    % which do not contain a trace and must be skipped rather than leaving
+    % the variable undefined.
+    trace = [];
     if isfield(steptrace,'data')
         trace = steptrace.data;
     elseif isfield(steptrace,'trace')
@@ -77,8 +81,9 @@ for i=1:fnum
     end
     
     % Skip if trace does not exist
-    if ~isfield(trace,'trace') || ~isfield(trace,'trace_yx')
+    if ~isstruct(trace) || ~isfield(trace,'trace') || ~isfield(trace,'trace_yx')
         fnum = fnum - 1;
+        continue
     else
 
     %JS Edit 2024/03/07 for loading MINFLUX times rather than framerate

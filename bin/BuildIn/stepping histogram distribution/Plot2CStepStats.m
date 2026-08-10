@@ -918,26 +918,43 @@ chtot_notruns = [];
 persistence_storage = nan(length(molidx),5);
 
 r = []; theta = [];
+rquad = repmat({zeros(0,1)}, 1, 4);   % each cell contains a 0x1 double
+thetaquad = repmat({zeros(0,1)}, 1, 4);
+angle_alignment = [];
 for j = 1:length(molidx)-1
     deltatxystep = xy_deltatxy_step_filtered(molidx(j):molidx(j+1),:);
     
     % before anything, make r, theta for separation of ch1 to ch2
     % deltatxystep has column 3 and 4 containing on, off axis separation
     % appropriately. Let's just calculate it at every step.
-    r = [r; sqrt(deltatxystep(:,3).^2 + deltatxystep(:,4).^2)];
+    tempr = sqrt(deltatxystep(:,3).^2 + deltatxystep(:,4).^2);
+    magstep = sqrt(deltatxystep(:,6).^2 + deltatxystep(:,7).^2);
+    angle_alignment = [angle_alignment; sum(deltatxystep(:,3:4).*deltatxystep(:,6:7), 2)./tempr./magstep];
+
+    r = [r; tempr];
     theta_add = atan(deltatxystep(:,4)./deltatxystep(:,3)) - pi*floor((sign(deltatxystep(:,3))-1)/2);
     theta = [theta; theta_add];
+
+    % polar plots by quadrant (review suggestion 260304)
+    masks = repmat({zeros(0,1)}, 1, 4);
+    masks{1} = [masks{1}; find(deltatxystep(:,3) > 0 & deltatxystep(:,4) > 0)];
+    masks{2} = [masks{2}; find(deltatxystep(:,3) > 0 & deltatxystep(:,4) < 0)];
+    masks{3} = [masks{3}; find(deltatxystep(:,3) < 0 & deltatxystep(:,4) < 0)];
+    masks{4} = [masks{4}; find(deltatxystep(:,3) < 0 & deltatxystep(:,4) > 0)];
+    
+    for p = 1:length(masks)
+        rquad{p} = [rquad{p}; sqrt(deltatxystep(masks{p},6).^2 + deltatxystep(masks{p},7).^2)];
+        thetaquad{p} = [thetaquad{p}; atan(deltatxystep(masks{p},7)./deltatxystep(masks{p},6)) - pi*floor((sign(deltatxystep(masks{p},6))-1)/2);];
+    end
 
     % To start we should move everything into the ch1 reference
     % This is just the xsep, ysep, not the steps
     ch2mask = find(deltatxystep(:,1) == 2);
     % deltatxystep(ch2mask,[3:4,6:7]) = -deltatxystep(ch2mask,[3:4,6:7]);
     deltatxystep(ch2mask,3:4) = -deltatxystep(ch2mask,3:4);
-    
 
     % could also add a buffer for separation. i.e. if the sep is too small,
     % say 5nm, then let's just say it is the same sign as the previous.
-    % This isn't doing anything though...weirdly
     buffer_dist = 3;
     deltatxystep = [deltatxystep(1,:); deltatxystep]; %add first row for edge case
     too_small_idx = find(abs(deltatxystep(2:end,4)) < buffer_dist); too_small_idx = too_small_idx+1;
@@ -1061,6 +1078,20 @@ title('Mean separation during runs')
 
 %% get polar plot of r, theta for interhead separation
 plot_polar_conversion(r, theta, 24)
+
+%% get polar plot of r, theta for steps for each quadrant
+for p = 1:length(rquad)
+    plot_polar_conversion(rquad{p}, thetaquad{p}, 24)
+end
+
+figure()
+histogram(angle_alignment)
+title("Stepping vector correlation with MTBD separation")
+m = mean(angle_alignment,'omitnan');
+s = std(angle_alignment, 0, "omitnan");      % default normalization (N-1). use 1 for population std
+label = sprintf('mean = %.3g, std = %.3g', m, s);
+legend(label, 'Location', 'best');
+
 
 %% get the velocities within or not in runs. Is there a difference?
 v1 = ch1sum(:,6)./time_diff;

@@ -132,6 +132,17 @@ if options.Poissonk1
         fprintf("Warning, fit was unable to converge without setting limits \n")
     end
     cfint = confint(fittedmdl);
+    % fittedmdl, gof returned by fit
+    RSS = gof.sse;           % residual sum of squares
+    n   = numel(Y);          % number of observations
+    p   = numel(coeffvalues(fittedmdl)); % number of fitted parameters
+    
+    AIC  = n*log(RSS./n) + 2*p;
+    AICc = AIC + 2*p*(p+1)./(n-p-1); % be careful when n<=p+1
+    BIC  = n*log(RSS./n) + p*log(n);
+    
+    fprintf('Poissonk1 n=%d, p=%d, RSS=%.4g\nAIC=%.4g\nAICc=%.4g\nBIC=%.4g\n', n,p,RSS,AIC,AICc,BIC);
+
 plot(X',fittedmdl(X'),'r--','DisplayName',"Fitted 1/theta = "+num2str(round(fittedmdl.k,1))+" ("+num2str(round(cfint(1),1))+","+num2str(round(cfint(2),1))+") R2="+num2str(round(gof.rsquare,2)))
 end
 if options.Poissonk2
@@ -142,6 +153,16 @@ if options.Poissonk2
         fprintf("Warning, fit was unable to converge without setting limits \n")
     end
     cfint2 = confint(fittedmdl2);
+    % fittedmdl, gof returned by fit
+    RSS = gof2.sse;           % residual sum of squares
+    n   = numel(Y);          % number of observations
+    p   = numel(coeffvalues(fittedmdl2)); % number of fitted parameters
+    
+    AIC  = n*log(RSS./n) + 2*p;
+    AICc = AIC + 2*p*(p+1)./(n-p-1); % be careful when n<=p+1
+    BIC  = n*log(RSS./n) + p*log(n);
+    
+    fprintf('Gamma2 n=%d, p=%d, RSS=%.4g\nAIC=%.4g\nAICc=%.4g\nBIC=%.4g\n', n,p,RSS,AIC,AICc,BIC);
 plot(X',fittedmdl2(X'),'k--','DisplayName',"Fitted 1/theta2 = "+num2str(round(fittedmdl2.k,1))+" ("+num2str(round(cfint2(1),1))+","+num2str(round(cfint2(2),1))+") R2="+num2str(round(gof2.rsquare,2)))
 end
 if options.DoubleExp

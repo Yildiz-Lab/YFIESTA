@@ -16,23 +16,23 @@ if nargin < 4
 end
 
 f = dir(fullfile(rootfolder,'*.mat')); %JS Edit 220207
-fnum = length(f);
-
-% JS Edit 2025/05/28 so that we can still export StepInfoUnique even with
-% MAC madness
-if fnum > 1 
-    for i=fnum:-1:1
-        if contains(f(i).name,'._') %JS Edit to ignore extra '._' that randomly show up sometimes MAC
-        f(i) = [];
+% Ignore macOS AppleDouble sidecars and bookkeeping MAT files that do not
+% contain a FIONA trace (for example FIONAviewer_SIC5_batch_report.mat).
+if ~isempty(f)
+    f = f(~startsWith({f.name}, '.'));
+end
+for i = numel(f):-1:1
+    try
+        variables = whos('-file', fullfile(rootfolder, f(i).name));
+        variableNames = {variables.name};
+        if ~ismember('data', variableNames) && ~ismember('trace', variableNames)
+            f(i) = [];
         end
-    end
-    fnum = length(f);
-else
-    if contains(fname,'._') %JS Edit to ignore extra '._' that randomly show up sometimes MAC
-        fnum = 0;
-        return
+    catch
+        f(i) = [];
     end
 end
+fnum = numel(f);
 
 % Generate StatsArr
 % NumOn, Mean, Std, NumBack, BackMean, BackStd, NumOff, AbsMean, AbsStd

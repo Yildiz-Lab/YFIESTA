@@ -16,6 +16,21 @@
 %   generate the step-size and dwell-time histograms.
 
 function [ONsteps,OFFsteps,dwells,dwells_for,dwells_back] = StepandDwellHist_v2(directory,threshold,framerate,options)
+% A final FIONAviewer SIC folder is tiered into S/A/B/C_or_lower and also
+% contains a MAT-only staging folder. Prefer that staging folder when the
+% parent folder is selected in the GUI, so the aggregate report excludes
+% batch bookkeeping MAT files and does not double-count tiered traces.
+if isfolder(directory)
+    stepStatisticsFolder = fullfile(directory, 'all');
+    % Keep aggregate statistics usable for output folders made before this
+    % staging folder was renamed to "all".
+    if ~isfolder(stepStatisticsFolder)
+        stepStatisticsFolder = fullfile(directory, 'For_StepStatistics');
+    end
+    if isfolder(stepStatisticsFolder)
+        directory = stepStatisticsFolder;
+    end
+end
 % Default threshold is 0.
 
 options
@@ -71,4 +86,3 @@ StepInfoUnique(options,framerate,fullfile(directory,'/'),foldername)
 end
 
 end
-
