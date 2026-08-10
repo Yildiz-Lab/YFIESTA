@@ -55,6 +55,13 @@ else
     app.data.neighbors = [];
 end
 
+%% User Changes Table
+if isfield(trace_curr,'UserChanges')
+    app.Data.StepChangesTable = trace_curr.UserChanges;
+else
+    app.Data.StepChangesTable = [];
+end
+
 %% -----------------------------
 % Update UI labels
 % ------------------------------

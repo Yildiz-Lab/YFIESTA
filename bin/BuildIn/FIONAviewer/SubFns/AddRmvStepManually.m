@@ -45,10 +45,12 @@ if app.FitPanelFields.BtnAdd.UserData.pressed
     for i = 2:length(changespots) % go through and fill in with the average
         % idx(changespots(i-1)+1:changespots(i))
         % [idx(changespots(i-1)+1), idx(changespots(i))]
-        mean(rawData(idx(changespots(i-1)+1:changespots(i))),'omitnan');
+        % mean(rawData(idx(changespots(i-1)+1:changespots(i))),'omitnan');
         stepVector(idx(changespots(i-1)+1:changespots(i))) = mean(rawData(idx(changespots(i-1)+1:changespots(i))),'omitnan');
 
     end
+    app = UserStepChangesTable(app, k+1, "user");
+
     
 else % remove a step
     
@@ -67,16 +69,18 @@ else % remove a step
     % changespots finds spots where idx(2:idxlimit)
     changespots = find(stepVector(idx(2:idxlimit)) - stepVector(idx(1:idxlimit-1)));
     [~, k] = min(abs(idx(changespots+1) - remove_index));
+    app = UserStepChangesTable(app, changespots(k)+1, "user");
     changespots(k) = [];
 
     changespots = [0, changespots, idxlimit]; %add beginning and end for padding
     for i = 2:length(changespots) % go through and fill in with the average
         % idx(changespots(i-1)+1:changespots(i))
         % [idx(changespots(i-1)+1), idx(changespots(i))]
-        mean(rawData(idx(changespots(i-1)+1:changespots(i))),'omitnan');
+        % mean(rawData(idx(changespots(i-1)+1:changespots(i))),'omitnan');
         stepVector(idx(changespots(i-1)+1:changespots(i))) = mean(rawData(idx(changespots(i-1)+1:changespots(i))),'omitnan');
 
     end
+    
 end
 
 % Finally update the trace data in package trace

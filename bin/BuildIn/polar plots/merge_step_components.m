@@ -29,8 +29,8 @@ function data =  merge_step_components(data)
 % components, an xy total step if you will. We will look at both x and y
 % direction.
 
-merge_window = 4; % if step occurs within this span, consider it the same step.
-merge_window = 12; % if step occurs within this span, consider it the same step.
+merge_window = 4; % if step occurs within this number of frames (for 2.5ms MINFLUX data), consider it the same step.
+% merge_window = 12; % if step occurs within this number of frames (for 0.67ms 2-color MINFLUX data), consider it the same step.
 
 % Find steps from data.trace and data.trace_yx
 onaxis_idx = find(data.trace(:,5));

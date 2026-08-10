@@ -101,7 +101,6 @@ Index = [ find(MolSelect==1) find(FilSelect==1)*1i ];
 hPathsStatsGui.fig = figure('Units','normalized','DockControls','off','IntegerHandle','off','MenuBar','none','Name','Path Statistics',...
                       'NumberTitle','off','HandleVisibility','callback','Tag','hPathsStatsGui',...
                       'Visible','off','Resize','off'); 
-
 if ispc || ismac
     set(hPathsStatsGui.fig,'Color',[50 50 50]/255);
 end

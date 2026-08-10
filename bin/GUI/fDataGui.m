@@ -331,6 +331,13 @@ Check = false(size(Object.Results,1),1);
 setappdata(0,'hDataGui',hDataGui);
 setappdata(hDataGui.fig,'Object',Object);
 setappdata(hDataGui.fig,'Check',Check);
+% try
+%     XAxisList(hDataGui);
+% catch
+%     delete(hDataGui.fig);
+%     Create(Type,idx);
+% end
+
 try
     XAxisList(hDataGui);
 catch ME

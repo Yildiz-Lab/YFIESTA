@@ -27,6 +27,7 @@ function app = FIONAviewer(varargin)
     % app.EditNoise = [];
     % app.EditMinDelta = [];
         app.FitPanelFields.DropFitAxis = [];
+        app.FitPanelFields.DropFitString = [];
         app.FitPanelFields.BtnFit = [];
         app.FitPanelFields.BtnAdd = [];
         app.FitPanelFields.BtnDelete = [];
@@ -63,6 +64,7 @@ function app = FIONAviewer(varargin)
     app.Data.shortstepVector = [];
     app.Data.FilterData = [];
     app.Data.FilteredFlag = 0;
+    app.Data.StepChangesTable = [];
     app.time_bool = 0;
     app.display = struct();
     
@@ -152,6 +154,13 @@ function app = FIONAviewer(varargin)
         'Position',[10 55 120 22], ...
         'Items',{'Long-axis','Short-axis'}, ...
         'Value','Long-axis');
+
+    % --- Create edit field left of the Fit Axis dropdown
+    app.FitPanelFields.DropFitString = uieditfield(app.FitPanel, 'text');
+    app.FitPanelFields.DropFitString.Position = [140 55 70 22]; % set proper coordinates
+    app.FitPanelFields.DropFitString.Tooltip = 'User string for step changes';
+    app.FitPanelFields.DropFitString.Value = 'user';
+
 
     app.FitPanelFields.BtnFit = uibutton(app.FitPanel, ...
         'Position',[10 15 120 30], ...
@@ -252,7 +261,7 @@ function app = FIONAviewer(varargin)
     uilabel(app.DisplayPanel,'Position',[10 70 60 20],'Text','Plot marker:');
     app.DisplayPanelFields.DropLineStyle = uidropdown(app.DisplayPanel, ...
         'Position',[80 70 100 22], ...
-        'Items',{'Lines','Dots','None'}, ...
+        'Items',{'Lines','Dots','Both','None'}, ...
         'Value','Lines');
 
     app.DisplayPanelFields.BtnRefresh = uibutton(app.DisplayPanel, ...
@@ -391,6 +400,8 @@ function app = onFit(app)
             stepFit.StepFit = out(1:length(app.Data.t));
         end
         app.Data.stepVector = stepFit.StepFit; % Update step vector
+        cp = find(abs(app.Data.stepVector(2:end) - app.Data.stepVector(1:end-1)));
+        app = UserStepChangesTable(app, cp+1, 'fit');
     elseif strcmp(app.FitPanelFields.DropFitAxis.Value,'Short-axis')
         lineObj = findobj(app.AxMain, 'Type', 'Line', 'Tag', 'hShortAxis');
         stepFit = SICstepFinder(lineObj.YData);
@@ -400,6 +411,8 @@ function app = onFit(app)
             stepFit.StepFit = out(1:length(app.Data.t));
         end
         app.Data.shortstepVector = stepFit.StepFit; % Update step vector
+        cp = find(abs(app.Data.shortstepVector(2:end) - app.Data.shortstepVector(1:end-1)));
+        app = UserStepChangesTable(app, cp+1, 'fit');
     end
     app = updateMainPlot(app); %and replot
     % Then let buttons be visible again
@@ -516,7 +529,7 @@ function [nearestX, nearestY] = AxMainClick(app, src, event)
     yRange = diff(ax.YLim);
     
     % Find the line (if only one line, just pick it)
-    if strcmp(app.FitPanelFields.DropFitAxis.Value,'Long-axis');
+    if strcmp(app.FitPanelFields.DropFitAxis.Value,'Long-axis')
         lineObj = findobj(ax, 'Type', 'Line', 'Tag', 'hFitLine'); %line to find nearest point to Long-axis
     else
         lineObj = findobj(ax, 'Type', 'Line', 'Tag', 'hFitShortLine'); %line to find nearest point to Short-axis fit

@@ -56,6 +56,7 @@ if strcmp(app.FitPanelFields.DropFitAxis.Value,'Long-axis')
 elseif strcmp(app.FitPanelFields.DropFitAxis.Value,'Short-axis')
     app.Data.shortstepVector = xfit'; % Update step vector
 end
+app = UserStepChangesTable(app, newcp, "align");
 app = updateMainPlot(app);
 
 stepFit.StepFit = xfit';

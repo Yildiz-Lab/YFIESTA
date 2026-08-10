@@ -57,7 +57,8 @@ histogram(theta(fwd_mask)*180/pi)
 x = r.*cos(theta); x = x(:);
 y = r.*sin(theta); y = y(:);
 
-f2 = figure('Position',[300,300,600,1200]);
+% f2 = figure('Position',[300,300,600,1200]);
+figure();
 % subplot(1,3,3)
 % hist3([y,x], 'CDataMode','auto','Ctrs', {-20:5:20, -31.5:2:40.5});
 hist3([y, x], 'CDataMode','auto','Ctrs', {-20:5:20, -31.5:3:40.5}); % Dynein parameters
@@ -76,5 +77,16 @@ ax.XTick = -20:10:20;
 % fontsize(fig,11,'points');
 set(ax,'fontname','Arial');
 set(ax,'fontsize',36);
+
+% % return the information for export
+% % c{1} are x-centers, c{2} are y-centers
+% xCenters = c{1}(:);
+% yCenters = c{2}(:);
+% 
+% % To get a list of (xCenter,yCenter,count) rows:
+% [Xg,Yg] = meshgrid(xCenters,yCenters);   % note ordering
+% counts = N';                             % transpose to align with meshgrid
+% triples = [Xg(:), Yg(:), counts(:)];    % each row: [xCenter yCenter count]
+% writematrix(triples,'triples.xlsx');
 
 end
