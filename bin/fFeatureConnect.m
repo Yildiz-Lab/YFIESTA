@@ -192,9 +192,8 @@ else
     StartFrame = 1;
 end
 
-% Prevent automatic pool creation: only use parallel if a pool already exists
-p = gcp('nocreate');   % do NOT create a pool
-useParallel = ~isempty(p);
+% This implementation connects and postprocesses tracks serially. Do not
+% query gcp here, so it also runs without Parallel Computing Toolbox.
 
 % UI or Job status
 createdParent = false;

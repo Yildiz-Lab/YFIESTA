@@ -152,15 +152,13 @@ if Config.FirstTFrame>0
         end
 
         N = Config.LastFrame-Config.FirstTFrame+1;
-        p = gcp('nocreate');
-        useParallel = ~isempty(p);
+        [~,useParallel] = GetExistingParallelPool();
 
         if useParallel
             dq = parallel.pool.DataQueue;
             fig = uifigure('Name','Tracking','Position',[0.35*sspix(3), 0.42*sspix(4), 0.29*sspix(3), 0.2*sspix(4)]);
             pd = uiprogressdlg(fig,'Title','Processing','Message','Starting...','Cancelable','off','Indeterminate','off');
-            count = 0;
-            afterEach(dq,@(~) localUpdate());
+            afterEach(dq,@(~) localUpdate(pd,N));
             try
                 parfor n = Config.FirstTFrame:Config.LastFrame
                     Objects{n} = ScanImage(cat(3,Stack{:,n}),params,n);
@@ -197,8 +195,7 @@ if Config.FirstTFrame>0
         end
 
         N = Config.LastFrame-Config.FirstTFrame+1;
-        p = gcp('nocreate');
-        useParallel = ~isempty(p);
+        [p,useParallel] = GetExistingParallelPool();
 
         if useParallel
             % Respect existing pool size; do not request a specific worker count.
@@ -206,8 +203,7 @@ if Config.FirstTFrame>0
             fig = uifigure('Name','Tracking','Position',[0.35*sspix(3), 0.42*sspix(4), 0.29*sspix(3), 0.2*sspix(4)]);
             pd = uiprogressdlg(fig,'Title',sprintf('Tracking on %d cores',p.NumWorkers),...
                 'Message','Starting...','Cancelable','off','Indeterminate','off');
-            count = 0;
-            afterEach(dq,@(~) localUpdate());
+            afterEach(dq,@(~) localUpdate(pd,N));
             try
                 parfor n = Config.FirstTFrame:Config.LastFrame
                     Objects{n} = ScanImage(cat(3,Stack{:,n}),params,n);
@@ -535,12 +531,35 @@ for k = 1:numel(d)
 end
 
 
-% ---- Local nested helper for DataQueue updates ----
-function localUpdate()
-    % uses count, pd, N from parent workspace
-    count = count + 1; %#ok<SEPEX>
+% ---- Local helper for DataQueue updates ----
+function localUpdate(pd,N)
     if isvalid(pd)
+        count = min(N,round(pd.Value*N)+1);
         pd.Value = count / N;
         pd.Message = sprintf('Frame %d of %d', count, N);
         drawnow;
     end
+
+% ---- Local helper: query a pool only when parallel support is available ----
+function [p,useParallel] = GetExistingParallelPool()
+p = [];
+useParallel = false;
+
+% gcp is supplied by Parallel Computing Toolbox. On installations without
+% that toolbox, even gcp('nocreate') raises an undefined-function error.
+if exist('gcp','file') == 0
+    return;
+end
+
+try
+    p = gcp('nocreate');
+    useParallel = ~isempty(p);
+catch ME
+    % A missing/expired license or unavailable local cluster must not stop
+    % tracking. Report the reason once, then let the caller use its serial
+    % for-loop branch.
+    warning('FIESTA:fAnalyseStack:ParallelUnavailable', ...
+            'Parallel pool unavailable; continuing serially. %s', ...
+            ME.message);
+    p = [];
+end
