@@ -18,6 +18,11 @@ function [Stack,TimeInfo,PixelSize] = fStackRead(varargin)
 %
 %   Copyright 2015 Felix Ruhnow 
 %   $Revision: 1.4 $  $Date: 2015/06/25
+%
+%   MATLAB R2025 compatibility update:
+%   - replace the Java-based progressdlg with a guarded waitbar
+%   - read all strips belonging to each TIFF frame
+%   - support native-pixel custom channel regions on non-1024 images
 
 if nargin == 0
     error('No file specified');
@@ -29,6 +34,9 @@ else
     end
 end
 file = fopen(source, 'r', 'l');
+if file == -1
+    error('FIESTA:fStackRead:OpenFailed','Unable to open stack file: %s',source);
+end
 %read TIFF-header
 
 %read byte order first
@@ -38,6 +46,9 @@ if (order ~= hex2dec('4949'))
     if (order == hex2dec('4D4D'))
         fclose(file);
         file = fopen(source, 'r' , 'b' );
+        if file == -1
+            error('FIESTA:fStackRead:OpenFailed','Unable to reopen stack file: %s',source);
+        end
         %read byte order first
         fread(file, 1, 'uint16');
     else
@@ -45,6 +56,7 @@ if (order ~= hex2dec('4949'))
         error('No Stack File')
     end
 end
+fileCleanup = onCleanup(@()CloseStackFile(file));
 
 %check tiff format
 format = fread(file, 1, 'uint16');
@@ -52,11 +64,8 @@ if (format ~= 42)
     fclose(file);
     error('No Tiff File');
 end
-hMainGui=getappdata(0,'hMainGui'); 
-progressdlg('close');
-if ~isempty(hMainGui)
-    progressdlg('Title','FIESTA','String','Reading Stack Information...','Parent',hMainGui.fig);    
-end
+hProgress = CreateProgress('Reading Stack Information...');
+progressCleanup = onCleanup(@()CloseProgress(hProgress));
 A_start = fread(file, 1, 'uint32');
 A=A_start;
 NumFrames = 0;
@@ -79,6 +88,7 @@ while A~=0
 end
 A=A_start;
 TiffInfo = struct('ImageWidth',cell(1,NumFrames),'ImageLength',cell(1,NumFrames),'BitsPerSample',cell(1,NumFrames),...
+                  'Compression',cell(1,NumFrames),...
                   'StripOffsets',cell(1,NumFrames),'RowsPerStrip',cell(1,NumFrames),'StripByteCounts',cell(1,NumFrames));             
 for N=1:NumFrames
     fseek(file, A, 'bof');
@@ -97,6 +107,8 @@ for N=1:NumFrames
                 TiffInfo(N).ImageLength = fread(file, 1, type); %read Value
             case 258 %hex 102
                 TiffInfo(N).BitsPerSample = fread(file, 1, type); %read Value
+            case 259 %hex 103
+                TiffInfo(N).Compression = fread(file, 1, type); %read Value
             case 273 %hex 111
                 if count==1
                     TiffInfo(N).StripOffsets = fread(file, 1, type); %read Value
@@ -147,7 +159,9 @@ if ~isempty(uic) %if file is MetaMorph stack
     ImageLength = ones(1,N)*TiffInfo.ImageLength;
     BitsPerSample = ones(1,N)*TiffInfo.BitsPerSample;    
 else %if file is multilayer TIFF
-    planeOffset = [TiffInfo.StripOffsets];
+    % Keep one entry per image.  Concatenating StripOffsets treats every
+    % strip as a new frame when a TIFF stores an image in multiple strips.
+    planeOffset = arrayfun(@(info)info.StripOffsets(1),TiffInfo);
     ImageWidth = [TiffInfo.ImageWidth];
     ImageLength = [TiffInfo.ImageLength];
     BitsPerSample = [TiffInfo.BitsPerSample];
@@ -235,7 +249,7 @@ if max(BitsPerSample)==8
 else
     datatype = 'uint16';
 end
-progressdlg(0,'Reading Stack...');          
+UpdateProgress(hProgress,0,'Reading Stack...');
 if isempty(options)
     nChannels = 1;
     Region{1} = [1 1 x y];
@@ -247,42 +261,7 @@ else
     if isempty(Region)
         Region{1} = [1 1 x y];
     else
-        r = cell2mat(Region);
-        
-        if max(r) > 1 %cheating if we are in pixels instead and want to do the difference thing
-            if r(4)-r(2) > 0
-            xblock = min(r(:,1),x);
-            yblock = r(4)-r(2);
-            else % if we want to split vertically
-            xblock = r(3)-r(1);
-            yblock = min(r(:,2),y);
-            end
-        else
-        xblock = min(r(:,1))*x;
-        yblock = min(r(:,2))*y;
-        end
-        
-        % JS Edit 2022/07/19 to deal with the problem of odd splitting,
-        % which shouldn't happen but just in case someone is careless
-        if mod(xblock,2)
-            xblock = floor(xblock);
-            warning("Warning: Odd number of pixel dimension, changing frame")
-        end
-        if mod(yblock,2) 
-            yblock = floor(yblock);
-            warning("Warning: Odd number of pixel dimension, changing frame")
-        end
-        % This is just to stop strange parsing errors which should work if
-        % centered. This is also where custom options should exist by using
-        % region rather than blocks
-        
-        for n = 1:nChannels
-            if max(r) > 1 % JS Edit 2022/07/27 for custom horizontal/vertical cut
-                Region{n} = [x/1024*Region{n}(1)-xblock+1 y/1024*Region{n}(2)-yblock+1 x/1024*Region{n}(1) y/1024*Region{n}(2)];
-            else
-                Region{n} = [x*Region{n}(1)-xblock+1 y*Region{n}(2)-yblock+1 x*Region{n}(1) y*Region{n}(2)];
-            end
-        end
+        Region = ResolveRegions(Region,x,y);
     end
     if Block(end) == Inf
        Block(end) = N-sum(Block(1:end-1)); 
@@ -324,9 +303,18 @@ for n = 1:N
         fclose(file);
         error('Only 8bit or 16bit Stacks supported');
     end            
-    fseek(file, planeOffset(1,n), 'bof');
     try
-        Img = reshape(fread(file,x*y,type),x,y)';
+        if isempty(uic)
+            Img = ReadTiffPlane(file,TiffInfo(n),x,y,type,datatype);
+        else
+            fseek(file,planeOffset(1,n),'bof');
+            pixels = fread(file,x*y,type);
+            if numel(pixels) ~= x*y
+                error('FIESTA:fStackRead:ShortRead', ...
+                    'Frame %d contains %d of %d expected pixels.',n,numel(pixels),x*y);
+            end
+            Img = reshape(pixels,x,y)';
+        end
         if numel(idxStack)>1
             r = n - fix((n-1)/sBlock)*sBlock;
             idx = sum(r>cBlock);
@@ -353,14 +341,164 @@ for n = 1:N
             TimeInfo{idx(m)}(frame) = MetaInfo.CreationTime(n);
         end 
         
-    catch   
-        progressdlg(1);      
-        warning('MATLAB:outOfMemory','Out of memory - read %4.0f of %4.0f frames',n-1,N);
-        break
+    catch ME
+        frameError = MException('FIESTA:fStackRead:FrameReadFailed', ...
+            'Unable to read frame %d of %d from "%s".\n%s',n,N,source,ME.message);
+        frameError = addCause(frameError,ME);
+        throw(frameError);
     end
-    progressdlg(n/N*100);
+    if n == N || mod(n,max(1,floor(N/100))) == 0
+        UpdateProgress(hProgress,n/N,'Reading Stack...');
+    end
 end
 fclose(file);
+clear fileCleanup progressCleanup
+
+function Region = ResolveRegions(Region,imageWidth,imageHeight)
+% Convert GUI region endpoints to integer [x1 y1 x2 y2] rectangles.
+% Custom values are interpreted as native pixels when they fit the image.
+% Values beyond the native dimension retain the legacy 1024-pixel scale.
+r = cell2mat(Region);
+if max(r) > 1
+    if numel(Region) ~= 2
+        error('FIESTA:fStackRead:InvalidRegion', ...
+            'Custom pixel regions require exactly two channels.');
+    end
+
+    xEnds = [Region{1}(1) Region{2}(1)];
+    yEnds = [Region{1}(2) Region{2}(2)];
+    if xEnds(1) == xEnds(2) && yEnds(1) ~= yEnds(2)
+        % Horizontal split: the GUI stores the lower Y endpoint of each area.
+        ends = ConvertCustomEndpoints(yEnds,imageHeight);
+        blockSize = ends(2)-ends(1);
+        Region = {[1 ends(1)-blockSize+1 imageWidth ends(1)], ...
+                  [1 ends(2)-blockSize+1 imageWidth ends(2)]};
+    elseif yEnds(1) == yEnds(2) && xEnds(1) ~= xEnds(2)
+        % Vertical split: the GUI stores the right X endpoint of each area.
+        ends = ConvertCustomEndpoints(xEnds,imageWidth);
+        blockSize = ends(2)-ends(1);
+        Region = {[ends(1)-blockSize+1 1 ends(1) imageHeight], ...
+                  [ends(2)-blockSize+1 1 ends(2) imageHeight]};
+    else
+        error('FIESTA:fStackRead:InvalidRegion', ...
+            'Custom regions do not describe a horizontal or vertical two-channel split.');
+    end
+else
+    xblock = floor(imageWidth*Region{1}(1));
+    yblock = floor(imageHeight*Region{1}(2));
+    for channel = 1:numel(Region)
+        xEnd = round(imageWidth*Region{channel}(1));
+        yEnd = round(imageHeight*Region{channel}(2));
+        Region{channel} = [xEnd-xblock+1 yEnd-yblock+1 xEnd yEnd];
+    end
+end
+
+for channel = 1:numel(Region)
+    rectangle = Region{channel};
+    if any(~isfinite(rectangle)) || any(rectangle ~= round(rectangle)) || ...
+            rectangle(1) < 1 || rectangle(2) < 1 || ...
+            rectangle(3) > imageWidth || rectangle(4) > imageHeight || ...
+            rectangle(1) > rectangle(3) || rectangle(2) > rectangle(4)
+        error('FIESTA:fStackRead:RegionOutOfBounds', ...
+            ['Channel %d region [%g %g %g %g] is outside the %d-by-%d image. ' ...
+             'Enter a center and width in native image pixels.'], ...
+            channel,rectangle,imageWidth,imageHeight);
+    end
+    Region{channel} = round(rectangle);
+end
+
+function ends = ConvertCustomEndpoints(ends,nativeDimension)
+if any(~isfinite(ends)) || ends(2) <= ends(1) || ends(1) <= 0
+    error('FIESTA:fStackRead:InvalidRegion', ...
+        'The custom center and width must be positive finite values.');
+end
+if max(ends) > nativeDimension
+    ends = round(ends*nativeDimension/1024);
+else
+    ends = round(ends);
+end
+if ends(2) <= ends(1)
+    error('FIESTA:fStackRead:InvalidRegion', ...
+        'The custom region width becomes zero after scaling.');
+end
+
+function Img = ReadTiffPlane(file,info,x,y,type,datatype)
+% Read every uncompressed strip belonging to one TIFF image directory.
+if ~isempty(info.Compression) && info.Compression ~= 1
+    error('FIESTA:fStackRead:CompressedTiff', ...
+        'TIFF compression type %d is not supported by this reader.',info.Compression);
+end
+offsets = info.StripOffsets(:);
+byteCounts = info.StripByteCounts(:);
+if isempty(offsets) || isempty(byteCounts) || numel(offsets) ~= numel(byteCounts)
+    error('FIESTA:fStackRead:InvalidStrips','Invalid TIFF strip metadata.');
+end
+bytesPerPixel = info.BitsPerSample/8;
+if ~ismember(bytesPerPixel,[1 2])
+    error('FIESTA:fStackRead:UnsupportedBitDepth', ...
+        'Only 8-bit or 16-bit TIFF images are supported.');
+end
+pixels = zeros(x*y,1,datatype);
+nextPixel = 1;
+for strip = 1:numel(offsets)
+    stripPixels = byteCounts(strip)/bytesPerPixel;
+    if stripPixels ~= floor(stripPixels)
+        error('FIESTA:fStackRead:CompressedTiff', ...
+            'Compressed TIFF strips are not supported by this reader.');
+    end
+    remaining = x*y-nextPixel+1;
+    stripPixels = min(stripPixels,remaining);
+    if stripPixels <= 0
+        break;
+    end
+    if fseek(file,offsets(strip),'bof') ~= 0
+        error('FIESTA:fStackRead:SeekFailed','Unable to seek to TIFF strip %d.',strip);
+    end
+    values = fread(file,stripPixels,type);
+    if numel(values) ~= stripPixels
+        error('FIESTA:fStackRead:ShortRead', ...
+            'TIFF strip %d contains fewer pixels than expected.',strip);
+    end
+    pixels(nextPixel:nextPixel+stripPixels-1) = values;
+    nextPixel = nextPixel+stripPixels;
+end
+if nextPixel ~= x*y+1
+    error('FIESTA:fStackRead:ShortRead', ...
+        'TIFF image contains %d of %d expected pixels.',nextPixel-1,x*y);
+end
+Img = reshape(pixels,x,y)';
+
+function hProgress = CreateProgress(message)
+hProgress = [];
+try
+    hProgress = waitbar(0,message,'Name','FIESTA');
+catch
+    % Loading must continue when no graphics display is available.
+end
+
+function UpdateProgress(hProgress,value,message)
+if ~isempty(hProgress) && isgraphics(hProgress)
+    try
+        waitbar(max(0,min(1,value)),hProgress,message);
+        drawnow limitrate;
+    catch
+        % A closed or unavailable progress window must not stop stack loading.
+    end
+end
+
+function CloseProgress(hProgress)
+if ~isempty(hProgress) && isgraphics(hProgress)
+    delete(hProgress);
+end
+
+function CloseStackFile(file)
+try
+    if isnumeric(file) && isscalar(file) && file > 0 && ~isempty(fopen(file))
+        fclose(file);
+    end
+catch
+    % The file may already have been closed while handling another error.
+end
 
 function type=DefineType(num)
 switch (num)

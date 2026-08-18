@@ -331,13 +331,6 @@ Check = false(size(Object.Results,1),1);
 setappdata(0,'hDataGui',hDataGui);
 setappdata(hDataGui.fig,'Object',Object);
 setappdata(hDataGui.fig,'Check',Check);
-% try
-%     XAxisList(hDataGui);
-% catch
-%     delete(hDataGui.fig);
-%     Create(Type,idx);
-% end
-
 try
     XAxisList(hDataGui);
 catch ME
@@ -518,6 +511,33 @@ for n = 1:size(t,1)
             tags{n}(1) = ' ';
         end    
     end
+end
+
+function mask = PointSelectionMask(Check,nData)
+mask = logical(Check(:));
+if numel(mask) ~= nData
+    error('FIESTA:fDataGui:SelectionSizeMismatch', ...
+          'The point selection has %d entries, but Results has %d rows.', ...
+          numel(mask),nData);
+end
+
+function TrackingResults = NormalizeTrackingResults(TrackingResults,nData)
+% TrackingResults is optional raw fit data. Imported tracks can contain an
+% empty or shortened cell array even though Results contains nData rows.
+if isempty(TrackingResults)
+    TrackingResults = cell(1,nData);
+    return;
+end
+if ~iscell(TrackingResults)
+    error('FIESTA:fDataGui:InvalidTrackingResults', ...
+          'TrackingResults must be a cell array, but it is %s.', ...
+          class(TrackingResults));
+end
+TrackingResults = TrackingResults(:).';
+if numel(TrackingResults) < nData
+    TrackingResults(end+1:nData) = cell(1,nData-numel(TrackingResults));
+elseif numel(TrackingResults) > nData
+    TrackingResults = TrackingResults(1:nData);
 end
 
 function Draw(hDataGui,ax)
@@ -1046,20 +1066,27 @@ global Molecule;
 hMainGui=getappdata(0,'hMainGui');
 Object = getappdata(hDataGui.fig,'Object');
 Check = getappdata(hDataGui.fig,'Check');
-if sum(Check)<size(Object.Results,1)
-    Object.Results(Check==1,:)=[];
+nData = size(Object.Results,1);
+deleteMask = PointSelectionMask(Check,nData);
+if nnz(deleteMask)<nData
+    if ~isfield(Object,'TrackingResults')
+        Object.TrackingResults = cell(1,nData);
+    else
+        Object.TrackingResults = NormalizeTrackingResults(Object.TrackingResults,nData);
+    end
+    Object.Results(deleteMask,:)=[];
     Object.Results(:,6)=fDis(Object.Results(:,3:5));
-    Object.TrackingResults(Check==1)=[];
+    Object.TrackingResults = Object.TrackingResults(~deleteMask.');
     if strcmp(hDataGui.Type,'Filament')==1
-        Object.PosStart(Check==1,:)=[];
-        Object.PosCenter(Check==1,:)=[];   
-        Object.PosEnd(Check==1,:)=[];
-        Object.Data(Check==1)=[];        
+        Object.PosStart(deleteMask,:)=[];
+        Object.PosCenter(deleteMask,:)=[];   
+        Object.PosEnd(deleteMask,:)=[];
+        Object.Data(deleteMask)=[];        
     end
     if ~isempty(Object.PathData)
-        Object.PathData(Check==1,:)=[];   
+        Object.PathData(deleteMask,:)=[];   
     end
-    Check( Check==1 ) = [];
+    Check(deleteMask) = [];
     CreateTable(hDataGui,[num2cell(Check) num2cell(Object.Results(:,1:9)) getTags(Object.Results)]);
     setappdata(hDataGui.fig,'Object',Object);
     if strcmp(hDataGui.Type,'Molecule')==1
@@ -1167,18 +1194,25 @@ global Molecule;
 hMainGui=getappdata(0,'hMainGui');
 Object=getappdata(hDataGui.fig,'Object');
 Check = getappdata(hDataGui.fig,'Check');
-if sum(Check)<length(Check)
-    Object.Results(Check==0,:)=[];
+nData = size(Object.Results,1);
+keepMask = PointSelectionMask(Check,nData);
+if nnz(keepMask)<nData
+    if ~isfield(Object,'TrackingResults')
+        Object.TrackingResults = cell(1,nData);
+    else
+        Object.TrackingResults = NormalizeTrackingResults(Object.TrackingResults,nData);
+    end
+    Object.Results(~keepMask,:)=[];
     Object.Results(:,6)=fDis(Object.Results);
-    Object.TrackingResults(Check==0)=[];
+    Object.TrackingResults = Object.TrackingResults(keepMask.');
     if strcmp(hDataGui.Type,'Filament')==1
-        Object.PosCenter(Check==0,:)=[];   
-        Object.PosStart(Check==0,:)=[];
-        Object.PosEnd(Check==0,:)=[];
-        Object.Data(Check==0)=[];
+        Object.PosCenter(~keepMask,:)=[];   
+        Object.PosStart(~keepMask,:)=[];
+        Object.PosEnd(~keepMask,:)=[];
+        Object.Data(~keepMask)=[];
     end
     if ~isempty(Object.PathData)
-        Object.PathData(Check==0,:)=[];      
+        Object.PathData(~keepMask,:)=[];      
     end
     Object.Name=sprintf('New %s',Object.Name);
     if strcmp(hDataGui.Type,'Molecule')
