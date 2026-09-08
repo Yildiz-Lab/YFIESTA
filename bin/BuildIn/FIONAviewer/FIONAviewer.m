@@ -2,6 +2,7 @@ function app = FIONAviewer(varargin)
     % Modern UIFIGURE-based recreation of the original FIONAviewer GUI
     % Works in MATLAB R2020+ (tested R2023, R2024)
     
+
     % make sure to add dependencies if launching through Fiesta
     addpath('bin/BuildIn/FIONAviewer/SubFns/')
     % otherwise do a simpler version if already navigated to parent
@@ -390,6 +391,7 @@ function app = onSave(app)
     setappdata(app.fig, 'app', app);
 end
 
+
 % DC260724 wrapped try catch for text error
 function app = onFit(app)
     app = getappdata(app.fig, 'app');
@@ -576,6 +578,7 @@ function [nearestX, nearestY] = AxMainClick(app, src, event)
     yRange = diff(ax.YLim);
     
     % Find the line (if only one line, just pick it)
+
     if strcmp(app.FitPanelFields.DropFitAxis.Value,'Long-axis')
         lineObj = findobj(ax, 'Type', 'Line', 'Tag', 'hFitLine'); %line to find nearest point to Long-axis
     else
@@ -689,4 +692,3 @@ function onKeyPress(app, event)
         end
     end
 end
-
