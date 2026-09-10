@@ -3,7 +3,10 @@ switch (func)
     case 'Create'
         try
             Create(varargin{1},varargin{2});
-        catch
+        catch ME
+            warning('FIESTA:fDataGui:CreateFailed', ...
+                    'Unable to create the Data GUI:\n%s', ...
+                    getReport(ME,'extended','hyperlinks','off'));
             return;
         end
     case 'SetAdvanced'
@@ -330,9 +333,13 @@ setappdata(hDataGui.fig,'Object',Object);
 setappdata(hDataGui.fig,'Check',Check);
 try
     XAxisList(hDataGui);
-catch
-    delete(hDataGui.fig);
-    Create(Type,idx);
+catch ME
+    % Do not recursively retry GUI creation. In particular, a user abort
+    % during graphics initialization used to restart Create indefinitely.
+    if isgraphics(hDataGui.fig,'figure')
+        delete(hDataGui.fig);
+    end
+    rethrow(ME);
 end
 
 function Clear(h,~)
@@ -506,6 +513,33 @@ for n = 1:size(t,1)
     end
 end
 
+function mask = PointSelectionMask(Check,nData)
+mask = logical(Check(:));
+if numel(mask) ~= nData
+    error('FIESTA:fDataGui:SelectionSizeMismatch', ...
+          'The point selection has %d entries, but Results has %d rows.', ...
+          numel(mask),nData);
+end
+
+function TrackingResults = NormalizeTrackingResults(TrackingResults,nData)
+% TrackingResults is optional raw fit data. Imported tracks can contain an
+% empty or shortened cell array even though Results contains nData rows.
+if isempty(TrackingResults)
+    TrackingResults = cell(1,nData);
+    return;
+end
+if ~iscell(TrackingResults)
+    error('FIESTA:fDataGui:InvalidTrackingResults', ...
+          'TrackingResults must be a cell array, but it is %s.', ...
+          class(TrackingResults));
+end
+TrackingResults = TrackingResults(:).';
+if numel(TrackingResults) < nData
+    TrackingResults(end+1:nData) = cell(1,nData-numel(TrackingResults));
+elseif numel(TrackingResults) > nData
+    TrackingResults = TrackingResults(1:nData);
+end
+
 function Draw(hDataGui,ax)
 %get object data
 Object=getappdata(hDataGui.fig,'Object');
@@ -522,14 +556,22 @@ XPlot=XList.data{x};
 y=get(hDataGui.lYaxis,'Value');
 YList=get(hDataGui.lYaxis,'UserData');
 YPlot{1}=YList(x).data{y};
-      
-cla(hDataGui.aPlot,'reset');
-%hDataGui.aPlot = axes('Parent',hDataGui.pPlotPanel,'OuterPosition',[0 0 1 1],'TickDir','out',...
-   %                   'XLimMode','manual','YLimMode','manual'); 
+
+% MATLAB R2025 can stall in the private graphics clo method called by
+% cla(ax,'reset'). Recreate this dedicated plot axes instead. This gives
+% Draw the same clean axes state, including removal of a prior yyaxis.
+plotUnits = get(hDataGui.aPlot,'Units');
+plotOuterPosition = get(hDataGui.aPlot,'OuterPosition');
+delete(hDataGui.aPlot);
+hDataGui.aPlot = axes('Parent',hDataGui.pPlotPanel, ...
+                      'Units',plotUnits, ...
+                      'OuterPosition',plotOuterPosition, ...
+                      'Tag','Plot','NextPlot','add', ...
+                      'TickDir','out','Layer','top');
 hDataGui.DataPlot = [];                  
 set(0,'CurrentFigure',hDataGui.fig);  %JS note, this probably requires this to be interacted with first                
 setappdata(0,'hDataGui',hDataGui);                 
-hold on     
+hold(hDataGui.aPlot,'on');
 xscale=1;
 yscale=1;
 
@@ -702,7 +744,7 @@ if ~isempty(XPlot)
         if length(XPlot)>1
             SetAxis(hDataGui.aPlot,XPlot/xscale,YPlot{n}/yscale(n),x,astr);
         else
-            axis auto;
+            axis(hDataGui.aPlot,'auto');
         end
         set(hDataGui.DataPlot(n),'Marker','.','MarkerSize',12);
     end
@@ -719,7 +761,7 @@ else
     set(hDataGui.aPlot,'XColor','white'); set(hDataGui.aPlot,'YColor','white');
     set(hDataGui.aPlot,'Color',cbc)
 end
-hold off;
+hold(hDataGui.aPlot,'off');
 if xy{1}(2)~=1&&xy{2}(2)~=1 && ax==-1
     set(hDataGui.aPlot,{'xlim','ylim'},xy);
 else
@@ -1024,20 +1066,27 @@ global Molecule;
 hMainGui=getappdata(0,'hMainGui');
 Object = getappdata(hDataGui.fig,'Object');
 Check = getappdata(hDataGui.fig,'Check');
-if sum(Check)<size(Object.Results,1)
-    Object.Results(Check==1,:)=[];
+nData = size(Object.Results,1);
+deleteMask = PointSelectionMask(Check,nData);
+if nnz(deleteMask)<nData
+    if ~isfield(Object,'TrackingResults')
+        Object.TrackingResults = cell(1,nData);
+    else
+        Object.TrackingResults = NormalizeTrackingResults(Object.TrackingResults,nData);
+    end
+    Object.Results(deleteMask,:)=[];
     Object.Results(:,6)=fDis(Object.Results(:,3:5));
-    Object.TrackingResults(Check==1)=[];
+    Object.TrackingResults = Object.TrackingResults(~deleteMask.');
     if strcmp(hDataGui.Type,'Filament')==1
-        Object.PosStart(Check==1,:)=[];
-        Object.PosCenter(Check==1,:)=[];   
-        Object.PosEnd(Check==1,:)=[];
-        Object.Data(Check==1)=[];        
+        Object.PosStart(deleteMask,:)=[];
+        Object.PosCenter(deleteMask,:)=[];   
+        Object.PosEnd(deleteMask,:)=[];
+        Object.Data(deleteMask)=[];        
     end
     if ~isempty(Object.PathData)
-        Object.PathData(Check==1,:)=[];   
+        Object.PathData(deleteMask,:)=[];   
     end
-    Check( Check==1 ) = [];
+    Check(deleteMask) = [];
     CreateTable(hDataGui,[num2cell(Check) num2cell(Object.Results(:,1:9)) getTags(Object.Results)]);
     setappdata(hDataGui.fig,'Object',Object);
     if strcmp(hDataGui.Type,'Molecule')==1
@@ -1145,18 +1194,25 @@ global Molecule;
 hMainGui=getappdata(0,'hMainGui');
 Object=getappdata(hDataGui.fig,'Object');
 Check = getappdata(hDataGui.fig,'Check');
-if sum(Check)<length(Check)
-    Object.Results(Check==0,:)=[];
+nData = size(Object.Results,1);
+keepMask = PointSelectionMask(Check,nData);
+if nnz(keepMask)<nData
+    if ~isfield(Object,'TrackingResults')
+        Object.TrackingResults = cell(1,nData);
+    else
+        Object.TrackingResults = NormalizeTrackingResults(Object.TrackingResults,nData);
+    end
+    Object.Results(~keepMask,:)=[];
     Object.Results(:,6)=fDis(Object.Results);
-    Object.TrackingResults(Check==0)=[];
+    Object.TrackingResults = Object.TrackingResults(keepMask.');
     if strcmp(hDataGui.Type,'Filament')==1
-        Object.PosCenter(Check==0,:)=[];   
-        Object.PosStart(Check==0,:)=[];
-        Object.PosEnd(Check==0,:)=[];
-        Object.Data(Check==0)=[];
+        Object.PosCenter(~keepMask,:)=[];   
+        Object.PosStart(~keepMask,:)=[];
+        Object.PosEnd(~keepMask,:)=[];
+        Object.Data(~keepMask)=[];
     end
     if ~isempty(Object.PathData)
-        Object.PathData(Check==0,:)=[];      
+        Object.PathData(~keepMask,:)=[];      
     end
     Object.Name=sprintf('New %s',Object.Name);
     if strcmp(hDataGui.Type,'Molecule')
@@ -1601,9 +1657,12 @@ end
 
 function ReturnFocus(~,~)
 hDataGui=getappdata(0,'hDataGui');
-warning off MATLAB:HandleGraphics:ObsoletedProperty:JavaFrame
-javaFrame = get(hDataGui.fig,'JavaFrame');
-javaFrame.getAxisComponent.requestFocus;
+% JavaFrame was removed in MATLAB R2025a. Activating the documented figure
+% handle restores focus without relying on the former Java implementation.
+if isstruct(hDataGui) && isfield(hDataGui,'fig') && ...
+        isgraphics(hDataGui.fig,'figure')
+    figure(hDataGui.fig);
+end
 
 function FitMissingPoints(hDataGui)
 global Filament;

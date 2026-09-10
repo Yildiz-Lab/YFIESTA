@@ -99,25 +99,6 @@ setappdata(0,'hMainGui',hMainGui);
 function SetMaskCorrections(hMainGui)
 global Molecule;
 
-% If a previous correction is still applied, revert it first so we start
-% from clean/raw positions before computing the new one
-prevApplied = getappdata(hMainGui.fig,'MaskCorrectionApplied');
-if isequal(prevApplied,1)
-    prevDeltas = getappdata(hMainGui.fig,'MaskCorrectionDeltas');
-    prevChannels = getappdata(hMainGui.fig,'MaskCorrectChannels');
-    if ~isempty(prevDeltas) && ~isempty(prevChannels)
-        prevAdjChannel = prevChannels(2);
-        for i = 1:length(Molecule)
-            if Molecule(i).Channel == prevAdjChannel && i <= length(prevDeltas) && ~isempty(prevDeltas{i})
-                Molecule(i).Results(:,3) = Molecule(i).Results(:,3) + prevDeltas{i}(:,1);
-                Molecule(i).Results(:,4) = Molecule(i).Results(:,4) + prevDeltas{i}(:,2);
-                Molecule(i).Results(:,6) = sqrt( (Molecule(i).Results(:,3) - Molecule(i).Results(1,3)).^2 + (Molecule(i).Results(:,4) - Molecule(i).Results(1,4)).^2 );
-            end
-        end
-    end
-    setappdata(hMainGui.fig,'MaskCorrectionApplied',0);
-end
-
 refChannel = str2double(fInputDlg('Enter reference channel number (stays fixed):','1'));
 if isnan(refChannel)
     return;
@@ -126,6 +107,22 @@ adjChannel = str2double(fInputDlg('Enter channel number to adjust:','2'));
 if isnan(adjChannel)
     return;
 end
+
+
+% DC260910
+% Revert any correction currently baked into this channel's tracks.
+% Per-molecule, so it's safe even if only some of them are corrected.
+for i = 1:length(Molecule)
+    if Molecule(i).Channel == adjChannel && Molecule(i).MultiChannelCorrected
+        Molecule(i).Results(:,3) = Molecule(i).Results(:,3) + Molecule(i).MultiChannelDelta(:,1);
+        Molecule(i).Results(:,4) = Molecule(i).Results(:,4) + Molecule(i).MultiChannelDelta(:,2);
+        Molecule(i).Results(:,6) = sqrt( (Molecule(i).Results(:,3) - Molecule(i).Results(1,3)).^2 + (Molecule(i).Results(:,4) - Molecule(i).Results(1,4)).^2 );
+        Molecule(i).MultiChannelCorrected = false;
+        Molecule(i).MultiChannelDelta = [];
+    end
+end
+
+
 too_large_nm = str2double(fInputDlg('Max matching distance between channels (nm). Increase if objects further apart than this are being missed:','100'));
 if isnan(too_large_nm) || too_large_nm <= 0
     return;
@@ -151,31 +148,29 @@ fShared('SetLoadDir',folder);
 F = fCalcAlignCorrection(ch1file, ch2file, refChannel, adjChannel, too_large_nm);
 Fx = F{1}; Fy = F{2};
 
-deltas = cell(1,length(Molecule));
 for i = 1:length(Molecule)
     if Molecule(i).Channel == adjChannel
         rawXY = double(Molecule(i).Results(:,3:4));
         dx = Fx(rawXY);
         dy = Fy(rawXY);
-        deltas{i} = [dx, dy];
         Molecule(i).Results(:,3) = Molecule(i).Results(:,3) - dx;
         Molecule(i).Results(:,4) = Molecule(i).Results(:,4) - dy;
         Molecule(i).Results(:,6) = sqrt( (Molecule(i).Results(:,3) - Molecule(i).Results(1,3)).^2 + (Molecule(i).Results(:,4) - Molecule(i).Results(1,4)).^2 );
+        Molecule(i).MultiChannelDelta = [dx, dy];
+        Molecule(i).MultiChannelCorrected = true;
     end
 end
 
 setappdata(hMainGui.fig,'MaskCorrect',F);
 setappdata(hMainGui.fig,'MaskCorrectFiles',{ch1file, ch2file});
 setappdata(hMainGui.fig,'MaskCorrectChannels',[refChannel, adjChannel]);
-setappdata(hMainGui.fig,'MaskCorrectionDeltas',deltas);
-setappdata(hMainGui.fig,'MaskCorrectionApplied',1);
 
 set(hMainGui.Menu.mApplyMultiCorrections,'Enable','On');
 set(hMainGui.Menu.mSaveMaskCorrections,'Enable','On');
 
 setappdata(0,'hMainGui',hMainGui);
+fShared('UpdateMenu',hMainGui);
 fShow('Tracks');
-
 
 function SetLinearMaskCorrections(hMainGui)
 [dx,dy] = offset_by_raw_means_v2(); %get straight correction
@@ -200,28 +195,48 @@ setappdata(0,'hMainGui',hMainGui);
 function ApplyMultiChannelCorrections(hMainGui)
 global Molecule;
 
-deltas = getappdata(hMainGui.fig,'MaskCorrectionDeltas');
+F = getappdata(hMainGui.fig,'MaskCorrect');
 channels = getappdata(hMainGui.fig,'MaskCorrectChannels');
-adjChannel = channels(2);
-toggle = getappdata(hMainGui.fig,'MaskCorrectionApplied');
-
-if toggle
-    sign_ = -1;   % currently on -> subtract the cached delta back off
-else
-    sign_ = 1;    % currently off -> re-add the cached delta
+if isempty(F) || isempty(channels)
+    return;
 end
+Fx = F{1}; Fy = F{2};
+adjChannel = channels(2);
 
-for i = 1:length(Molecule)
-    if Molecule(i).Channel == adjChannel && i <= length(deltas) && ~isempty(deltas{i})
-        Molecule(i).Results(:,3) = Molecule(i).Results(:,3) + sign_*deltas{i}(:,1);
-        Molecule(i).Results(:,4) = Molecule(i).Results(:,4) + sign_*deltas{i}(:,2);
+idx = find([Molecule.Channel] == adjChannel);
+if isempty(idx)
+    return;
+end
+corrected = [Molecule(idx).MultiChannelCorrected];
+
+if all(corrected)
+    % fully corrected -> invert all, no prompt
+    for i = idx
+        Molecule(i).Results(:,3) = Molecule(i).Results(:,3) + Molecule(i).MultiChannelDelta(:,1);
+        Molecule(i).Results(:,4) = Molecule(i).Results(:,4) + Molecule(i).MultiChannelDelta(:,2);
         Molecule(i).Results(:,6) = sqrt( (Molecule(i).Results(:,3) - Molecule(i).Results(1,3)).^2 + (Molecule(i).Results(:,4) - Molecule(i).Results(1,4)).^2 );
+        Molecule(i).MultiChannelCorrected = false;
+        Molecule(i).MultiChannelDelta = [];
+    end
+else
+    % off or mixed -> bring everyone up to corrected, touching only
+    % the ones that aren't already
+    for i = idx
+        if ~Molecule(i).MultiChannelCorrected
+            rawXY = double(Molecule(i).Results(:,3:4));
+            dx = Fx(rawXY);
+            dy = Fy(rawXY);
+            Molecule(i).Results(:,3) = Molecule(i).Results(:,3) - dx;
+            Molecule(i).Results(:,4) = Molecule(i).Results(:,4) - dy;
+            Molecule(i).Results(:,6) = sqrt( (Molecule(i).Results(:,3) - Molecule(i).Results(1,3)).^2 + (Molecule(i).Results(:,4) - Molecule(i).Results(1,4)).^2 );
+            Molecule(i).MultiChannelDelta = [dx, dy];
+            Molecule(i).MultiChannelCorrected = true;
+        end
     end
 end
 
-setappdata(hMainGui.fig,'MaskCorrectionApplied', ~toggle);
-
-fShow('Tracks')
+fShared('UpdateMenu',hMainGui);
+fShow('Tracks');
 % end of DC edit
 % End of JS Edit
 
@@ -261,35 +276,25 @@ end
 F = loaded.F;
 channels = loaded.MaskCorrectChannels;
 adjChannel = channels(2);
-
-% revert any correction currently applied, same guard as SetMaskCorrections
-prevApplied = getappdata(hMainGui.fig,'MaskCorrectionApplied');
-if isequal(prevApplied,1)
-    prevDeltas = getappdata(hMainGui.fig,'MaskCorrectionDeltas');
-    prevChannels = getappdata(hMainGui.fig,'MaskCorrectChannels');
-    if ~isempty(prevDeltas) && ~isempty(prevChannels)
-        prevAdjChannel = prevChannels(2);
-        for i = 1:length(Molecule)
-            if Molecule(i).Channel == prevAdjChannel && i <= length(prevDeltas) && ~isempty(prevDeltas{i})
-                Molecule(i).Results(:,3) = Molecule(i).Results(:,3) + prevDeltas{i}(:,1);
-                Molecule(i).Results(:,4) = Molecule(i).Results(:,4) + prevDeltas{i}(:,2);
-                Molecule(i).Results(:,6) = sqrt( (Molecule(i).Results(:,3) - Molecule(i).Results(1,3)).^2 + (Molecule(i).Results(:,4) - Molecule(i).Results(1,4)).^2 );
-            end
-        end
-    end
-    setappdata(hMainGui.fig,'MaskCorrectionApplied',0);
-end
-
 Fx = F{1}; Fy = F{2};
 
-% compute all deltas first, validate, then apply (same pattern as SetMaskCorrections)
+% Reconstruct true raw positions (undoing any correction currently on
+% this channel, per molecule) and compute+validate the new correction
+% against those raw positions -- before touching any Molecule data, so
+% a bad correction never leaves tracks half-reverted.
+rawPos = cell(1,length(Molecule));
 deltas = cell(1,length(Molecule));
 badIdx = [];
 for i = 1:length(Molecule)
     if Molecule(i).Channel == adjChannel
-        rawXY = double(Molecule(i).Results(:,3:4));
-        dx = Fx(rawXY);
-        dy = Fy(rawXY);
+        if Molecule(i).MultiChannelCorrected
+            raw = double(Molecule(i).Results(:,3:4)) + double(Molecule(i).MultiChannelDelta);
+        else
+            raw = double(Molecule(i).Results(:,3:4));
+        end
+        rawPos{i} = raw;
+        dx = Fx(raw);
+        dy = Fy(raw);
         deltas{i} = [dx, dy];
         if any(isnan(dx)) || any(isnan(dy))
             badIdx(end+1) = i; %#ok<AGROW>
@@ -305,21 +310,22 @@ end
 
 for i = 1:length(Molecule)
     if Molecule(i).Channel == adjChannel
-        Molecule(i).Results(:,3) = Molecule(i).Results(:,3) - deltas{i}(:,1);
-        Molecule(i).Results(:,4) = Molecule(i).Results(:,4) - deltas{i}(:,2);
+        Molecule(i).Results(:,3) = rawPos{i}(:,1) - deltas{i}(:,1);
+        Molecule(i).Results(:,4) = rawPos{i}(:,2) - deltas{i}(:,2);
         Molecule(i).Results(:,6) = sqrt( (Molecule(i).Results(:,3) - Molecule(i).Results(1,3)).^2 + (Molecule(i).Results(:,4) - Molecule(i).Results(1,4)).^2 );
+        Molecule(i).MultiChannelDelta = deltas{i};
+        Molecule(i).MultiChannelCorrected = true;
     end
 end
 
 setappdata(hMainGui.fig,'MaskCorrect',F);
 setappdata(hMainGui.fig,'MaskCorrectChannels',channels);
-setappdata(hMainGui.fig,'MaskCorrectionDeltas',deltas);
-setappdata(hMainGui.fig,'MaskCorrectionApplied',1);
 
 set(hMainGui.Menu.mApplyMultiCorrections,'Enable','On');
 set(hMainGui.Menu.mSaveMaskCorrections,'Enable','On');
 
 setappdata(0,'hMainGui',hMainGui);
+fShared('UpdateMenu',hMainGui);
 fShow('Tracks');
 
 

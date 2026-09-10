@@ -83,6 +83,18 @@ if isfield(Object,'Channel')==0
         Object(i).Channel=1;
     end
 end
+if strcmp(Mode,'Molecule')
+    if isfield(Object,'MultiChannelCorrected')==0
+        for i=1:nObj
+            Object(i).MultiChannelCorrected = false;
+        end
+    end
+    if isfield(Object,'MultiChannelDelta')==0
+        for i=1:nObj
+            Object(i).MultiChannelDelta = [];
+        end
+    end
+end
 if isfield(Object,'Color')==0
     for i=1:nObj 
         Object(i).Color=[0 0 1];

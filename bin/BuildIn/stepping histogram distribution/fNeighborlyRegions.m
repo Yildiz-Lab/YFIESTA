@@ -298,7 +298,7 @@ end
 
 if isfield(do,'pause')
     for k=1:length(NearNeighborRegions)
-        fprintf(strcat("=== REGION ",num2str(k),": ===\n"));
+        fprintf(strcat("--- REGION ",num2str(k),": ---\n"));
         fprintf(strcat("Pause Number: ", num2str(sum(RegionPauseStats{k})), "\n"))
         fprintf(strcat("Pause Density: ", num2str(mean(RegionPauseFreqStats{k})*1000), "\n"))
         fprintf(strcat("Pause Fraction: ", num2str(mean(RegionPauseFracStats{k})), "\n"))

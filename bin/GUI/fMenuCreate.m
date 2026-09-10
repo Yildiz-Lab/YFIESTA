@@ -228,7 +228,7 @@ hMenu.mSetLinearMaskCorrections = uimenu('Parent',hMenu.mOptions,'Callback','fMe
                           'Label','Set Linear Corrections','Tag','mSetLinearMaskCorrections');   
 
 hMenu.mApplyMultiCorrections = uimenu('Parent',hMenu.mOptions,'Callback','fMenuOptions(''ApplyMultiChannelCorrections'',getappdata(0,''hMainGui''));','Enable','off',...
-                          'Label','Toggle Multichannel Corrections','Tag','mApplyMultiCorrections');       
+                          'Label','Toggle Multichannel Corrections','Tag','mApplyMultiCorrections','Checked','off');
 % DC260721 adding save / load for multi channel corrections
 hMenu.mSaveMaskCorrections = uimenu('Parent',hMenu.mOptions,'Callback','fMenuOptions(''SaveMaskCorrections'',getappdata(0,''hMainGui''));','Enable','off',...
                           'Label','Save Multichannel Corrections','Tag','mSaveMaskCorrections');       

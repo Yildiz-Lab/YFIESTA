@@ -487,6 +487,23 @@ else
     set(hMainGui.Menu.mShowCorrections,'Enable',enable);
     set(hMainGui.Menu.mCorrectStack,'Enable',enable);
 end
+maskChannels = getappdata(hMainGui.fig,'MaskCorrectChannels');
+idx = [];
+if ~isempty(maskChannels) && ~isempty(Molecule)
+    idx = find([Molecule.Channel] == maskChannels(2));
+end
+if isempty(idx)
+    set(hMainGui.Menu.mApplyMultiCorrections,'Checked','off','Label','Toggle Multichannel Corrections');
+else
+    corrected = [Molecule(idx).MultiChannelCorrected];
+    if all(corrected)
+        set(hMainGui.Menu.mApplyMultiCorrections,'Checked','on','Label','Toggle Multichannel Corrections');
+    elseif any(corrected)
+        set(hMainGui.Menu.mApplyMultiCorrections,'Checked','off','Label','Toggle Multichannel Corrections (Mixed)');
+    else
+        set(hMainGui.Menu.mApplyMultiCorrections,'Checked','off','Label','Toggle Multichannel Corrections');
+    end
+end
 if strcmp(get(hMainGui.ToolBar.ToolNormImage,'State'),'on')
    set(hMainGui.Menu.mZProjection,'Enable',enable);
    set(hMainGui.Menu.mObjProjection,'Enable',enable);

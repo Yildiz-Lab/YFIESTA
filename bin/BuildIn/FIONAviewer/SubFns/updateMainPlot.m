@@ -58,6 +58,16 @@ function app = updateMainPlot(app)
             end
         end
         
+        % DC260910
+        % Lock x-axis to the main trace's range, regardless of neighbor extent
+        % if app.Data.FilteredFlag
+        %     mainT = app.Data.t_Filt;
+        % else
+        %     mainT = app.Data.t;
+        % end
+        % if numel(mainT) > 1
+        %     xlim(app.AxMain, [min(mainT), max(mainT)]);
+        % end
         
         if app.time_bool
             xlabel(app.AxMain,'time (s)');
