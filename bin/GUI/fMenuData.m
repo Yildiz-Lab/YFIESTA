@@ -854,26 +854,6 @@ if ~iscell(FileName)
     FileName={FileName};
 end
 
-% % JS Edit 2024/03/04 to load MINFLUX data
-% for k = 1:length(FileName)
-%     minflux_file = fullfile(PathName,FileName{k});
-%     mfchk = load(fullfile(PathName,FileName{k}));
-%     if isfield(mfchk, "itr") %this is a MINFLUX dataset, convert to FIESTA format
-%         [~,fname1,ext] = fileparts(fullfile(PathName,FileName{k}));
-%         FileName{k} = strcat(fname1,'_fiesta',ext);
-%         % and set the directory for FIONA
-%         Config.Directory{k}=PathName;
-%         Config.StackName{k}=FileName{k};
-%         hMainGui.Directory.Stack={PathName};
-%         % and do the conversion so we can actually load!
-%         if ~isfile(fullfile(PathName, FileName{k}))
-%             fConvertMINFLUX(minflux_file, fullfile(PathName, FileName{k}))
-%         end
-%     end
-% end
-
-% End of JS Edit 2024/03/04
-
 % JS Edit 2024/11/07 to load MINFLUX data
 for k = 1:length(FileName)
     minflux_file = fullfile(PathName,FileName{k});

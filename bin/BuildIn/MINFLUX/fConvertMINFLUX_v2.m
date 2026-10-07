@@ -48,25 +48,29 @@ uid = unique(MFData.tid);
 
 Colorwheel = [0,0,1; 0,1,0; 1,0,0];
 
-% for tracking, we only care about the last index, so make sure we only
-% grab the last index
-% lastitr = size(MFData.loc,2);
-lastitr_label = max(MFData.itr);
-idx2 = find(MFData.itr == lastitr_label);
+options = fCheckboxGUI_MINFLUX(MFData);
 
-% for superres imaging, we can use both the last and second to last for
-% localization data so let's put it together
-last2itr_label = max(MFData.itr)-1;
-idx3 = find(MFData.itr == last2itr_label);
+idx_itr = [];
+for i = 1:numel(options.itr)
+    idx_itr = [idx_itr, find(MFData.itr == options.itr(i))];
+end
 
-size(idx2)
-size(idx3)
+% % for tracking, we only care about the last index, so make sure we only
+% % grab the last index
+% lastitr_label = max(MFData.itr);
+% idx2 = find(MFData.itr == lastitr_label);
+% 
+% % for superres imaging, we can use both the last and second to last for
+% % localization data so let's put it together
+% last2itr_label = max(MFData.itr)-1;
+% idx3 = find(MFData.itr == last2itr_label);
 
 for j = 1:length(uid)
 
     idx = find(MFData.tid == uid(j));
-    idx = intersect(idx, idx2);
+    % idx = intersect(idx, idx2);
     % idx = intersect(idx, [idx2, idx3]);
+    idx = intersect(idx, idx_itr);
 
     MFMolecule(j).Name = ['Molecule ', ' ', num2str(uid(j))];
     MFMolecule(j).File = fname;
@@ -122,11 +126,19 @@ for j = 1:length(uid)
     % you are dealing with a MINFLUX data set
     MFMolecule(j).PixelSize = 1;
     
-    MFMolecule(j).Channel = MFData.thi(idx(1))+1; %MFData.vld(idx(1))
-    % For dcr coloring
-    % if mean(MFMolecule(j).Results(:,9)) > 0.45
-    %     MFMolecule(j).Channel = MFData.thi(idx(1))+2;
-    % end
+    if any(strcmp(options.channelSplit, 'thi'))
+        MFMolecule(j).Channel = MFData.thi(idx(1))+1; %MFData.vld(idx(1))
+    elseif strcmp(options.channelSplit, 'dcr')
+        % For dcr coloring
+        if mean(MFMolecule(j).Results(:,9)) > options.dcrThreshold
+            MFMolecule(j).Channel = MFData.thi(idx(1))+2;
+        else
+            MFMolecule(j).Channel = MFData.thi(idx(1))+1;
+        end
+    else
+        MFMolecule(j).Channel = 1;
+    end
+    
     MFMolecule(j).Color = Colorwheel(MFMolecule(j).Channel,:);
     MFMolecule(j).PathData = [];
     MFMolecule(j).PlotHandles = [];
