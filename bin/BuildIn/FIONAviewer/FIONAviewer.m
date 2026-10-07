@@ -2,11 +2,16 @@ function app = FIONAviewer(varargin)
     % Modern UIFIGURE-based recreation of the original FIONAviewer GUI
     % Works in MATLAB R2020+ (tested R2023, R2024)
     
-    % make sure to add dependencies if launching through Fiesta
-    addpath('bin/BuildIn/FIONAviewer/SubFns/')
-    % otherwise do a simpler version if already navigated to parent
-    % FIONAviewer
-    % addpath('SubFns/')
+    % Resolve dependencies relative to this file. This also works when a
+    % batch is launched from an acquisition or collection output folder.
+    viewerFolder = fileparts(mfilename('fullpath'));
+    subFunctionFolder = fullfile(viewerFolder, 'SubFns');
+    if isfolder(subFunctionFolder)
+        addpath(subFunctionFolder);
+    else
+        warning('FIONAviewer:MissingSubFns', ...
+            'Could not locate the FIONAviewer SubFns folder: %s', subFunctionFolder);
+    end
 
     app.fig = uifigure('Name','FIONAviewer', ...
                        'Position',[100 100 1400 800]);

@@ -76,7 +76,15 @@ SIC_old = SIC_new;
     StepsInd_old = StepsInd;
     FitPos_old = FitPos;
     
-    [~, StepInd]=min(Metric);
+    [bestMetric, StepInd]=min(Metric);
+    % Rejected short-dwell candidates are marked with zero below. Once no
+    % negative (variance-reducing) candidate remains, min(Metric) otherwise
+    % returns the same zero entry forever because SIC_new is unchanged.
+    % There is no additional admissible split at that point, so terminate
+    % with the last accepted fit.
+    if ~isfinite(bestMetric) || bestMetric >= 0
+        break
+    end
     
     % Find the correct place to insert StepInd into StepsInd
     StepLocs=find((StepsInd-StepInd)>0);

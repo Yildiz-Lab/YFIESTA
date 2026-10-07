@@ -49,8 +49,10 @@ gradable for steppiness, but their report will show `EFOAvailable = false`.
 |---|---:|---|
 | `DownsampleFactor` | `5` | FIONAviewer **Filter Data → Decimate → Dec/Window** value used before fitting each axis. |
 | `OutputFolderName` | `'FIONAviewer_SIC5'` | Name of the new results subfolder created inside the selected input folder. |
+| `OutputFolder` | `''` | Exact existing or new output-folder path. When supplied, this overrides `OutputFolderName`. |
 | `ShowViewer` | `false` | Set `true` to show FIONAviewer while each long-/short-axis filtering, fitting, and alignment stage is performed. |
 | `StagePauseSeconds` | `1` when `ShowViewer=true`; otherwise `0` | Time to pause at every visible processing stage. |
+| `ResumeExisting` | `false` | Set `true` after an interrupted run. Complete MAT/figure pairs are reused, incomplete traces are processed again, and all successful outputs are then graded and organized. |
 
 Examples:
 
@@ -60,6 +62,11 @@ batchFIONAviewerSIC('', 'ShowViewer', true, 'StagePauseSeconds', 2)
 
 % Process a known folder without opening the GUI, using 10x decimation.
 batchFIONAviewerSIC('/path/to/fiona/files', 'DownsampleFactor', 10)
+
+% Resume an interrupted run into its existing output folder.
+batchFIONAviewerSIC('/path/to/fiona/files', ...
+    'OutputFolder', '/path/to/FIONAviewer_SIC', ...
+    'ResumeExisting', true)
 
 % Use the convenience wrapper, which opens uigetdir when no folder is given.
 runFIONAviewerBatchSIC([], 'ShowViewer', true)

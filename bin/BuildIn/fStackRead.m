@@ -22,6 +22,7 @@ function [Stack,TimeInfo,PixelSize] = fStackRead(varargin)
 %   MATLAB R2025 compatibility update:
 %   - replace the Java-based progressdlg with a guarded waitbar
 %   - read all strips belonging to each TIFF frame
+%   - decode compressed TIFF/OME-TIFF pages with MATLAB's TIFF reader
 %   - support native-pixel custom channel regions on non-1024 images
 
 if nargin == 0
@@ -305,7 +306,8 @@ for n = 1:N
     end            
     try
         if isempty(uic)
-            Img = ReadTiffPlane(file,TiffInfo(n),x,y,type,datatype);
+            Img = ReadTiffPlane(file,TiffInfo(n),x,y,type,datatype, ...
+                source,n,tiffinfo);
         else
             fseek(file,planeOffset(1,n),'bof');
             pixels = fread(file,x*y,type);
@@ -422,11 +424,20 @@ if ends(2) <= ends(1)
         'The custom region width becomes zero after scaling.');
 end
 
-function Img = ReadTiffPlane(file,info,x,y,type,datatype)
-% Read every uncompressed strip belonging to one TIFF image directory.
+function Img = ReadTiffPlane(file,info,x,y,type,datatype,source,imageIndex,imageInfo)
+% Use MATLAB's TIFF decoder for compressed pages (for example OME-TIFF
+% files using LZW), and retain the faster raw-strip path when uncompressed.
 if ~isempty(info.Compression) && info.Compression ~= 1
-    error('FIESTA:fStackRead:CompressedTiff', ...
-        'TIFF compression type %d is not supported by this reader.',info.Compression);
+    Img = imread(source,'Index',imageIndex,'Info',imageInfo);
+    if ~ismatrix(Img) || size(Img,1) ~= y || size(Img,2) ~= x
+        error('FIESTA:fStackRead:UnsupportedTiffLayout', ...
+            ['Decoded TIFF page %d has size %s; expected a %d-by-%d ' ...
+             'single-channel image.'],imageIndex,mat2str(size(Img)),y,x);
+    end
+    if ~isa(Img,datatype)
+        Img = cast(Img,datatype);
+    end
+    return;
 end
 offsets = info.StripOffsets(:);
 byteCounts = info.StripByteCounts(:);

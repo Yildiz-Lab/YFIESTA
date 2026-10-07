@@ -54,10 +54,19 @@ Colorwheel = [0,0,1; 0,1,0; 1,0,0];
 lastitr_label = max(MFData.itr);
 idx2 = find(MFData.itr == lastitr_label);
 
+% for superres imaging, we can use both the last and second to last for
+% localization data so let's put it together
+last2itr_label = max(MFData.itr)-1;
+idx3 = find(MFData.itr == last2itr_label);
+
+size(idx2)
+size(idx3)
+
 for j = 1:length(uid)
 
     idx = find(MFData.tid == uid(j));
     idx = intersect(idx, idx2);
+    % idx = intersect(idx, [idx2, idx3]);
 
     MFMolecule(j).Name = ['Molecule ', ' ', num2str(uid(j))];
     MFMolecule(j).File = fname;
@@ -114,6 +123,10 @@ for j = 1:length(uid)
     MFMolecule(j).PixelSize = 1;
     
     MFMolecule(j).Channel = MFData.thi(idx(1))+1; %MFData.vld(idx(1))
+    % For dcr coloring
+    % if mean(MFMolecule(j).Results(:,9)) > 0.45
+    %     MFMolecule(j).Channel = MFData.thi(idx(1))+2;
+    % end
     MFMolecule(j).Color = Colorwheel(MFMolecule(j).Channel,:);
     MFMolecule(j).PathData = [];
     MFMolecule(j).PlotHandles = [];

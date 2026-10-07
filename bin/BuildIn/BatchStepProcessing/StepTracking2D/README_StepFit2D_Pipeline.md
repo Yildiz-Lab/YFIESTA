@@ -97,3 +97,40 @@ point-to-point path length.
 
 For quadratic paths, nearest-path projection is more computationally costly
 than a linear path because each localization is projected to the curve.
+
+## Analyze a collection of FIESTA files
+
+Use `batchFiestaCollection2DSICThenFIONAviewerSIC` when selected FIESTA MAT
+files from several acquisition folders should be processed and reviewed as
+one experiment. Pass a cell array of full file paths and one collection
+output folder:
+
+```matlab
+[CollectionReport, CombinedManifest] = ...
+    batchFiestaCollection2DSICThenFIONAviewerSIC(sourceFiles, outputFolder);
+```
+
+The wrapper copies the selected inputs into `Source_FIESTA/`, processes each
+file independently below `Per_Dataset/`, and gathers the final outputs below
+`Combined_FIONAviewer_SIC/S`, `A`, `B`, `C_or_lower`, and `all`. Combined
+filenames are prefixed with their source-dataset name so identical molecule
+numbers from different acquisitions do not collide. Progress is written
+after every dataset, and the default `ResumeExisting=true` reuses datasets
+that have a `collection_dataset_complete.mat` marker.
+
+## Export S/A step sizes and dwell times
+
+`exportFIONASAStatsCSV` collects the final aligned FIONAviewer results from
+the `S` and `A` grade folders. It writes two columns (`step size (nm)` and
+`dwell times (ms)`) and leaves one blank row between molecules. Pass the
+original overarching FIESTA MAT file, any enclosing analysis folder, or the
+`FIONAviewer_SIC` folder itself:
+
+```matlab
+Report = exportFIONASAStatsCSV('/full/path/to/dataset_fiesta.mat');
+```
+
+The default output is
+`FIONAviewer_SIC/steps_summary_S_A.csv`. Call the function without an input
+to select the overarching MAT file with a file-selection dialog, or provide
+a second argument to choose another CSV filename.

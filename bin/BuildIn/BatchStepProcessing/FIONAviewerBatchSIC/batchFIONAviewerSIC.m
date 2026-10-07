@@ -20,6 +20,7 @@ function Report = batchFIONAviewerSIC(inputFolder, varargin)
     p.addParameter('OutputFolder', '', @(x) ischar(x) || isstring(x));
     p.addParameter('ShowViewer', false, @(x) islogical(x) || (isnumeric(x) && isscalar(x)));
     p.addParameter('StagePauseSeconds', [], @(x) isempty(x) || (isnumeric(x) && isscalar(x) && x >= 0));
+    p.addParameter('ResumeExisting', false, @(x) islogical(x) || (isnumeric(x) && isscalar(x)));
     p.parse(inputFolder, varargin{:}); opt = p.Results;
     if isempty(opt.StagePauseSeconds)
         if opt.ShowViewer, opt.StagePauseSeconds = 1; else, opt.StagePauseSeconds = 0; end
@@ -81,6 +82,18 @@ function Report = batchFIONAviewerSIC(inputFolder, varargin)
         inputFile = fullfile(inputFolder, files(k).name);
         outputFile = fullfile(outputFolder, files(k).name);
         Report(k).InputFile = inputFile; Report(k).OutputFile = outputFile;
+        if opt.ResumeExisting
+            [existingFile, existingData] = findCompleteFIONAOutput(outputFolder, files(k).name);
+            if ~isempty(existingFile)
+                Report(k) = reportExistingFIONAOutput(Report(k), existingFile, existingData);
+                RegionScores{k} = existingData.Steppiness.Regions;
+                for r = 1:numel(RegionScores{k})
+                    RegionScores{k}(r).OutputFile = existingFile;
+                end
+                fprintf('Skipping completed trace %s.\n', files(k).name);
+                continue
+            end
+        end
         app = [];
         try
             % Use the existing FIONAviewer loader. The supplied version of
@@ -143,6 +156,48 @@ function Report = batchFIONAviewerSIC(inputFolder, varargin)
     writeFIONASteppinessReports(outputFolder, Report, RegionScores);
 end
 
+function [existingFile, data] = findCompleteFIONAOutput(outputFolder, filename)
+    existingFile = '';
+    data = [];
+    folders = {outputFolder, fullfile(outputFolder,'S'), fullfile(outputFolder,'A'), ...
+        fullfile(outputFolder,'B'), fullfile(outputFolder,'C_or_lower')};
+    for k = 1:numel(folders)
+        candidate = fullfile(folders{k}, filename);
+        [~, baseName] = fileparts(candidate);
+        standardFigure = fullfile(folders{k}, [baseName '.fig']);
+        if ~isfile(candidate) || ~isfile(standardFigure), continue, end
+        try
+            loaded = load(candidate, 'data');
+            if ~isfield(loaded,'data') || ~isstruct(loaded.data) || ...
+                    ~isfield(loaded.data,'Steppiness') || ...
+                    ~isfield(loaded.data,'BatchFIONAviewerSIC')
+                continue
+            end
+            existingFile = candidate;
+            data = loaded.data;
+            return
+        catch
+            % A damaged or partial file is not resumable; process it again.
+        end
+    end
+end
+
+function entry = reportExistingFIONAOutput(entry, existingFile, data)
+    entry.OutputFile = existingFile;
+    entry.Succeeded = true;
+    entry.Reason = 'Previously completed; reused during resume';
+    entry.Steppiness = data.Steppiness.Trace;
+    if isfield(data.BatchFIONAviewerSIC,'LongAxis')
+        entry.LongAudit = data.BatchFIONAviewerSIC.LongAxis;
+    end
+    if isfield(data.BatchFIONAviewerSIC,'ShortAxis')
+        entry.ShortAudit = data.BatchFIONAviewerSIC.ShortAxis;
+    end
+    [folder, baseName] = fileparts(existingFile);
+    flagFigure = fullfile(folder, [baseName '_review_flags.fig']);
+    if isfile(flagFigure), entry.FlagFigure = flagFigure; end
+end
+
 function [Report, RegionScores] = organizeFIONAOutputsByGrade(Report, RegionScores, outputFolder)
     % Keep final FIONA SIC results organized by their post-fit grade. A
     % MAT-only staging folder supports Step Statistics without accidentally
@@ -168,7 +223,8 @@ function [Report, RegionScores] = organizeFIONAOutputsByGrade(Report, RegionScor
             continue
         end
         [~, baseName] = fileparts(oldOutputFile);
-        moveFIONAOutputFile(fullfile(outputFolder, [baseName '.fig']), gradeFolder);
+        oldOutputFolder = fileparts(oldOutputFile);
+        moveFIONAOutputFile(fullfile(oldOutputFolder, [baseName '.fig']), gradeFolder);
         if ~isempty(Report(k).FlagFigure)
             [newFlagFigure, flagMoved] = moveFIONAOutputFile(Report(k).FlagFigure, gradeFolder);
             if flagMoved, Report(k).FlagFigure = newFlagFigure; end
