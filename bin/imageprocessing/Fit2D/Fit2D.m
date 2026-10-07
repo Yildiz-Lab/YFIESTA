@@ -299,7 +299,8 @@ function [ value, CoD, region ] = Fit2D( modelstr, guess, params, bw_id )
     % do actual fitting
     if supportsDerivative % models may calculate derivatives
       options.Jacobian = 'on';
-      options.DerivativeCheck = 'off';
+      % options.DerivativeCheck = 'off'; depreciated in r2026, changed to
+      % checkGradient if needed to be true.
       % disable warning, that might occur durring fitting
       warning_state = warning( 'off', 'MATLAB:singularMatrix' );
       try
