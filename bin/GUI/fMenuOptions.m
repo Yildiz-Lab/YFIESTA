@@ -207,7 +207,15 @@ idx = find([Molecule.Channel] == adjChannel);
 if isempty(idx)
     return;
 end
-corrected = [Molecule(idx).MultiChannelCorrected];
+corrected = false(1,numel(idx));
+for k = 1:numel(idx)
+    val = Molecule(idx(k)).MultiChannelCorrected;
+    delta = Molecule(idx(k)).MultiChannelDelta;
+    % A molecule only counts as corrected if it has BOTH a true flag
+    % AND a real delta to invert -- anything else is treated as
+    % not-corrected rather than trusted blindly.
+    corrected(k) = ~isempty(val) && val && ~isempty(delta) && size(delta,2)==2;
+end
 
 if all(corrected)
     % fully corrected -> invert all, no prompt
@@ -222,7 +230,8 @@ else
     % off or mixed -> bring everyone up to corrected, touching only
     % the ones that aren't already
     for i = idx
-        if ~Molecule(i).MultiChannelCorrected
+        val = Molecule(i).MultiChannelCorrected;
+        if isempty(val) || ~val
             rawXY = double(Molecule(i).Results(:,3:4));
             dx = Fx(rawXY);
             dy = Fy(rawXY);

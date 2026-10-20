@@ -90,7 +90,7 @@ else
     PathFilSelect =[];
 end
 PathMol = Molecule(MolSelect==1);
-PathMol = rmfield(PathMol,'Type');
+PathMol = rmfield(PathMol,{'Type','MultiChannelCorrected','MultiChannelDelta'});
 PathFil = Filament(FilSelect==1);
 PathFil = rmfield(PathFil,{'PosStart','PosCenter','PosEnd','Data'});
 PathStats = [PathMol PathFil];

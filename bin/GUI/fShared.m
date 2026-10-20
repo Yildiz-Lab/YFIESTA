@@ -495,7 +495,11 @@ end
 if isempty(idx)
     set(hMainGui.Menu.mApplyMultiCorrections,'Checked','off','Label','Toggle Multichannel Corrections');
 else
-    corrected = [Molecule(idx).MultiChannelCorrected];
+    corrected = false(1,numel(idx));
+    for k = 1:numel(idx)
+        val = Molecule(idx(k)).MultiChannelCorrected;
+        corrected(k) = ~isempty(val) && val;
+    end
     if all(corrected)
         set(hMainGui.Menu.mApplyMultiCorrections,'Checked','on','Label','Toggle Multichannel Corrections');
     elseif any(corrected)
