@@ -7,6 +7,16 @@ function output = Image2Binary( input, params )
 % results:
 %   output  the binary result having the same dimensions as the input image
 
+  % Spatial correction is isolated; disabled settings retain the original path.
+  if isstruct(params) && isfield(params,'spatial_background')
+    spatial=params.spatial_background;
+    if iscell(spatial), spatial=spatial{1}; end
+    if spatial.Enabled
+      localParams=params; localParams.spatial_background=spatial;
+      output=fSpatialBackground('threshold',input,localParams);
+      return;
+    end
+  end
   input = double( input ); %<< convert to double
   
   

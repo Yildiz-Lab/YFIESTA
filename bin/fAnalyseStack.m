@@ -52,6 +52,8 @@ end
 params.focus_correction = Config.FilFocus;
 params.min_cod=Config.Threshold.Fit;
 params.threshold = Config.Threshold.Value;
+params=fSpatialBackground('params',params,Config.Threshold);
+fSpatialBackgroundGui('warnings',Config.Threshold,Stack,false);
 if length(Config.Threshold.Filter)==1
     [params.binary_image_processing,params.background_filter] = strtok(Config.Threshold.Filter{1},'+');
 else

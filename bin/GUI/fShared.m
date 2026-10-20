@@ -771,6 +771,8 @@ else
     params.focus_correction = Config.FilFocus;
     params.min_cod=Config.Threshold.Fit;
     params.threshold = Config.Threshold.Value;
+    params=fSpatialBackground('params',params,Config.Threshold);
+    fSpatialBackgroundGui('warnings',Config.Threshold,Stack);
     if length(Config.Threshold.Filter)==1
         [params.binary_image_processing,params.background_filter] = strtok(Config.Threshold.Filter{1},'+');
     else
@@ -895,6 +897,7 @@ if isfield(Config,'DynamicFil')
         Fil = double(getappdata(hMainGui.fig,'AverageImage'));
         [filter,background] = strtok(Config.Threshold.Filter,'+'); 
         params = struct('scale',Config.PixSize,'fwhm_estimate',Config.Threshold.FWHM/Config.PixSize,'binary_image_processing',filter,'background_filter',background);
+        params.spatial_background=fSpatialBackground('get',Config.Threshold,1);
         if strcmp(Config.Threshold.Mode,'variable')==1
             Fil = Image2Binary(Fil,params);
         elseif strcmp(Config.Threshold.Mode,'relative')==1
@@ -1023,6 +1026,11 @@ if isempty(FileName) || iscell(FileName)
             for p = 1:length(k)
                 addConfig.Threshold.Filter{p} = Config.Threshold.Filter;
             end
+            spatialChannels=k;
+            if contains(get(gcbo,'Tag'),'Batch') && isempty(hMainGui.Values.PostSpecial)
+                spatialChannels=hMainGui.Values.FrameIdx(1);
+            end
+            addConfig.Threshold.SpatialBackground=fSpatialBackground('select',Config.Threshold,spatialChannels);
             addConfig.Region = addRegion;
             addConfig.NumCores = addConfig.NumCores;
             k = min([length(Stack)*ones(size(k)); k]);
