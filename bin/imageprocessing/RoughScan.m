@@ -646,6 +646,9 @@ function [bw,pic] = GlobalImage2Binary( pic, params )
    for n = 1:nChannel
      p = params;
      p.threshold = params.threshold(n);
+     if isfield(params,'spatial_background')
+         p.spatial_background=params.spatial_background{n};
+     end
      [p.binary_image_processing,p.background_filter] = strtok(params.background_filter{n},'+'); 
      I = Image2Binary(pic(:,:,n), p);
      if idx~=n       

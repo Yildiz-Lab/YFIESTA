@@ -68,6 +68,8 @@ if ~isempty(Stack)
                 end
         end
     end
+    spatialPreview=fSpatialBackground('enabled',Config.Threshold,stidx);
+    if spatialPreview, nativeThresholdImage=Image; end
     if (strcmp(get(hMainGui.Menu.mApplyCorrections,'Checked'),'on')&&strcmp(get(hMainGui.Menu.mApplyCorrections,'Enable'),'on'))||(strcmp(get(hMainGui.ToolBar.ToolThreshImage,'State'),'on')&&~isempty(hMainGui.Values.PostSpecial)&&~strcmp(get(hMainGui.ToolBar.ToolChannels(5),'State'),'on'))
         for n = 1:length(stidx)
             if ~isempty(Drift{stidx(n)}) && all(idx>0)
@@ -101,6 +103,9 @@ if ~isempty(Stack)
             Image = IRGB;
         end
     elseif strcmp(get(hMainGui.ToolBar.ToolThreshImage,'State'),'on')
+        if spatialPreview
+            Image=fSpatialBackgroundGui('preview',nativeThresholdImage,Config,hMainGui,stidx,idx,Drift);
+        else
         [filter,background] = strtok(Config.Threshold.Filter,'+'); 
         for n = 1:length(idx)
             params = struct('scale',Config.PixSize,'fwhm_estimate',Config.Threshold.FWHM/Config.PixSize,'binary_image_processing',filter,'background_filter',background);
@@ -116,6 +121,7 @@ if ~isempty(Stack)
                 params.threshold = hMainGui.Values.Thresh(stidx(n));
                 Image(:,:,n)=Image2Binary(Image(:,:,n),params);
             end
+        end
         end
         if size(Image,3)>1
             IRGB = zeros(size(Image,1),size(Image,2),3);

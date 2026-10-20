@@ -348,6 +348,9 @@ hConfigGui.pGeneral.cFilterBackground = uicontrol('Parent',hConfigGui.pGeneral.p
                                           'String','filter background','HorizontalAlignment','left','Value',Filter,...
                                           'TooltipString','Right click for Help','UIContextMenu',hConfigGui.mHelpContext,'UserData','Filter_for_thresholding');                                       
                                       
+% Spatial-background controls live in their own helper dialog.
+fSpatialBackgroundGui('create',hConfigGui);
+
 hConfigGui.pMolecules.panel = uipanel('Parent',hConfigGui.fig,'Units','normalized','Fontsize',12,'Bordertype','none',...
                                      'Position',[0 .06 1 0.54],'Tag','pNorm','Visible','on','BackgroundColor',c,'ForegroundColor',ctext);
 
@@ -1031,15 +1034,11 @@ if get(hConfigGui.pGeneral.rVariable,'Value')==1
     tempConfig.Threshold.Mode='variable';
 end
    
-r=get(hConfigGui.pGeneral.pFilter,'Children');
-val = cell2mat(get(r,'Value'));
-k=find(val(2:4)==1,1);
-tag=get(r(k+1),'Tag');
-if strcmp( tag, 'rFilterAverage' )
+if get(hConfigGui.pGeneral.rFilterAverage,'Value')==1
   tempConfig.Threshold.Filter='average';
-elseif strcmp( tag, 'rFilterSmooth' )
+elseif get(hConfigGui.pGeneral.rFilterSmooth,'Value')==1
   tempConfig.Threshold.Filter='smooth';  
-elseif strcmp( tag, 'rFilterNone' )
+elseif get(hConfigGui.pGeneral.rFilterNone,'Value')==1
   tempConfig.Threshold.Filter='none';
 end
 if get(hConfigGui.pGeneral.cFilterBackground,'Value')==1
@@ -1218,6 +1217,11 @@ else
 end
 
 tempConfig.DynamicFil = get(hConfigGui.pExperimental.cDynamicFil,'Value');
+try
+    tempConfig.Threshold=fSpatialBackgroundGui('commit',hConfigGui,tempConfig.Threshold);
+catch spatialError
+    err{end+1}=spatialError.message;
+end
 
 if isempty(err)&&strcmp(warn,'continue')
     Config = tempConfig;
