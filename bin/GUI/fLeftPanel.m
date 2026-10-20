@@ -28,7 +28,7 @@ switch func
     case 'FindRegion' % JS Edit 2022/10/20
         FindRegion(varargin{1});
     case 'LoadRegion'
-        LoadRegion(varargin{1});
+        LoadRegion(varargin{:});
     case 'SaveRegion'
         SaveRegion(varargin{1});
     case 'CheckRegion'
@@ -310,17 +310,16 @@ function RegListSlider(hMainGui)
 RegUpdateList(hMainGui);
 fShared('ReturnFocus');
 
-function LoadRegion(hMainGui)
-[FileName, PathName] = uigetfile({'*.mat','FIESTA Regions (*.mat)'},'Load FIESTA Regions',fShared('GetLoadDir'));
-if FileName~=0
+function LoadRegion(hMainGui,varargin)
+[Region,PathName]=fLoadROI(hMainGui,varargin{:});
+if ~isempty(Region)
     fShared('SetLoadDir',PathName);
-    Region=fLoad([PathName FileName],'Region');
     nRegion=length(hMainGui.Region);
     nNewRegion=length(Region);
     hMainGui.Region = [hMainGui.Region Region];
     for i=nRegion+1:nRegion+nNewRegion
         hMainGui.Region(i).color=hMainGui.RegionColor(mod(i-1,24)+1,:);        
-        hMainGui.Plots.Region(i)=plot(hMainGui.Region(i).X,hMainGui.Region(i).Y,'Color',hMainGui.Region(i).color,'LineStyle','--','UserData',i,'UIContextMenu',hMainGui.Menu.ctRegion);
+        hMainGui.Plots.Region(i)=line(hMainGui.MidPanel.aView,hMainGui.Region(i).X,hMainGui.Region(i).Y,'Color',hMainGui.Region(i).color,'LineStyle','--','UserData',i,'UIContextMenu',hMainGui.Menu.ctRegion);
     end
 end
 setappdata(0,'hMainGui',hMainGui);
