@@ -1,11 +1,11 @@
 function varargout=fSpatialBackground(action,varargin)
 %FSPATIALBACKGROUND Spatial-background settings, thresholding and pattern checks.
-% Actions: defaults/get/set/enabled/select/params/load/validate/check/threshold.
+% Actions: defaults/get/set/enabled/select/params/load/reference/gaussian/validate/check/threshold.
 % NormalizedMap is a fixed pattern: 1 = median signal above camera baseline.
 switch action
     case 'defaults'
         varargout{1}=struct('Enabled',false,'File','','Baseline',100,'Strength',1, ...
-            'NormalizedMap',[],'SourceMedian',[],'FrameCount',0);
+            'NormalizedMap',[],'SourceMedian',[],'FrameCount',0,'SourceFile','','BlurSigma',[]);
     case 'get'
         threshold=varargin{1}; channel=varargin{2};
         s=fSpatialBackground('defaults');
@@ -57,24 +57,13 @@ switch action
         file=varargin{1}; baseline=varargin{2}; strength=varargin{3};
         validateattributes(baseline,{'numeric'},{'real','scalar','finite','nonnegative'});
         validateattributes(strength,{'numeric'},{'real','scalar','finite','nonnegative'});
-        pages=imfinfo(file); image=[];
-        for k=1:numel(pages)
-            frame=imread(file,k,'Info',pages);
-            validateattributes(frame,{'numeric'},{'real','2d','finite','nonempty'});
-            if isempty(image), image=zeros(size(frame)); end
-            if ~isequal(size(image),size(frame))
-                error('FIESTA:BackgroundSize','All background TIFF pages must have the same size.');
-            end
-            image=image+double(frame)/numel(pages);
-        end
-        signal=max(image-baseline,0); reference=median(signal(:));
-        if reference<=0
-            error('FIESTA:BackgroundBaseline','The background image median must exceed the camera baseline.');
-        end
-        s=fSpatialBackground('defaults');
-        s.Enabled=true; s.File=char(file); s.Baseline=baseline; s.Strength=strength;
-        s.NormalizedMap=signal/reference; s.SourceMedian=median(image(:)); s.FrameCount=numel(pages);
-        varargout{1}=s;
+        [image,count]=ReadReference(file);
+        varargout{1}=NormalizeReference(image,file,baseline,strength,count);
+        if nargout>1, varargout{2}=image; end
+    case 'reference'
+        [varargout{1:nargout}]=ReadReference(varargin{:});
+    case 'gaussian'
+        [varargout{1:nargout}]=GenerateGaussian(varargin{:});
     case 'validate'
         s=varargin{1}; imageSize=varargin{2}; mode=varargin{3};
         if ~s.Enabled, return; end
@@ -95,6 +84,53 @@ switch action
     otherwise
         error('FIESTA:SpatialBackgroundAction','Unknown background action: %s',action);
 end
+
+function [image,count]=ReadReference(file)
+% A stack contributes one fixed background: its mean over TIFF pages.
+pages=imfinfo(file); count=numel(pages); image=[];
+for k=1:count
+    frame=imread(file,k,'Info',pages);
+    validateattributes(frame,{'numeric'},{'real','2d','finite','nonempty'});
+    if isempty(image), image=zeros(size(frame)); end
+    if ~isequal(size(image),size(frame))
+        error('FIESTA:BackgroundSize','All background TIFF pages must have the same size.');
+    end
+    image=image+double(frame)/count;
+end
+
+function s=NormalizeReference(image,file,baseline,strength,count)
+signal=max(image-baseline,0); reference=median(signal(:));
+if reference<=0
+    error('FIESTA:BackgroundBaseline','The background image median must exceed the camera baseline.');
+end
+s=fSpatialBackground('defaults');
+s.Enabled=true; s.File=char(file); s.Baseline=baseline; s.Strength=strength;
+s.NormalizedMap=signal/reference; s.SourceMedian=median(image(:)); s.FrameCount=count;
+s.SourceFile=char(file);
+
+function [s,reference,blurred]=GenerateGaussian(file,sigma,baseline,strength,imageSize)
+% Save floating-point counts without intensity rescaling or integer rounding.
+validateattributes(sigma,{'numeric'},{'real','scalar','finite','positive'});
+validateattributes(baseline,{'numeric'},{'real','scalar','finite','nonnegative'});
+validateattributes(strength,{'numeric'},{'real','scalar','finite','nonnegative'});
+[reference,count]=ReadReference(file);
+blurred=single(imgaussfilt(reference,sigma,'Padding','symmetric'));
+[folder,name]=fileparts(file); stem=sprintf('%s_gaussianblur_%.15g',name,sigma);
+output=fullfile(folder,[stem '.tif']); version=2;
+while isfile(output)
+    output=fullfile(folder,sprintf('%s_%d.tif',stem,version)); version=version+1;
+end
+s=NormalizeReference(double(blurred),output,baseline,strength,1);
+if nargin<5, imageSize=[]; end
+fSpatialBackground('validate',s,imageSize,'constant');
+tags=struct('ImageLength',size(blurred,1),'ImageWidth',size(blurred,2), ...
+    'Photometric',Tiff.Photometric.MinIsBlack,'BitsPerSample',32,'SamplesPerPixel',1, ...
+    'SampleFormat',Tiff.SampleFormat.IEEEFP,'PlanarConfiguration',Tiff.PlanarConfiguration.Chunky, ...
+    'Compression',Tiff.Compression.LZW,'RowsPerStrip',min(64,size(blurred,1)), ...
+    'Software','YFIESTA','ImageDescription',sprintf('Gaussian sigma %.15g pixels; mean of %d reference TIFF page(s). Source: %s',sigma,count,file));
+tiff=Tiff(output,'w'); cleanup=onCleanup(@()close(tiff));
+setTag(tiff,tags); write(tiff,blurred); clear cleanup;
+s.SourceFile=char(file); s.BlurSigma=sigma;
 
 function report=CheckPattern(image,settings)
 %FSPATIALBACKGROUNDCHECK Advisory check of low-frequency pattern agreement.
