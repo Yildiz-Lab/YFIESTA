@@ -1,4 +1,4 @@
-function abort=fAnalyseStack(Stack,TimeInfo,Config,JobNr,Objects)
+function [abort,fData]=fAnalyseStack(Stack,TimeInfo,Config,JobNr,Objects)
 global logfile;
 global error_events;
 global DirCurrent;
@@ -6,7 +6,8 @@ global FiestaDir;
 hMainGui=getappdata(0,'hMainGui'); 
 
 error_events=[];
-abort=0;
+abort=1; % An early error/cancellation must not consume the queued job.
+fData='';
 sspix = get(0,'ScreenSize');
 
 params.bw_region = Config.Region;
@@ -80,10 +81,10 @@ if isempty(Config.TrackingServer) && Config.NumCores>0
     num_cores = Config.NumCores;
     JobNr = -1;
 end
-if isinf(Config.LastFrame)
+if ~isempty(Stack)&&isinf(Config.LastFrame)
     Config.LastFrame = size(Stack{1},3);
 end
-if Config.LastFrame > size(Stack{1},3)
+if ~isempty(Stack)&&Config.LastFrame > size(Stack{1},3)
    Config.LastFrame = size(Stack{1},3);
 end
 if isempty(Objects)
@@ -111,6 +112,7 @@ end
 
 filestr = [FiestaDir.AppData 'logfile.txt'];
 logfile = fopen(filestr,'w');
+logCleanup=onCleanup(@()CloseLog(logfile));
 
 % % --- Begin: create transient archive folder only if parallel pool is active ---
 % pool = gcp('nocreate');           % returns [] if no pool
@@ -531,7 +533,13 @@ for k = 1:numel(d)
         end
     end
 end
+abort=0;
 
+function CloseLog(fid)
+try
+    if fid>=0&&~isempty(fopen(fid)),fclose(fid);end
+catch
+end
 
 % ---- Local helper for DataQueue updates ----
 function localUpdate(pd,N)

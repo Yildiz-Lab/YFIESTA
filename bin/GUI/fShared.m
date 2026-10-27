@@ -759,7 +759,7 @@ else
     params.display = 0;
     
     if isinf(Config.LastFrame)
-        Config.LastFrame = size(Stack,2);
+        Config.LastFrame = size(Stack{1},3);
     end
    
     params.options = optimset( 'Display', 'off','UseParallel','never');
@@ -805,7 +805,8 @@ global FiestaDir;
 global DirRoot;
 global DirCurrent;
 addConfig=Config;
-Mode=get(gcbo,'UserData');
+Mode=[];isBatch=false;
+if ~isempty(gcbo),Mode=get(gcbo,'UserData');isBatch=contains(get(gcbo,'Tag'),'Batch');end
 % JS Edit 2022/09/28 Temp fix for keyboard shortcut to add to queue
 if isempty(Mode)
     Mode = 'Local';
@@ -892,7 +893,7 @@ else
     Config.DynamicFil = 0;
     addConfig.DynamicFil = 0;
 end
-if ~contains(get(gcbo,'Tag'),'Batch')
+if ~isBatch
     if isempty(hMainGui.Values.PostSpecial)
         batch = hMainGui.Values.FrameIdx(1);
     else
@@ -916,10 +917,10 @@ else
        FileName=0; 
     end
     batch = 1:length(FileName);
-    if addConfig.LastFrame == size(Stack)
+    if addConfig.LastFrame >= size(Stack{1},3)
         addConfig.LastFrame = Inf;
     end
-    Time = repmat(Config.Time,1,length(FileName));
+    Time = repmat(Config.Time(min(hMainGui.Values.FrameIdx(1),numel(Config.Time))),1,length(FileName));
     RelThresh = repmat(hMainGui.Values.RelThresh,1,length(FileName));
 end
 if isempty(FileName) || iscell(FileName)
@@ -947,7 +948,7 @@ if isempty(FileName) || iscell(FileName)
                     addConfig.FirstTFrame=1;
                     addConfig.FirstCFrame=0;
                     addConfig.LastFrame=1;
-                elseif hMainGui.Values.MaxIdx(t) < addConfig.LastFrame
+                elseif ~isBatch&&hMainGui.Values.MaxIdx(t) < addConfig.LastFrame
                     addConfig.LastFrame = hMainGui.Values.MaxIdx(t);
                 elseif Config.LastFrame<Config.FirstTFrame+4
                     fMsgDlg({'There must be at least 5 frames for tracking','Try analyzing current frame'},'error');
@@ -982,7 +983,8 @@ if isempty(FileName) || iscell(FileName)
             end
             if isempty(hMainGui.Values.PostSpecial)
                 k = n;
-                addConfig.Channel = n;
+                if isBatch,k=hMainGui.Values.FrameIdx(1);end
+                addConfig.Channel = k;
                 addConfig.Drift = {};
             else
                 k = 1:length(hMainGui.Values.TformChannel);
@@ -1004,7 +1006,7 @@ if isempty(FileName) || iscell(FileName)
                 addConfig.Threshold.Filter{p} = Config.Threshold.Filter;
             end
             spatialChannels=k;
-            if contains(get(gcbo,'Tag'),'Batch') && isempty(hMainGui.Values.PostSpecial)
+            if isBatch && isempty(hMainGui.Values.PostSpecial)
                 spatialChannels=hMainGui.Values.FrameIdx(1);
             end
             addConfig.Threshold.SpatialBackground=fSpatialBackground('select',Config.Threshold,spatialChannels);
@@ -1020,11 +1022,8 @@ if isempty(FileName) || iscell(FileName)
                     set(hMainGui.RightPanel.pQueue.bSrvRefresh,'String','Refresh SERVER Queue');
                 elseif strcmp(Mode,'Local')==1||strcmp(Mode,'Reconnect')==1||strcmp(Mode,'One')==1
                     addConfig.TrackingServer = [];
-                    if isempty(Queue)
-                        Queue=addConfig;
-                    else
-                        Queue=[Queue addConfig];
-                    end
+                    job=fLocalQueue('snapshot',addConfig,Config,Objects,isBatch);
+                    Queue=fLocalQueue('append',Queue,job);
                     fRightPanel('UpdateQueue','Local');
                     fRightPanel('QueueLocalPanel',hMainGui);
                 end
@@ -1044,71 +1043,9 @@ ReturnFocus;
 %                           Menu - Analyse all Stacks in Queue            %
 %/////////////////////////////////////////////////////////////////////////%
 function AnalyseQueue(hMainGui)
-global Config;
-global Queue;
-global Objects;
-global Stack;
-global TimeInfo;
-try
-    nQueue=length(Queue);
-    abort=0;
-    while nQueue>0&&abort==0
-        if Queue(1).FirstTFrame==0 && isempty(Objects)
-            abort=1;
-        else
-            aObjects = Objects;
-        end
-        if isempty(strfind(Queue(1).StackName,'Reconnect'))
-            if ~strcmp(Queue(1).StackName,Config.StackName)
-                try
-                    if strcmp(Queue(1).StackType,'ND2')
-                        [aStack,aTimeInfo]=fReadND2([Queue(1).Directory Queue(1).StackName],Queue(1).StackReadOptions); 
-                    else 
-                        [aStack,aTimeInfo]=fStackRead([Queue(1).Directory Queue(1).StackName],Queue(1).StackReadOptions); 
-                    end
-                catch ME   
-                    fMsgDlg(ME.message,'error');
-                    abort=1;
-                end
-                if ~isempty(Queue(1).Time) && ~isnan(Queue(1).Time) && Queue(1).Time>0
-                    for n = 1:length(aStack)
-                        nFrames=size(aStack,3);
-                        aTimeInfo{n}=(0:nFrames-1)*Queue(1).Time;
-                    end
-                end
-            else
-                aTimeInfo = TimeInfo;
-                aStack = Stack;
-            end
-            if isempty(Queue(1).Drift)
-                if numel(aStack)>1
-                    k = Queue(1).Channel;
-                else
-                    k = 1;
-                end 
-            else
-                k = 1:numel(Queue(1).Drift);
-            end 
-            aObjects = [];
-        else
-            k = Queue(1).Channel;
-            aTimeInfo = TimeInfo;
-            aStack = Stack;
-        end
-        if abort==0
-            abort=fAnalyseStack(aStack(k),aTimeInfo(k),Queue(1),0,aObjects);
-        end
-        if abort==0
-            Queue(1)=[];
-            fRightPanel('UpdateQueue','Local');
-        end
-        nQueue=length(Queue);
-    end
-    ReturnFocus;
-catch ME   
-    fMsgDlg({'FIESTA detected a problem during analysis','','Error message:','',getReport(ME,'extended','hyperlinks','off')},'error');
-    delete(gcp);
-end
+[~,problem]=fLocalQueue('run',hMainGui);
+if ~isempty(problem),fMsgDlg({'Local queue stopped; unfinished jobs remain queued.','',problem.message},'error');end
+ReturnFocus;
 
 function Molecule=AddDataMol(Molecule,Objects,nMol,nData,idx,k)
 global Config;

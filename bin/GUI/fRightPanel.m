@@ -1239,7 +1239,7 @@ for i=QueueLength+1:9
 end
 if strcmp(mode,'Local')
     enable='off';
-    if l>0
+    if l>0&&~isequal(getappdata(0,'LocalQueueRunning'),true)
         enable='on';
     end
     set(hMainGui.Menu.mAnalyseQueue,'Enable',enable);
