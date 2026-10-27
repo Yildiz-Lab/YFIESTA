@@ -182,6 +182,12 @@ hMenu.mColorOverlay = uimenu('Parent',hMenu.mView,'Callback','fMenuView(''ColorO
                             
 hMenu.mExport = uimenu('Parent',hMenu.mView,'Callback','fExportViewGui(''Create'');','Enable','off',...
                        'Label','Export current view','Tag','mExport','Separator','on');
+
+% Trace movie add-on (implementation is isolated in GUI/TraceMovie).
+fTraceMovieGui(''); % dependency for compiling
+hMenu.mExportSelectedMovie = uimenu('Parent',hMenu.mView, ...
+    'Callback',@(src,event)fTraceMovieGui('create'),'Label','Export selected molecule movie', ...
+    'Tag','mExportSelectedMovie','Separator','on');
                    
 %create Options menu
 

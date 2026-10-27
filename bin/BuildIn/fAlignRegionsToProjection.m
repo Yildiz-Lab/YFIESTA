@@ -2,10 +2,11 @@ function [Region,Alignment] = fAlignRegionsToProjection(Region,Projection,MaxShi
 %FALIGNREGIONSTOPROJECTION Register scan centerlines by one x/y translation.
 % Coordinates and displacements are pixels; +X is right, +Y is down.
 % Match equally weighted centerlines to multiscale bright image ridges,
-% suppressing round spots. Search all integer shifts, then refine subpixel.
+% suppressing round spots. Search up to +/-64 pixels per axis by default,
+% capped at a quarter of the smaller image dimension, then refine subpixel.
 % Region shapes, scan widths, and measured lengths are preserved. Area masks
 % are regenerated for the target image. No image or source file is modified.
-if nargin<3, MaxShift=min(32,floor(min(size(Projection))/4)); end
+if nargin<3, MaxShift=min(64,floor(min(size(Projection))/4)); end
 validateattributes(Projection,{'numeric'},{'real','2d','nonempty','finite'});
 validateattributes(MaxShift,{'numeric'},{'real','scalar','integer','positive','finite'});
 if isempty(Region)
