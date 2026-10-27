@@ -1,208 +1,87 @@
 function fMotilityGui(func,varargin)
-% JS 2022/07/14 For Yildiz Motility Assays
-
+% JS 2022/07/14 For Yildiz Motility Assays.
 switch func
-    case 'Create'
-        Create;       
-    case 'Draw'
-        Draw(varargin{1});  
-    case 'SaveFig'
-        SaveFig(varargin{1}); 
-    case 'ExportCSV'
-        ExportCSV(varargin{1});
-    case 'Cancel'
-        Cancel(varargin{1});          
+    case 'Create',Create(varargin{:});
+    case 'Draw',Draw(varargin{1});
+    case 'SaveFig',SaveFig(varargin{1});
+    case 'ExportCSV',ExportCSV(varargin{1}); % Preserve the existing callback name.
+    case 'Cancel',close(varargin{1}.fig);
 end
 
-function Create
-global Molecule;
-global Filament;
-global Index;
-global Config;
-
-global KymoTrackMol; %I think this may allow for selecting the tracks in a kymograph but unsure yet
-
-h=findobj('Tag','hMotilityGui');
-close(h)
-
+function Create(varargin)
+global Molecule Config TimeInfo Stack
 hMainGui=getappdata(0,'hMainGui');
-
-MolSelect = [Molecule.Selected];
-FilSelect = [Filament.Selected];
-if all(MolSelect==0) && all(FilSelect==0)
-    fMsgDlg('No track selected!','error');
-    return;
-end
-
-% choose options for what to include
-options = fMotilityStatsDlg;
-
-if isempty(options)
-    return
-end
-% if strcmp(options.mode,'average')
-%     AverageDis = options.dis;
-% else
-%     AverageDis  = 0;
-% end
-
-
-% Draw the figure
-
-hMotilityGui.fig = figure('Units','normalized','DockControls','off','IntegerHandle','off','MenuBar','none','Name','Motility Statistics',...
-                      'NumberTitle','off','HandleVisibility','callback','Tag','hMotilityGui',...
-                      'Visible','off','Resize','off','WindowStyle','modal');
-                  
-if ispc
-    set(hMotilityGui.fig,'Color',[236 233 216]/255);
-end
-
-c=get(hMotilityGui.fig,'Color');
-
-hMotilityGui.pResults = uipanel('Parent',hMotilityGui.fig,'Position',[0.05 0.05 0.9 0.9],'Tag','PlotPanel','BackgroundColor','white');
-
-hMotilityGui.aPlot = axes('Parent',hMotilityGui.pResults,'Units','normalized','OuterPosition',[0 0 1 1],'Tag','aPlotXYZ','Visible','off'); 
-                         
-hMotilityGui.bExportCSV = uicontrol('Parent',hMotilityGui.fig,'Units','normalized','Callback','fMotilityGui(''ExportCSV'',getappdata(0,''hMotilityGui''));',...
-                            'Position',[0.4 0.01 0.175 0.03],'String','Export','Tag','bExportCSV'); 
-                         
-hMotilityGui.bSaveFig = uicontrol('Parent',hMotilityGui.fig,'Units','normalized','Callback','fMotilityGui(''SaveFig'',getappdata(0,''hMotilityGui''));',...
-                             'Position',[0.6 0.01 0.175 0.03],'String','Save Figure','Tag','bSaveFig'); 
-
-hMotilityGui.bCancel = uicontrol('Parent',hMotilityGui.fig,'Units','normalized','Callback','fMotilityGui(''Cancel'',getappdata(0,''hMotilityGui''));',...
-                             'Position',[0.8 0.01 0.175 0.03],'String','Cancel','Tag','bCancel');
-
-
-setappdata(0,'hMotilityGui',hMotilityGui);
-                         
-Index = find(MolSelect==1);
-
-% Do the analysis on selected molecules
-
-% Results: Molecule Index, Velocity, Run Length, Landing Rate
-Results = [];
-% this is where thresholding occurs by options
-for i = Index
-    %frame, time(s), x(nm), y(nm), z(nm), dist to origin(nm), FWHM(nm), Amplitude(cnts), Position Error(nm), Tags
-    rr = Molecule(i).Results;
-    pr = Molecule(i).PathData;
-
-    if ~isempty(pr)
-        distance = max(pr(:,4)) - min(pr(:,4));
-    else
-        % (rr(end,6) - rr(1,6))/(rr(end,2) - rr(1,2));
-        distance = max(rr(:,6)) - min(rr(:,6));
+if isempty(Molecule),fMsgDlg('No molecules are loaded!','error');return;end
+if isempty(varargin),options=fMotilityStatsDlg(numel(hMainGui.Region));else,options=varargin{1};end
+if isempty(options),return;end
+if ~options.pool&&~any([Molecule.Selected]==1),fMsgDlg('No molecules selected!','error');return;end
+try
+    channel=hMainGui.Values.FrameIdx(1);interval=Config.Time(min(channel,numel(Config.Time)));
+    context=struct('PixelSizeNm',hMainGui.Values.PixSize,'Channel',channel,'FrameIntervalMs',interval, ...
+        'FrameRange',[str2double(get(hMainGui.RightPanel.pTools.eKymoStart,'String')) ...
+        str2double(get(hMainGui.RightPanel.pTools.eKymoEnd,'String'))],'TimeMs',[],'Scan',hMainGui.Scan);
+    if numel(TimeInfo)>=channel,context.TimeMs=TimeInfo{channel};end
+    report=fYildizMotility('analyze',Molecule,hMainGui.Region,context,options);
+    [folder,base]=OutputPath(Config);report.OutputBase=base;
+    if options.pool
+        exportKymo=isfield(options,'exportKymographs')&&options.exportKymographs;
+        if exportKymo&&(numel(Stack)<channel||isempty(Stack{channel})||size(Stack{channel},3)<context.FrameRange(2))
+            error('FIESTA:MotilityStack','Load the current-channel stack covering the requested kymograph frames.');
+        end
+        if numel(varargin)>1
+            folder=varargin{2};
+        else
+            folder=uigetdir(folder,'Choose a folder for pooled motility results');if isequal(folder,0),return;end
+        end
+        % Each pool run has its own folder, preserving earlier exports.
+        folder=fullfile(folder,[base '_motility_' char(datetime('now','Format','yyyyMMdd_HHmmssSSS'))]);mkdir(folder);
+        if exportKymo
+            settings=struct('Method',1,'Drift',[],'CorrectDrift',false,'StackCorrected',false,'Limits',[]);
+            tools=hMainGui.RightPanel.pTools;
+            if isfield(tools,'mKymoMethod'),settings.Method=get(tools.mKymoMethod,'Value');end
+            if isfield(tools,'cKymoDrift'),settings.CorrectDrift=logical(get(tools.cKymoDrift,'Value'));end
+            drift=getappdata(hMainGui.fig,'Drift');if numel(drift)>=channel,settings.Drift=drift{channel};end
+            if isfield(hMainGui,'Menu')&&isfield(hMainGui.Menu,'mCorrectStack')
+                settings.StackCorrected=strcmp(get(hMainGui.Menu.mCorrectStack,'Checked'),'on');
+            end
+            if isfield(hMainGui.Values,'ScaleMin'),settings.Limits=[hMainGui.Values.ScaleMin(channel) hMainGui.Values.ScaleMax(channel)];end
+            report.Kymographs=fYildizMotility('savekymographs',report,hMainGui.Region,Molecule,Stack{channel},settings,folder,base);
+        end
+        fYildizMotility('export',report,fullfile(folder,[base '_motility.xlsx']));
+        fYildizMotility('savefigures',report,folder,base);
+        fprintf('Yildiz motility: %d trajectories across %d regions saved to\n%s\n',height(report.Traces),height(report.Regions),folder);
+        report.OutputFolder=folder;
     end
-    
-    % filter if they are over the dthresh and fthresh
-    if distance < options.dthresh*Config.PixSize
-        moverthresh = 0;
-    else
-        moverthresh = 1;
+    old=findall(0,'Tag','hMotilityGui');close(old);
+    gui.fig=figure('Units','pixels','Position',[100 100 900 680],'Name','Yildiz Motility Statistics', ...
+        'NumberTitle','off','MenuBar','none','ToolBar','none','Tag','hMotilityGui','Color','white');
+    gui.pResults=uipanel(gui.fig,'Position',[0 .08 1 .92],'BorderType','none','BackgroundColor','white');
+    gui.Report=report;gui.OutputFolder=folder;gui.OutputBase=base;
+    labels={'Export XLSX','Save Figure','Close'};actions={'ExportCSV','SaveFig','Cancel'};
+    for k=1:3
+        action=actions{k};uicontrol(gui.fig,'Style','pushbutton','Units','normalized','Position',[.36+(k-1)*.21 .015 .19 .05], ...
+            'String',labels{k},'BackgroundColor',[.16 .16 .16],'ForegroundColor',[.9 .9 .9], ...
+            'Callback',@(s,e)fMotilityGui(action,getappdata(0,'hMotilityGui')));
     end
-    
-    if rr(end,1)-rr(1,1) < options.fthresh
-        molthresh = 0;
-    else
-        molthresh = 1;
-    end
-    
-    % then add to the associated results iff they are above the passthresh
-    % for moving
-    Results = [Results; nan(1,5)];
-    
-    % Get name convert to number
-    number = strfind(Molecule(i).Name, ' '); % find space should be where the number starts - 1
-    if length(number) > 1 % if there are multiple spaces get the last one
-        number = max(number);
-    end
-    Results(end,1)= str2num(Molecule(i).Name(number+1:end));
-    
-    ResultTitles = ["Molecule", "Velocity (nm/s)", "Distance (nm)", "Landing Rate (um^{-1} s^{-1})", "Interaction Time (s)"];
-    if (~options.velocity_moverstoggle || moverthresh) && molthresh
-    Results(end,2) = distance/(rr(end,2) - rr(1,2));
-    end
-    if (~options.runlength_moverstoggle || moverthresh) && molthresh
-    Results(end,3) = distance;
-    end
-    if (~options.landingrate_moverstoggle || moverthresh) && molthresh
-    Results(end,4) = 1;
-    end
-    if (~options.runlength_moverstoggle || moverthresh) && molthresh
-    Results(end,5) = rr(end,2) - rr(1,2);
-    end
-    
+    setappdata(0,'hMotilityGui',gui);setappdata(gui.fig,'Report',report);
+    setappdata(gui.fig,'CompResults',table2array(report.Traces(:,1:5)));
+    setappdata(gui.fig,'ResultTitles',report.Traces.Properties.VariableNames(1:5));Draw(gui);
+catch err
+    fMsgDlg(err.message,'error');rethrow(err);
 end
 
-% at the end, do modification for the Landing Rate
-deltad = hMainGui.Scan.InterpD(end); % distance in pixels
-%distance in time +1 since the number of frames is actually the difference
-deltat = str2double(get(hMainGui.RightPanel.pTools.eKymoEnd,'String')) - str2double(get(hMainGui.RightPanel.pTools.eKymoStart,'String')) + 1;
+function Draw(gui)
+fYildizMotility('plot',gui.Report,gui.pResults);
 
-% only fill in results if not nan
-idxnan = find(isnan(Results(:,4)));
-if length(Config.Time) > 1
-    Results(:,4) = ones(size(Results(:,1),1),1) * sum(Results(:,4),'omitnan') / deltad / Config.PixSize / deltat / Config.Time(1) * 1e6;
-else
-    Results(:,4) = ones(size(Results(:,1),1),1) * sum(Results(:,4),'omitnan') / deltad / Config.PixSize / deltat / Config.Time * 1e6;
-end
-Results(idxnan,4) = NaN;
+function ExportCSV(gui)
+file=fullfile(gui.OutputFolder,[gui.OutputBase '_motility.xlsx']);
+fYildizMotility('export',gui.Report,file,true);fprintf('Saved %s\n',file);
 
-% set this data for later
-setappdata(hMotilityGui.fig,'CompResults',Results);
-setappdata(hMotilityGui.fig,'ResultTitles',ResultTitles);
-Draw(hMotilityGui);  
+function SaveFig(gui)
+fYildizMotility('savefigures',gui.Report,gui.OutputFolder,gui.OutputBase);
 
-fPlaceFig(hMotilityGui.fig,'big');
-
-function Draw(hMotilityGui)
-
-set(hMotilityGui.aPlot,'Visible','on');   
-Results = getappdata(hMotilityGui.fig,'CompResults');
-Titles = getappdata(hMotilityGui.fig,'ResultTitles');
-
-
-%plots
-for i=2:size(Results,2)
-    % subplot(1,size(Results,2)-1,i-1);
-    subplot(2,2,i-1);
-    cdfplot(Results(:,i));
-    title(Titles(i))
-    legend("Mean: " +num2str(mean(Results(:,i),'omitnan')) + newline + "Std: " +num2str(std(Results(:,i),'omitnan')) + newline + "N : " +num2str(length(find(isnan(Results(:,i))==0)))) 
-end
-
-
-function ExportCSV(hMotilityGui)
-global Config;
-
-Results = getappdata(hMotilityGui.fig,'CompResults');
-Titles = getappdata(hMotilityGui.fig,'ResultTitles');
-
-[pathname, filename, ~] = fileparts(fullfile(Config.Directory, Config.StackName));
-savefile = fullfile(pathname, strcat(filename, '.xlsx'));
-if iscell(savefile)
-    savefile = savefile{1};
-end
-% check if files already exist. If so, then append or make a new file.
-if isfile(savefile)
-    olddata = readmatrix(savefile);
-    Results = [olddata; Results];
-end
-
-Results = [Titles; Results];
-writematrix(Results, savefile)
-
-
-function Cancel(hMotilityGui)
-close(hMotilityGui.fig);
-
-
-function SaveFig(hMotilityGui)
-global Config;
-[pathname, filename, ~] = fileparts(fullfile(Config.Directory, Config.StackName));
-savefile = fullfile(pathname, strcat(filename, '.fig'));
-if iscell(savefile)
-    savefile = savefile{1};
-end
-
-savefig(hMotilityGui.fig, savefile)
+function [folder,base]=OutputPath(config)
+folder=config.Directory;if iscell(folder),folder=folder{1};end
+name=config.StackName;if iscell(name),name=name{1};end
+[path,base]=fileparts(name);if ~isempty(path),folder=fullfile(folder,path);end
+if ~isfolder(folder),folder=pwd;end
