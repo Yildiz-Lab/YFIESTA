@@ -56,18 +56,21 @@ backgroundTab=uitab(settings,'Title','Background & crop','BackgroundColor',c);
 exportTab=uitab(settings,'Title','Export','BackgroundColor',c);
 o=fTraceMovie('defaults');
 keys={'PlaybackSpeed','FrameRate','DecayMs','BaselineAlpha','MarkerSize','LineWidth','DeadTimeSpeedup','BufferFraction','MaxDimension','ScaleBarNm'};
-labels={'Source seconds / movie second','Movie FPS (output sampling)','Fade decay (ms)','Old-trace opacity (0–1)','Point diameter (output pixels)', ...
-    'Connecting line width (pixels)','Dead-time speedup (1 = normal)','Padding fraction','Maximum canvas size (pixels)','Scale bar (nm; blank = auto)'};
+labels={'Source seconds / movie second','Movie FPS (output sampling)','Fade decay (ms)','Old-trace opacity (0–1)','Point diameter (base pixels)', ...
+    'Connecting line width (base pixels)','Dead-time speedup (1 = normal)','Padding fraction','Base canvas size (pixels)','Scale bar (nm; blank = auto)'};
 for k=1:numel(keys)
     key=keys{k};y=.92-(k-1)*.071;
     Label(traceTab,labels{k},[.04 y .68 .047]);
     ui.(key)=Edit(traceTab,num2str(o.(key)),[.74 y .22 .052],key,@(s,e)Dirty(h));
 end
-Label(traceTab,'Dominant motion axis',[.04 .19 .55 .045]);
-ui.Rotation=Popup(traceTab,{'No rotation','Horizontal','Vertical'},[.61 .19 .35 .052],'Rotation',@(s,e)RotationChanged(h));
-Label(traceTab,'Movie theme',[.04 .12 .55 .045]);
-ui.Theme=Popup(traceTab,{'Dark','Light'},[.61 .12 .35 .052],'Theme',@(s,e)Dirty(h));
-ui.ShowLegend=Check(traceTab,'Include molecule color legend',false,[.04 .045 .92 .05],'ShowLegend',@(s,e)Dirty(h));
+Label(traceTab,'Dominant motion axis',[.04 .205 .55 .045]);
+ui.Rotation=Popup(traceTab,{'No rotation','Horizontal','Vertical'},[.61 .205 .35 .052],'Rotation',@(s,e)RotationChanged(h));
+Label(traceTab,'Movie theme',[.04 .145 .55 .045]);
+ui.Theme=Popup(traceTab,{'Dark','Light'},[.61 .145 .35 .052],'Theme',@(s,e)Dirty(h));
+ui.ColorByChannel=Check(traceTab,'Color by channel (one color per channel)',false,[.04 .08 .92 .05],'ColorByChannel',@(s,e)Dirty(h));
+ui.ShowLegend=Check(traceTab,'Include color legend',false,[.04 .02 .92 .05],'ShowLegend',@(s,e)Dirty(h));
+set(ui.ShowLegend,'TooltipString','Molecule entries appear when their traces first enter the visible crop, then remain. Channel entries are fixed.');
+set(ui.MaxDimension,'TooltipString','Canvas size before output resolution scaling. Choose 2x or 4x on the Export tab for more pixels.');
 ui.IncludeBackground=Check(backgroundTab,'Include loaded background stack',~isempty(sources),[.04 .92 .92 .05], ...
     'IncludeBackground',@(s,e)Dirty(h));
 names=cell(1,numel(sources));
@@ -96,18 +99,21 @@ Button(backgroundTab,'Clear',[.79 .27 .17 .055],'ClearCrop',@(s,e)ClearCrop(h));
 ui.CropTiming=Popup(backgroundTab,{'Visible crop time only','Full selected trace timeline (matched inset)'}, ...
     [.04 .18 .92 .06],'CropTiming',@(s,e)Dirty(h));
 Label(backgroundTab,sprintf('Draw after choosing rotation. Full timing preserves parent frames and speedups.\nThe clock is always referenced to the full selection.'),[.04 .035 .92 .12]);
-Label(exportTab,'Output folder',[.04 .91 .92 .045]);
-ui.Folder=Edit(exportTab,folder,[.04 .82 .72 .08],'Folder',@(s,e)Dirty(h));
-Button(exportTab,'Choose...',[.79 .82 .17 .08],'ChooseFolder',@(s,e)ChooseFolder(h));
-Label(exportTab,'Filename (without extension)',[.04 .72 .92 .045]);
-ui.Filename=Edit(exportTab,'selected_molecule_movie',[.04 .64 .92 .065],'Filename',@(s,e)Dirty(h));
-Label(exportTab,'File format',[.04 .54 .55 .045]);
-ui.Format=Popup(exportTab,{'MP4','AVI','GIF'},[.61 .53 .35 .065],'Format',@(s,e)Dirty(h));
-Label(exportTab,'Clock',[.04 .43 .55 .045]);
-ui.TimeOrigin=Popup(exportTab,{'Elapsed from selection start','Absolute source time'},[.04 .35 .92 .06],'TimeOrigin',@(s,e)Dirty(h));
-Label(exportTab,'Optional source-time range [start end] s',[.04 .25 .92 .045]);
-ui.TimeRange=Edit(exportTab,'',[.04 .17 .92 .06],'TimeRange',@(s,e)Dirty(h));
-Label(exportTab,'Blank uses the selected traces, stack-frame limit, and crop timing above.',[.04 .04 .92 .10]);
+Label(exportTab,'Output folder',[.04 .92 .92 .045]);
+ui.Folder=Edit(exportTab,folder,[.04 .85 .72 .06],'Folder',@(s,e)Dirty(h));
+Button(exportTab,'Choose...',[.79 .85 .17 .06],'ChooseFolder',@(s,e)ChooseFolder(h));
+Label(exportTab,'Filename (without extension)',[.04 .77 .92 .045]);
+ui.Filename=Edit(exportTab,'selected_molecule_movie',[.04 .70 .92 .06],'Filename',@(s,e)Dirty(h));
+Label(exportTab,'File format',[.04 .62 .55 .045]);
+ui.Format=Popup(exportTab,{'MP4','AVI','GIF'},[.61 .61 .35 .06],'Format',@(s,e)Dirty(h));
+Label(exportTab,'Output resolution',[.04 .53 .55 .045]);
+ui.ResolutionScale=Popup(exportTab,{'1x (standard)','2x (sharper)','4x (highest)'},[.61 .52 .35 .06],'ResolutionScale',@(s,e)Dirty(h));
+set(ui.ResolutionScale,'TooltipString','Doubles or quadruples each pixel dimension, including text and trace styling. Higher settings take longer and create larger files.');
+Label(exportTab,'Clock',[.04 .44 .55 .045]);
+ui.TimeOrigin=Popup(exportTab,{'Elapsed from selection start','Absolute source time'},[.04 .37 .92 .06],'TimeOrigin',@(s,e)Dirty(h));
+Label(exportTab,'Optional source-time range [start end] s',[.04 .28 .92 .045]);
+ui.TimeRange=Edit(exportTab,'',[.04 .21 .92 .06],'TimeRange',@(s,e)Dirty(h));
+Label(exportTab,sprintf('Blank time range uses the selection, stack limit and crop.\nResolution scales pixels, text and traces together.'),[.04 .045 .92 .12]);
 ui.Tabs=uitabgroup(h,'Units','normalized','Position',[.39 .155 .59 .78]);
 ui.ProjectionTab=uitab(ui.Tabs,'Title','Aligned projection & crop','BackgroundColor',c);
 ui.MovieTab=uitab(ui.Tabs,'Title','Movie preview','BackgroundColor',c);
@@ -213,6 +219,8 @@ for k=1:numel(keys),o.(keys{k})=Numbers(ui.(keys{k}));end
 rotations={'none','horizontal','vertical'};themes={'dark','light'};origins={'relative','absolute'};timing={'visible','full'};
 o.Rotation=rotations{get(ui.Rotation,'Value')};o.Theme=themes{get(ui.Theme,'Value')};
 o.TimeOrigin=origins{get(ui.TimeOrigin,'Value')};o.ShowLegend=logical(get(ui.ShowLegend,'Value'));
+if isfield(ui,'ColorByChannel'),o.ColorByChannel=logical(get(ui.ColorByChannel,'Value'));end
+if isfield(ui,'ResolutionScale'),scales=[1 2 4];o.ResolutionScale=scales(get(ui.ResolutionScale,'Value'));end
 o.CropNormalized=Numbers(ui.Crop);o.CropTiming=timing{get(ui.CropTiming,'Value')};o.TimeRangeS=Numbers(ui.TimeRange);
 if get(ui.IncludeBackground,'Value')
     b=ui.Sources{get(ui.BackgroundChannel,'Value')};n=size(b.Stack,3);
@@ -242,7 +250,8 @@ ui=getappdata(h,'UI');if ui.Busy,return;end
 ui.Playing=false;set(ui.Play,'String','Play');set(ui.Status,'String','Updating aligned projection and movie preview...');drawnow;
 try
     o=ReadOptions(h);baseOptions=o;baseOptions.CropNormalized=[];
-    base=fTraceMovie('prepare',ui.Molecules,baseOptions);plan=fTraceMovie('prepare',ui.Molecules,o);
+    base=fTraceMovie('prepare',ui.Molecules,baseOptions);
+    if isempty(o.CropNormalized),plan=base;else,plan=fTraceMovie('prepare',ui.Molecules,o);end
     if ~isempty(ui.Renderer),fTraceMovie('dispose',ui.Renderer);end
     ui.Renderer=fTraceMovie('renderer',plan);ui.Plan=plan;ui.BasePlan=base;ui.Dirty=false;
     ui.ROI=[];setappdata(h,'UI',ui);cla(ui.ProjectionAxes);hold(ui.ProjectionAxes,'on');
@@ -267,8 +276,8 @@ try
     maxFrame=max(2,plan.FrameCount);value=min(maxFrame,max(1,round(get(ui.Slider,'Value'))));
     set(ui.Slider,'Min',1,'Max',maxFrame,'Value',value,'SliderStep',min(1,[1 10]/max(1,plan.FrameCount-1)));
     setappdata(h,'UI',ui);Preview(h);
-    set(ui.Status,'String',sprintf('%d molecules; %d output images; %.2f s playback; source %.3f–%.3f s. Legend %s.', ...
-        plan.MoleculeCount,plan.FrameCount,plan.FrameCount/o.FrameRate,plan.TimeRangeS,OnOff(o.ShowLegend)));
+    set(ui.Status,'String',sprintf('%d molecules; %d x %d px; %d output images; %.2f s playback; source %.3f–%.3f s. Legend %s.', ...
+        plan.MoleculeCount,plan.FrameSize,plan.FrameCount,plan.FrameCount/o.FrameRate,plan.TimeRangeS,OnOff(o.ShowLegend)));
 catch err
     setappdata(h,'LastError',err);
     set(ui.Status,'String',err.message);ui=getappdata(h,'UI');ui.Dirty=true;setappdata(h,'UI',ui);

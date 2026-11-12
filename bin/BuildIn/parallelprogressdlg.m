@@ -257,25 +257,26 @@ function progFigure = parallelprogressdlg(varargin)
         end
         mkdir(statusdir);
         t = timer('TimerFcn',@RefreshProgressDlg,'Period',2,'TasksToExecute', Inf,'Tag','fParallel',...
-          'ExecutionMode','fixedRate','BusyMode','queue','UserData',{starttime,max,progHandles,statusdir});
+          'ExecutionMode','fixedRate','BusyMode','drop','UserData',{starttime,max,progHandles,statusdir});
+        set(progHandles.figure,'DeleteFcn',@(~,~)DeleteProgressTimer(t));
         start(t)
     else
         if value==max
-            disp('bla5')
             % if 'Maximum' value reached close and reset progress dialog
+            statusdir = fullfile(p.Results.directory,'fiestastatus');
             close(progHandles.figure);
-            t= timerfind('Tag','fParallel');
-            var = get(t,'UserData');
-            stop(t)
-            delete(t);
-            rmdir(var{4},'s');
-            disp('bla6')
+            progHandles = [];
+            if isfolder(statusdir),rmdir(statusdir,'s');end
         end
     end
     
 function RefreshProgressDlg(obj, event) %#ok<INUSD>
     % get userdata
     var = get(obj,'UserData');
+    if ~isgraphics(var{3}.figure)
+        DeleteProgressTimer(obj);
+        return;
+    end
     starttime = var{1};
     if isempty(starttime)
         starttime = clock;
@@ -307,6 +308,9 @@ function RefreshProgressDlg(obj, event) %#ok<INUSD>
             set(progHandles.text(2),'Text',est_text);
         end
     end
+
+function DeleteProgressTimer(t)
+    if isvalid(t),stop(t);delete(t);end
 
 %% Define input parameters and their default values
 function p = checkInput(value,message)   

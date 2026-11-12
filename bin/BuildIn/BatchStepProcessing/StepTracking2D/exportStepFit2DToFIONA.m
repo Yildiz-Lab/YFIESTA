@@ -65,6 +65,12 @@ function ExportReport = exportStepFit2DToFIONA(Molecules, outputFolder)
                     isfield(Molecules(k).StepFit2D.EFOTruncation, 'Threshold')
                 data.efoThreshold = double(Molecules(k).StepFit2D.EFOTruncation.Threshold);
             end
+            % The population screen uses the original per-molecule median,
+            % rather than the EFO distribution after initial truncation.
+            if isfield(Molecules(k).StepFit2D, 'EFOTruncation') && ...
+                    isfield(Molecules(k).StepFit2D.EFOTruncation, 'MedianEFO')
+                data.efoPreTruncationMedian = double(Molecules(k).StepFit2D.EFOTruncation.MedianEFO);
+            end
             if isfield(Molecules(k).StepFit2D, 'EFOFlags') && ...
                     isfield(Molecules(k).StepFit2D.EFOFlags, 'HighMask')
                 data.efoHigh = logical(Molecules(k).StepFit2D.EFOFlags.HighMask(:));

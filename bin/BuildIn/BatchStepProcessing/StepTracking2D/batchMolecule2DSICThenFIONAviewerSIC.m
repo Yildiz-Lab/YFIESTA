@@ -39,6 +39,9 @@ function [AllMolecules, PassedMolecules, StepFit2DReport, Options, FIONAExportRe
     % does not enter the slower FIONAviewer SIC stage.
     p.addParameter('MinimumFIONAPreScreenScore', 40, @(x) isnumeric(x) && isscalar(x) && x >= 0 && x <= 100);
     p.parse(Molecule, varargin{:}); opt = p.Results;
+    if ~isfield(opt.FIONAOptions,'PopulationEFOGradeCap')
+        opt.FIONAOptions.PopulationEFOGradeCap = 'A';
+    end
 
     if isempty(opt.OutputFolder)
         outputParent = uigetdir(pwd, 'Select parent folder for combined SIC pipeline');
@@ -50,6 +53,12 @@ function [AllMolecules, PassedMolecules, StepFit2DReport, Options, FIONAExportRe
         outputFolder = fullfile(outputParent, char(opt.OutputFolderName));
     else
         outputFolder = char(opt.OutputFolder);
+    end
+    fionaOutputFolder = fullfile(outputFolder, 'FIONAviewer_SIC');
+    resume = isfield(opt.FIONAOptions,'ResumeExisting') && opt.FIONAOptions.ResumeExisting;
+    gradeCap = validatestring(opt.FIONAOptions.PopulationEFOGradeCap, {'off','A','B'});
+    if ~strcmp(gradeCap,'off') && ~resume
+        requireFreshFIONAEFOOutput(fionaOutputFolder);
     end
     if ~isfolder(outputFolder), mkdir(outputFolder); end
 
@@ -87,7 +96,9 @@ function [AllMolecules, PassedMolecules, StepFit2DReport, Options, FIONAExportRe
             'No passed 2-D SIC molecules were exported; FIONAviewer SIC was not run.');
         return
     end
+    % Only successful staging writes belong to this run's population.
     selected = FIONAPreScreenReport([FIONAPreScreenReport.Selected]);
+    selected = selected(~cellfun(@isempty,{selected.SelectedFile}));
     fprintf('FIONAviewer pre-screen: %d of %d exported traces met the score threshold (score >= %.0f).\n', ...
         numel(selected), numel(exported), opt.MinimumFIONAPreScreenScore);
     if isempty(selected)
@@ -100,10 +111,11 @@ function [AllMolecules, PassedMolecules, StepFit2DReport, Options, FIONAExportRe
         return
     end
 
-    fionaOutputFolder = fullfile(outputFolder, 'FIONAviewer_SIC');
     fionaArgs = structToNameValue(opt.FIONAOptions);
+    [~,names,extensions] = cellfun(@fileparts,{selected.SelectedFile},'UniformOutput',false);
+    selectedNames = strcat(names,extensions);
     FIONAReport = batchFIONAviewerSIC(selectedInputFolder, ...
-        fionaArgs{:}, 'OutputFolder', fionaOutputFolder);
+        fionaArgs{:}, 'OutputFolder', fionaOutputFolder, 'InputFileNames', selectedNames);
     FIONACompletion = summarizeFIONAOutputs(selected, FIONAReport);
     save(fullfile(outputFolder, 'combined_SIC_pipeline_report.mat'), ...
         'StepFit2DReport', 'FIONAExportReport', 'TwoDFigureReport', ...
@@ -262,8 +274,9 @@ function [Report, selectedFolder, ExportReport, FigureReport] = preScreenFIONAIn
             [FigureReport, Report(k)] = move2DSICFiguresToGrade( ...
                 FigureReport, k, gradeFolder, Report(k));
             if Report(k).Selected
-                Report(k).SelectedFile = fullfile(selectedFolder, [filename extension]);
-                save(Report(k).SelectedFile, 'data', '-v7');
+                selectedFile = fullfile(selectedFolder, [filename extension]);
+                save(selectedFile, 'data', '-v7');
+                Report(k).SelectedFile = selectedFile;
                 Report(k).Reason = 'Selected for FIONAviewer SIC';
             else
                 Report(k).Reason = 'Below FIONAviewer pre-screen threshold';

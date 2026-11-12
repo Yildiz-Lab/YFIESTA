@@ -282,6 +282,7 @@ global Filament;
 global Stack;
 hMainGui=getappdata(0,'hMainGui');
 if isempty(Stack)
+    fToolBar('TrackChannels');hMainGui=getappdata(0,'hMainGui');
     if isempty(hMainGui.ZoomView.level)
         axis auto;
     end
@@ -348,13 +349,12 @@ set(Track(~Visible),'Visible','off');
 SelectChannel(Object);
 
 function SelectChannel(Object)
-global Stack;
 hMainGui=getappdata(0,'hMainGui');
 Visible=[Object.Visible];
 Channel=[Object.Channel];
 Track=[Object.PlotHandles];
 if ~isempty(Track) && all(ishandle(Track))
-    if strcmp(get(hMainGui.ToolBar.ToolChannels(5),'State'),'on')||isempty(Stack)
+    if strcmp(get(hMainGui.ToolBar.ToolChannels(5),'State'),'on')
         set(Track(Visible==1),'Visible','on');
         set(Track(Visible==0),'Visible','off');
     else

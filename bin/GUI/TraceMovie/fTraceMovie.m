@@ -11,8 +11,8 @@ switch lower(action)
             'BaselineAlpha',.20,'MarkerSize',2.5/3,'LineWidth',.5,'BufferFraction',.10, ...
             'CropNormalized',[],'Rotation','none','Theme','dark','Color',[], ...
             'TimeOrigin','relative','ScaleBarNm',[],'MaxDimension',960, ...
-            'FrameSize',[],'Quality',95,'Overwrite',false, ...
-            'DeadTimeSpeedup',20,'ShowLegend',false,'CropTiming','visible', ...
+            'FrameSize',[],'ResolutionScale',1,'Quality',95,'Overwrite',false, ...
+            'DeadTimeSpeedup',20,'ShowLegend',false,'ColorByChannel',false,'CropTiming','visible', ...
             'TimeRangeS',[],'Background',[],'ProgressFcn',[]);
     case 'prepare'
         varargout{1}=Prepare(varargin{:});
@@ -45,7 +45,7 @@ end
 if ~isstruct(molecule)||isempty(molecule)||~isvector(molecule)||~isfield(molecule,'Results')
     error('FIESTA:TraceMovieMolecules','Pass a nonempty vector of FIESTA molecules.');
 end
-count=numel(molecule);traces=struct('Name',{},'DataTimesS',{},'OriginalXYNm',{},'XYNm',{},'Color',{},'GlobalIndices',{});
+count=numel(molecule);traces=struct('Name',{},'Channel',{},'DataTimesS',{},'OriginalXYNm',{},'XYNm',{},'Color',{},'GlobalIndices',{});
 motion=cell(count,1);offset=0;
 for k=1:count
     r=double(molecule(k).Results);validateattributes(r,{'double'},{'2d','nonempty'});
@@ -55,7 +55,9 @@ for k=1:count
     end
     name=sprintf('Molecule %d',k);
     if isfield(molecule,'Name'),name=strtrim(regexprep(char(molecule(k).Name),'\s+',' '));end
-    traces(k)=struct('Name',name,'DataTimesS',r(:,2),'OriginalXYNm',r(:,3:4), ...
+    channel=1;if isfield(molecule,'Channel')&&~isempty(molecule(k).Channel),channel=molecule(k).Channel;end
+    validateattributes(channel,{'numeric'},{'real','scalar','finite','integer','positive'});
+    traces(k)=struct('Name',name,'Channel',double(channel),'DataTimesS',r(:,2),'OriginalXYNm',r(:,3:4), ...
         'XYNm',[],'Color',[],'GlobalIndices',offset+(1:size(r,1))');
     motion{k}=r(:,3:4)-mean(r(:,3:4),1);offset=offset+size(r,1);
 end
@@ -68,6 +70,7 @@ validateattributes(o.BaselineAlpha,{'numeric'},{'real','scalar','finite','>=',0,
 validateattributes(o.BufferFraction,{'numeric'},{'real','scalar','finite','nonnegative'});
 validateattributes(o.Quality,{'numeric'},{'real','scalar','finite','>=',0,'<=',100});
 validateattributes(o.MaxDimension,{'numeric'},{'integer','>=',320});
+validateattributes(o.ResolutionScale,{'numeric'},{'real','scalar','finite','integer','>=',1,'<=',4});
 o.Rotation=validatestring(o.Rotation,{'none','horizontal','vertical'});
 o.Theme=validatestring(o.Theme,{'dark','light'});
 o.TimeOrigin=validatestring(o.TimeOrigin,{'relative','absolute'});
@@ -78,7 +81,13 @@ end
 if ~isempty(o.Background),o.Background=fTraceMovieBackground('validate',o.Background);end
 validateattributes(o.Overwrite,{'logical','numeric'},{'scalar','binary'});
 validateattributes(o.ShowLegend,{'logical','numeric'},{'scalar','binary'});
+validateattributes(o.ColorByChannel,{'logical','numeric'},{'scalar','binary'});
 colors=AssignColors(traces,o);
+legendLabels={traces.Name};legendColors=colors;
+if o.ColorByChannel&&isempty(o.Color)
+    [channels,first]=unique([traces.Channel]);legendColors=colors(first,:);
+    legendLabels=arrayfun(@(c)sprintf('Channel %g',c),channels,'UniformOutput',false);
+end
 xy=vertcat(traces.OriginalXYNm);center=mean(xy,1);R=eye(2);motion=vertcat(motion{:});
 if ~strcmp(o.Rotation,'none') && any(motion~=0,'all')
     % Within-trace motion determines the axis, rather than distance between traces.
@@ -118,7 +127,7 @@ else
     if frameSize(1)<320,error('FIESTA:TraceMovieFrameSize','Frame width must be at least 320 pixels for the title and clock.');end
 end
 legendColumns=max(1,min(4,floor((frameSize(1)-2*margin)/120)));legendHeight=0;
-if count>1 && o.ShowLegend,legendHeight=20*ceil(count/legendColumns);end
+if o.ShowLegend&&(count>1||o.ColorByChannel),legendHeight=20*ceil(numel(legendLabels)/legendColumns);end
 if isempty(o.FrameSize),frameSize(2)=frameSize(2)+legendHeight;end
 % macOS MPEG-4 encoding can corrupt RGB row strides at non-block-aligned sizes.
 % Use the same 16-pixel-aligned canvas for preview and all export formats.
@@ -150,6 +159,11 @@ if ~isempty(o.CropNormalized)&&strcmp(o.CropTiming,'visible')
 end
 if timeRange(1)>timeRange(2),error('FIESTA:TraceMovieTime','Time range does not overlap the selected molecules.');end
 [frameTimes,timeline,movieTimes]=BuildTimeline(traces,o,timeRange);
+legendStart=-inf(1,numel(legendLabels));
+if ~o.ColorByChannel||~isempty(o.Color),legendStart=TraceAppearanceTimes(traces,bounds);end
+% Scale the complete layout; keep physical bounds, clock and legend slots fixed.
+frameSize=frameSize*o.ResolutionScale;rect=rect*o.ResolutionScale;
+scale=scale*o.ResolutionScale;legendHeight=legendHeight*o.ResolutionScale;
 duration=diff(timeRange);n=numel(frameTimes);name=traces(1).Name;
 if count>1,name=sprintf('%d molecules',count);end
 plan=struct('Name',name,'Options',o,'DataTimesS',t,'OriginalXYNm',vertcat(traces.OriginalXYNm), ...
@@ -157,8 +171,30 @@ plan=struct('Name',name,'Options',o,'DataTimesS',t,'OriginalXYNm',vertcat(traces
     'BoundsNm',bounds,'FrameTimesS',frameTimes,'FrameCount',n,'FrameSize',frameSize, ...
     'PlotRectPx',rect,'PixelsPerNm',scale,'ScaleBarNm',bar,'SourceDurationS',duration, ...
     'Traces',traces,'MoleculeCount',count,'Colors',colors,'Timeline',timeline, ...
-    'LegendColumns',legendColumns,'LegendHeight',legendHeight,'TimeOriginS',timeOrigin, ...
+    'LegendColumns',legendColumns,'LegendHeight',legendHeight,'LegendLabels',{legendLabels}, ...
+    'LegendColors',legendColors,'LegendStartTimesS',legendStart,'TimeOriginS',timeOrigin, ...
     'TimeRangeS',timeRange,'MovieTimesS',movieTimes);
+
+function times=TraceAppearanceTimes(traces,bounds)
+times=inf(1,numel(traces));
+for k=1:numel(traces)
+    xy=traces(k).XYNm;t=traces(k).DataTimesS;
+    first=find(all(xy>=bounds(1,:) & xy<=bounds(2,:),2),1);
+    if ~isempty(first),times(k)=t(first);end
+    % A connecting segment can cross the crop with both endpoints outside it.
+    % The renderer reveals that segment only after its second localization.
+    [lo,hi]=ClipSegments(xy(1:end-1,:),diff(xy,1,1),bounds(1,:),bounds(2,:));
+    first=find(lo<=hi,1);if ~isempty(first),times(k)=min(times(k),t(first+1));end
+end
+
+function [lo,hi]=ClipSegments(a,v,low,high)
+lo=zeros(size(a,1),1);hi=ones(size(a,1),1);
+for dim=1:2
+    moving=v(:,dim)~=0;
+    ends=([low(dim) high(dim)]-a(moving,dim))./v(moving,dim);
+    lo(moving)=max(lo(moving),min(ends,[],2));hi(moving)=min(hi(moving),max(ends,[],2));
+    hi(~moving & (a(:,dim)<low(dim)|a(:,dim)>high(dim)))=-1;
+end
 
 function colors=AssignColors(traces,o)
 count=numel(traces);
@@ -172,44 +208,68 @@ if ~isempty(o.Color)
     if size(colors,1)==1,colors=repmat(colors,count,1);end
     return;
 end
-% Okabe-Ito colors; deterministic assignment gives nearby paths more contrast.
+% Okabe-Ito hues, reused with local spatial/time contrast rather than global ties.
 palette=[86 180 233;230 159 0;0 158 115;204 121 167;213 94 0;0 114 178;240 228 66]/255;
 if strcmp(o.Theme,'light')
     palette=palette([6 5 3 4 2 1 7],:);
     palette(end,:)=palette(end,:)*.65; % yellow needs more contrast on white
 end
+if o.ColorByChannel
+    colors=palette(1+mod([traces.Channel]-1,size(palette,1)),:);return;
+end
 if count==1,colors=palette(1,:);return;end
-distance=inf(count);samples=cell(1,count);
+[~,canonical]=sort(string({traces.Name}));traces=traces(canonical);
+samples=cell(count,1);low=zeros(count,2);high=low;center=low;interval=zeros(count,2);
 for k=1:count
     xy=traces(k).OriginalXYNm;
-    samples{k}=xy(unique(round(linspace(1,size(xy,1),min(256,size(xy,1))))),:);
+    samples{k}=xy(unique(round(linspace(1,size(xy,1),min(64,size(xy,1))))),:);
+    low(k,:)=min(xy,[],1);high(k,:)=max(xy,[],1);center(k,:)=mean(xy,1);
+    interval(k,:)=traces(k).DataTimesS([1 end]);
 end
+scale=max(1,median(vecnorm(high-low,2,2)));
+timeScale=max(3*o.DecayMs/1000,median(diff(interval,1,2)));
+neighbors=min(24,count-1);row=zeros(count*neighbors,1);column=row;values=row;
 for k=1:count
-    for j=1:k-1
+    gap=max(0,max(interval(:,1),interval(k,1))-min(interval(:,2),interval(k,2)));
+    temporal=o.BaselineAlpha+(1-o.BaselineAlpha)*exp(-gap/timeScale);
+    boxDistance=vecnorm(max(0,max(low-high(k,:),low(k,:)-high)),2,2);
+    score=temporal./(1+(boxDistance/scale).^2+.01*sum((center-center(k,:)).^2,2)/scale^2);
+    score(k)=-Inf;[~,candidate]=maxk(score,neighbors);
+    for n=1:neighbors
+        j=candidate(n);
         a=samples{k};b=samples{j};
         d=hypot(a(:,1)-b(:,1)',a(:,2)-b(:,2)');
-        distance(k,j)=min(d,[],'all');distance(j,k)=distance(k,j);
+        idx=(k-1)*neighbors+n;row(idx)=k;column(idx)=j;
+        values(idx)=temporal(j)/(1+(min(d,[],'all')/scale)^2);
     end
 end
-typical=max(1,median(distance(isfinite(distance))));weight=1./(1+distance/typical);
+weight=sparse(row,column,values,count,count);weight=max(weight,weight');
 lab=rgb2lab(reshape(palette,[],1,3));lab=reshape(lab,[],3);
-contrast=sqrt(sum((reshape(lab,[],1,3)-reshape(lab,1,[],3)).^2,3));
-[~,canonical]=sort(string({traces.Name}));assigned=zeros(count,1);
+penalty=exp(-sum((reshape(lab,[],1,3)-reshape(lab,1,[],3)).^2,3)/(2*35^2));
+assigned=zeros(count,1);usage=zeros(size(palette,1),1);priority=full(sum(weight,2));
 for step=1:count
-    remaining=canonical(assigned(canonical)==0);
-    if step==1
-        [~,idx]=max(sum(weight(remaining,:),2));k=remaining(idx);choice=1;
-    else
-        previous=find(assigned>0);
-        [~,idx]=max(sum(weight(remaining,previous),2));k=remaining(idx);
-        candidates=setdiff(1:size(palette,1),assigned(previous));
-        if isempty(candidates),candidates=1:size(palette,1);end
-        scores=min(contrast(candidates,assigned(previous))./max(weight(k,previous),.01),[],2);
-        [~,best]=max(scores);choice=candidates(best);
-    end
-    assigned(k)=choice;
+    [~,k]=max(priority);[~,choice]=min(ColorCosts(k,weight,assigned,usage,penalty));
+    assigned(k)=choice;usage(choice)=usage(choice)+1;priority(k)=-Inf;
+    [~,near,w]=find(weight(k,:));open=assigned(near)==0;
+    priority(near(open))=priority(near(open))+reshape(w(open),[],1);
 end
-colors=palette(assigned,:);
+% Refine against all local neighbors after the first greedy pass.
+for pass=1:2
+    for k=1:count
+        old=assigned(k);usage(old)=usage(old)-1;
+        scores=ColorCosts(k,weight,assigned,usage,penalty);[best,choice]=min(scores);
+        if scores(old)<=best+1e-12,choice=old;end
+        assigned(k)=choice;usage(choice)=usage(choice)+1;
+    end
+end
+colors=zeros(count,3);colors(canonical,:)=palette(assigned,:);
+
+function scores=ColorCosts(k,weight,assigned,usage,penalty)
+[~,near,w]=find(weight(k,:));keep=assigned(near)>0;near=near(keep);w=w(keep);
+scores=zeros(numel(usage),1);
+if ~isempty(near),scores=penalty(:,assigned(near))*w(:);end
+scores=scores+.02*max(1,sum(w))*usage/max(1,numel(assigned)/numel(usage));
+if numel(assigned)<=numel(usage),scores(usage>0)=Inf;end
 
 function [times,timeline,movieTimes]=BuildTimeline(traces,o,timeRange)
 intervals=zeros(numel(traces),2);
@@ -263,17 +323,26 @@ for j=1:plan.MoleculeCount
         'IsActive',isActive);
 end
 state=struct('TimeS',t,'LabelTimeS',label,'VisibleIndices',indices,'AgeMs',ageMs,'Alpha',a, ...
-    'Traces',traceStates,'IsDeadTime',~active,'SpeedFactor',1);
+    'Traces',traceStates,'IsDeadTime',~active,'SpeedFactor',1,'LegendVisible',t>=plan.LegendStartTimesS);
 if ~active,state.SpeedFactor=plan.Options.DeadTimeSpeedup;end
 
 function renderer=CreateRenderer(plan)
 o=plan.Options;if strcmp(o.Theme,'dark'),bg=[.045 .055 .075];fg=[.94 .95 .97];else,bg=[1 1 1];fg=[.08 .09 .11];end
 old=get(0,'CurrentFigure');
-f=figure('Visible','off','Units','pixels','Position',[40 40 plan.FrameSize], ...
+% Keep the hidden figure at base size, so high-resolution exports are not
+% constrained by the monitor. Raster layers and print DPI supply the extra pixels.
+s=o.ResolutionScale;baseSize=plan.FrameSize/s;dpi=round(get(0,'ScreenPixelsPerInch'));
+f=figure('Visible','off','Units','pixels','Position',[40 40 baseSize], ...
     'Color',bg,'MenuBar','none','ToolBar','none','NumberTitle','off','Name','Trace movie render', ...
     'Resize','off','HandleVisibility','off','InvertHardcopy','off');
+resolution='-r0';
+if s>1
+    set(f,'PaperUnits','inches','PaperPositionMode','manual', ...
+        'PaperPosition',[0 0 baseSize/dpi],'PaperSize',baseSize/dpi);
+    resolution=sprintf('-r%d',dpi*s);
+end
 try
-    ax=axes('Parent',f,'Units','pixels','Position',plan.PlotRectPx,'Color',bg, ...
+    ax=axes('Parent',f,'Units','pixels','Position',plan.PlotRectPx/s,'Color',bg, ...
         'XLim',plan.BoundsNm(:,1)','YLim',plan.BoundsNm(:,2)','YDir','reverse', ...
         'DataAspectRatio',[1 1 1],'Visible','off','NextPlot','add');
     raster=cell(1,plan.MoleculeCount);
@@ -287,12 +356,12 @@ try
     layer=image(ax,'XData',[plan.BoundsNm(1,1)+pixel(1)/2 plan.BoundsNm(2,1)-pixel(1)/2], ...
         'YData',[plan.BoundsNm(1,2)+pixel(2)/2 plan.BoundsNm(2,2)-pixel(2)/2], ...
         'CData',color);
-    W=plan.FrameSize(1);H=plan.FrameSize(2);
+    W=baseSize(1);H=baseSize(2);
     annotation(f,'textbox',[24/W (H-36)/H .56 28/H],'String',plan.Name,'Interpreter','none', ...
         'EdgeColor','none','Color',fg,'FontSize',13,'FontName','Helvetica','VerticalAlignment','middle');
     clock=annotation(f,'textbox',[.59 (H-36)/H .38 28/H],'String','','Interpreter','none', ...
         'EdgeColor','none','Color',fg,'FontSize',14,'FontName','Helvetica','HorizontalAlignment','right');
-    lengthPx=plan.ScaleBarNm*plan.PixelsPerNm;right=W-24;
+    lengthPx=plan.ScaleBarNm*plan.PixelsPerNm/s;right=W-24;
     annotation(f,'line',[right-lengthPx right]/W,[34 34]/H,'Color',fg,'LineWidth',2);
     if plan.ScaleBarNm>=1000,label=sprintf('%g %sm',plan.ScaleBarNm/1000,char(181));else,label=sprintf('%g nm',plan.ScaleBarNm);end
     labelWidth=max(100,lengthPx);
@@ -300,19 +369,21 @@ try
         'EdgeColor','none','Color',fg,'FontSize',11,'HorizontalAlignment','center','Margin',0);
     speedLabel=annotation(f,'textbox',[24/W 25/H .5 25/H],'String','','Interpreter','none', ...
         'EdgeColor','none','Color',fg,'FontSize',10,'Margin',0);
+    legend=gobjects(2,0);
     if plan.LegendHeight>0
         columnWidth=(W-48)/plan.LegendColumns;
-        for j=1:plan.MoleculeCount
-            x=24+mod(j-1,plan.LegendColumns)*columnWidth;y=52+plan.LegendHeight-20*ceil(j/plan.LegendColumns);
-            annotation(f,'line',[x x+15]/W,[y+8 y+8]/H,'Color',plan.Colors(j,:),'LineWidth',2);
-            label=regexprep(plan.Traces(j).Name,'^Molecule\s+','');
-            annotation(f,'textbox',[(x+20)/W y/H (columnWidth-20)/W 20/H],'String',label, ...
-                'Interpreter','none','EdgeColor','none','Color',fg,'FontSize',10,'Margin',0);
+        legend=gobjects(2,numel(plan.LegendLabels));
+        for j=1:numel(plan.LegendLabels)
+            x=24+mod(j-1,plan.LegendColumns)*columnWidth;y=52+plan.LegendHeight/s-20*ceil(j/plan.LegendColumns);
+            legend(1,j)=annotation(f,'line',[x x+15]/W,[y+8 y+8]/H,'Color',plan.LegendColors(j,:),'LineWidth',2,'Visible','off');
+            label=regexprep(plan.LegendLabels{j},'^Molecule\s+','');
+            legend(2,j)=annotation(f,'textbox',[(x+20)/W y/H (columnWidth-20)/W 20/H],'String',label, ...
+                'Interpreter','none','EdgeColor','none','Color',fg,'FontSize',10,'Margin',0,'Visible','off');
         end
     end
     renderer=struct('Figure',f,'PreviousFigure',old,'Layer',layer,'Raster',{raster}, ...
         'Clock',clock,'SpeedLabel',speedLabel,'Background',bg,'Foreground',fg, ...
-        'StackBackground',background);
+        'StackBackground',background,'Legend',legend,'PrintResolution',resolution);
 catch err
     delete(f);rethrow(err);
 end
@@ -329,8 +400,8 @@ alpha=zeros(sizePx);colorSum=zeros([sizePx 3]);ties=zeros(sizePx);
 if nargout>1,state.TraceCoverageAlpha=cell(1,plan.MoleculeCount);end
 for j=1:plan.MoleculeCount
     r=renderer.Raster{j};
-    points=Paint(r.Points,state.TimeS,plan.Options,r.Size,r.Supersample,plan.Options.MarkerSize/2);
-    lines=Paint(r.Lines,state.TimeS,plan.Options,r.Size,r.Supersample,plan.Options.LineWidth/2);
+    points=Paint(r.Points,state.TimeS,plan.Options,r.Size,r.Supersample,plan.Options.MarkerSize*plan.Options.ResolutionScale/2);
+    lines=Paint(r.Lines,state.TimeS,plan.Options,r.Size,r.Supersample,plan.Options.LineWidth*plan.Options.ResolutionScale/2);
     % Max-composite within each trace prevents dense old points building opacity.
     a=imresize(max(points,lines),r.Size,'box');
     if nargout>1,state.TraceCoverageAlpha{j}=a;end
@@ -348,9 +419,13 @@ set(renderer.Layer,'CData',(colorSum./max(ties,1)).*alpha+baseImage.*(1-alpha));
 set(renderer.Clock,'String',sprintf('t = %.3f s',state.LabelTimeS));
 speed='';if state.IsDeadTime&&state.SpeedFactor>1,speed=sprintf('Idle %gx',state.SpeedFactor);end
 set(renderer.SpeedLabel,'String',speed);
+if ~isempty(renderer.Legend)
+    set(renderer.Legend(:,state.LegendVisible),'Visible','on');
+    set(renderer.Legend(:,~state.LegendVisible),'Visible','off');
+end
 drawnow;
 % Scene-based capture keeps pixels consistent with a native crop editor open.
-rgb=print(renderer.Figure,'-RGBImage','-r0','-painters');
+rgb=print(renderer.Figure,'-RGBImage',renderer.PrintResolution,'-painters');
 if ~isequal([size(rgb,2) size(rgb,1)],plan.FrameSize),rgb=imresize(rgb,plan.FrameSize([2 1]),'bicubic');end
 
 function raster=PrepareRaster(plan,trace)
@@ -359,20 +434,12 @@ span=diff(plan.BoundsNm,1,1);
 xy=(trace.XYNm-plan.BoundsNm(1,:))./span.*grid([2 1])+.5;
 points=[xy trace.DataTimesS trace.DataTimesS];
 segments=cell(max(0,size(xy,1)-1),1);
+[lo,hi]=ClipSegments(xy(1:end-1,:),diff(xy,1,1),[.5 .5],grid([2 1])+.5);
 for k=1:numel(segments)
     a=xy(k,:);b=xy(k+1,:);v=b-a;
     % Clip before sampling so very tight crops do not create huge arrays.
-    lo=0;hi=1;
-    for dim=1:2
-        if v(dim)==0
-            if a(dim)<.5||a(dim)>grid(3-dim)+.5,hi=-1;end
-        else
-            ends=sort(([.5 grid(3-dim)+.5]-a(dim))/v(dim));
-            lo=max(lo,ends(1));hi=min(hi,ends(2));
-        end
-    end
-    if lo>hi,continue;end
-    fractions=linspace(lo,hi,max(2,ceil(norm(v)*(hi-lo)*2)+1))';
+    if lo(k)>hi(k),continue;end
+    fractions=linspace(lo(k),hi(k),max(2,ceil(norm(v)*(hi(k)-lo(k))*2)+1))';
     times=trace.DataTimesS(k)+fractions*(trace.DataTimesS(k+1)-trace.DataTimesS(k));
     segments{k}=[a+fractions.*v times repmat(trace.DataTimesS(k+1),numel(times),1)];
 end
@@ -472,7 +539,7 @@ report=struct('File',file,'MoleculeName',plan.Name,'FrameCount',plan.FrameCount,
     'FrameSize',plan.FrameSize,'FrameRate',o.FrameRate,'PlaybackSpeed',o.PlaybackSpeed, ...
     'SourceDurationS',plan.SourceDurationS,'MovieDurationS',plan.FrameCount/o.FrameRate, ...
     'ScaleBarNm',plan.ScaleBarNm,'Options',o,'MoleculeCount',plan.MoleculeCount, ...
-    'MoleculeNames',{{plan.Traces.Name}},'Colors',plan.Colors,'Timeline',plan.Timeline, ...
+    'MoleculeNames',{{plan.Traces.Name}},'Channels',[plan.Traces.Channel],'Colors',plan.Colors,'Timeline',plan.Timeline, ...
     'DeadTimeSpeedup',o.DeadTimeSpeedup);
 
 function DeleteTemporary(file)

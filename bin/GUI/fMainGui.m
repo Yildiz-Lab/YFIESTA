@@ -1643,6 +1643,8 @@ if ~strcmp(get(hMainGui.fig,'Pointer'),'watch')
                 fShared('AddStack',getappdata(0,'hMainGui'));
             case 97  %a
                 fShared('AnalyseQueue',getappdata(0,'hMainGui'));
+                % The queue closes the stack; keep its updated display handles.
+                hMainGui=getappdata(0,'hMainGui');
             % JS Edit 2022/09/30 keyboard shortcut to change between
             % channels using qwer right below 1-4
             case 113 %q

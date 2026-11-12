@@ -134,3 +134,33 @@ The default output is
 `FIONAviewer_SIC/steps_summary_S_A.csv`. Call the function without an input
 to select the overarching MAT file with a file-selection dialog, or provide
 a second argument to choose another CSV filename.
+
+## Population EFO screening in the combined pipeline
+
+`runMolecule2DSICThenFIONAviewerSIC` and its batch function automatically
+cap the **final** FIONAviewer grade at A when a molecule's median EFO
+exceeds 1.5 times the median of eligible molecules in that run. The 2-D
+prescreen, EFO truncation, fitted steps, and numerical steppiness score
+are unchanged. Each eligible molecule has equal weight in the reference,
+using its pre-truncation median EFO when available.
+
+Set these options before running the script, or pass the struct using
+`'FIONAOptions', FIONAOptions` to the batch function:
+
+```matlab
+FIONAOptions.PopulationEFOGradeCap = 'B'; % 'A' default; 'off' disables
+FIONAOptions.PopulationEFOMultiplier = 1.5;
+FIONAOptions.PopulationEFOReference = []; % Or a known-good reference in Hz
+runMolecule2DSICThenFIONAviewerSIC
+```
+
+An A cap keeps flagged traces in the S/A export. A B cap excludes flagged
+S/A traces from it. Traces already below the cap are never promoted.
+Fewer than five valid EFO medians disables the automatic reference; an
+explicit positive reference can still screen a small batch. Use one
+acquisition or comparable acquisition settings per run. The batch MAT
+report and trace CSV record the uncapped grade, reference, threshold,
+and which traces were flagged or capped. A new screened fit requires a
+fresh output folder so no older S/A copies survive a downgrade. Resume
+is supported for compatible saved outputs and the same screening policy.
+Standalone `batchFIONAviewerSIC` defaults to screening off.

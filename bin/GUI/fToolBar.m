@@ -20,6 +20,8 @@ switch func
         ToolKymoGraph(varargin{1});
     case 'SwitchChannel'
         SwitchChannel(varargin{1});
+    case 'TrackChannels'
+        TrackChannels;
     case 'SwitchColors'
         SwitchColors(varargin{1});
     case 'Overlay'
@@ -174,6 +176,13 @@ end
 
 function Overlay
 global Stack;
+if isempty(Stack)
+    global Molecule Filament;
+    hMainGui=getappdata(0,'hMainGui');
+    set(hMainGui.Menu.mColorOverlay,'Checked',get(hMainGui.ToolBar.ToolChannels(5),'State'));
+    fShow('SelectChannel',Molecule);fShow('SelectChannel',Filament);
+    return;
+end
 if ~isempty(Stack)
     hMainGui=getappdata(0,'hMainGui');
     s = get(hMainGui.ToolBar.ToolChannels(5),'State');
@@ -194,6 +203,16 @@ global Stack;
 global Config;
 global Molecule;
 global Filament;
+if isempty(Stack)
+    TrackChannels;hMainGui=getappdata(0,'hMainGui');
+    if ~ismember(nCh,hMainGui.Values.TrackChannels)||nCh>4,return;end
+    set(hMainGui.ToolBar.ToolChannels,'State','off');
+    set(hMainGui.ToolBar.ToolChannels(nCh),'State','on');
+    set(hMainGui.Menu.mColorOverlay,'Checked','off');
+    hMainGui.Values.FrameIdx(1)=nCh;setappdata(0,'hMainGui',hMainGui);
+    fShow('SelectChannel',Molecule);fShow('SelectChannel',Filament);
+    return;
+end
 if ~isempty(Stack)
     hMainGui=getappdata(0,'hMainGui');
     set(hMainGui.ToolBar.ToolChannels(1:4),'State','off');
@@ -244,6 +263,35 @@ if ~isempty(Stack)
         fRightPanel('ShowKymoGraph',hMainGui);
     end
 end
+
+function TrackChannels
+% Reuse the channel toolbar for trajectories loaded without image pixels.
+global Stack Molecule Filament;
+if ~isempty(Stack),return;end
+hMainGui=getappdata(0,'hMainGui');channels=[];
+if ~isempty(Molecule),channels=[channels Molecule.Channel];end
+if ~isempty(Filament),channels=[channels Filament.Channel];end
+channels=unique(channels(isfinite(channels)&channels>=1&channels==fix(channels)));
+first=~any(strcmp(get(hMainGui.ToolBar.ToolChannels(1:4),'Visible'),'on'));
+nCh=hMainGui.Values.FrameIdx(1);
+if ~ismember(nCh,channels),nCh=min([channels Inf]);end
+if isinf(nCh),nCh=1;end
+hMainGui.Values.TrackChannels=channels;
+hMainGui.Values.FrameIdx(1)=nCh;hMainGui.Values.MaxIdx(1)=max([1 channels]);
+set(hMainGui.ToolBar.ToolChannels(1:4),'Visible','off','State','off');
+if numel(channels)>1||any(channels~=1)
+    set(hMainGui.ToolBar.ToolChannels(channels(channels<=4)),'Visible','on');
+end
+if nCh<=4,set(hMainGui.ToolBar.ToolChannels(nCh),'State','on');end
+enable='off';
+if numel(channels)>1
+    enable='on';if first,set(hMainGui.ToolBar.ToolChannels(5),'State','on');end
+else,set(hMainGui.ToolBar.ToolChannels(5),'State','off');
+end
+set(hMainGui.ToolBar.ToolChannels(5),'Visible',enable);
+set(hMainGui.ToolBar.ToolColors,'Visible','off');
+set(hMainGui.Menu.mColorOverlay,'Enable',enable,'Checked',get(hMainGui.ToolBar.ToolChannels(5),'State'));
+setappdata(0,'hMainGui',hMainGui);
 
 function SetZoom(hMainGui)
 Zoom=hMainGui.ZoomView;

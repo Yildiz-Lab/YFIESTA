@@ -13,6 +13,19 @@ function writeFIONASteppinessReports(outputFolder, Report, RegionScores)
         'VariableNames', {'OutputFile','Grade','Score','NumberOfSteps','NumberOfDwells', ...
         'HighEFOFraction','PointCount','Directionality','ConstantVelocityR2', ...
         'LongestDwellFraction','EFOAvailable','NeedsManualReview','Flags'});
+    if isfield(traces,'PopulationEFO')
+        screen = [traces.PopulationEFO];
+        traceTable.UncappedGrade = {screen.UncappedGrade}.';
+        traceTable.PopulationEFOMedian = [screen.MedianEFO].';
+        traceTable.PopulationEFOReference = [screen.ReferenceEFO].';
+        traceTable.PopulationEFOReferenceSource = {screen.ReferenceSource}.';
+        traceTable.PopulationEFOReferenceTraceCount = [screen.ReferenceTraceCount].';
+        traceTable.PopulationEFOThreshold = [screen.ThresholdEFO].';
+        traceTable.PopulationEFORatio = [screen.Ratio].';
+        traceTable.PopulationEFOGradeCap = {screen.GradeCap}.';
+        traceTable.HighPopulationEFO = [screen.Flagged].';
+        traceTable.PopulationEFOGradeCapped = [screen.GradeCapped].';
+    end
     writetable(traceTable, fullfile(outputFolder, 'steppiness_trace_report.csv'));
 
     RegionScores = RegionScores(~cellfun(@isempty, RegionScores));

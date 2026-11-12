@@ -1,5 +1,5 @@
 function varargout=fLocalQueue(action,varargin)
-%FLOCALQUEUE File-backed local jobs; each movie lives only in RunJob's scope.
+%FLOCALQUEUE File-backed jobs; a sole matching loaded movie can stay in memory.
 switch lower(action)
     case 'snapshot',varargout{1}=Snapshot(varargin{:});
     case 'append',varargout{1}=Append(varargin{:});
@@ -50,19 +50,24 @@ for k=1:numel(queue)
     end
 end
 
-function [stack,time,job]=LoadJob(job)
+function [stack,time,job]=LoadJob(job,varargin)
 if job.FirstTFrame==0,stack={};time={};return;end
 if isfield(job,'LocalSourceFiles')&&~isempty(job.LocalSourceFiles),files=job.LocalSourceFiles;
 else,files={fullfile(One(job.Directory),One(job.StackName))};end
+if ~isempty(varargin)&&numel(files)~=1,error('FIESTA:QueueSource','Loaded-movie reuse requires one source file.');end
 stack={};time={};
 for source=1:numel(files)
-    file=files{source};if ~isfile(file),error('FIESTA:QueueSource','Queued source is unavailable: %s',file);end
-    [~,~,ext]=fileparts(file);
-    if strcmpi(ext,'.mat')
-        data=load(file,'Stack','TimeInfo');s=data.Stack;t=data.TimeInfo;
-    elseif ismember(lower(ext),{'.nd2','.nd','.zvi','.dv'})
-        [s,t]=fReadND2(file,job.StackReadOptions);
-    else,[s,t]=fStackRead(file,job.StackReadOptions);
+    if ~isempty(varargin)
+        s=varargin{1};t=varargin{2};
+    else
+        file=files{source};if ~isfile(file),error('FIESTA:QueueSource','Queued source is unavailable: %s',file);end
+        [~,~,ext]=fileparts(file);
+        if strcmpi(ext,'.mat')
+            data=load(file,'Stack','TimeInfo');s=data.Stack;t=data.TimeInfo;
+        elseif ismember(lower(ext),{'.nd2','.nd','.zvi','.dv'})
+            [s,t]=fReadND2(file,job.StackReadOptions);
+        else,[s,t]=fStackRead(file,job.StackReadOptions);
+        end
     end
     if ~iscell(s),s={s};end
     if ~iscell(t),t={t};end
@@ -98,9 +103,9 @@ if ~isempty(job.Region)&&~isequal(size(job.Region),[size(stack{1},1) size(stack{
 end
 job.StackName=One(job.StackName);job.Directory=[strip(One(job.Directory),'right',filesep) filesep];
 
-function [abort,file]=RunJob(job)
-% Returning releases all of this job's pixel arrays before the next load.
-[stack,time,job]=LoadJob(job);objects=[];
+function [abort,file]=RunJob(job,varargin)
+% File-loaded arrays are released on return; a reused GUI stack stays loaded.
+[stack,time,job]=LoadJob(job,varargin{:});objects=[];
 if job.FirstTFrame==0
     if ~isfield(job,'LocalReconnectObjects')||isempty(job.LocalReconnectObjects)
         error('FIESTA:QueueReconnect','Re-add this reconnect job to snapshot its source objects.');
@@ -111,20 +116,26 @@ if isfield(job,'LocalReconnectObjects'),job=rmfield(job,'LocalReconnectObjects')
 [abort,file]=fAnalyseStack(stack,time,job,0,objects);
 
 function [files,problem]=Run(main,unload)
-global Queue Stack
+global Queue Stack TimeInfo
 files={};problem=[];if isempty(Queue),return;end
 if getappdata(0,'LocalQueueRunning'),error('FIESTA:QueueBusy','The local queue is already running.');end
 setappdata(0,'LocalQueueRunning',true);cleanup=onCleanup(@Finish);
 Queue=Append(Queue,[]);if nargin<2,unload=true;end
 try
     fRightPanel('UpdateQueue','Local');
-    if unload&&~isempty(Stack)
-        fMenuData('CloseStack',main);main=getappdata(0,'hMainGui');
-        if ~isempty(Stack),error('FIESTA:QueueUnload','Close the current movie before running the local queue.');end
-    end
     while ~isempty(Queue)
         job=Queue(1);fprintf('Local queue: %s (%d job(s) remaining)\n',job.StackName,numel(Queue));
-        [abort,file]=RunJob(job);
+        if numel(Queue)==1&&CanReuseLoaded(job)
+            fprintf('Local queue: using the loaded movie without closing or reloading it.\n');
+            [abort,file]=RunJob(job,Stack,TimeInfo);
+        else
+            if unload&&~isempty(Stack)
+                main=getappdata(0,'hMainGui');
+                fMenuData('CloseStack',main);main=getappdata(0,'hMainGui');
+                if ~isempty(Stack),error('FIESTA:QueueUnload','Close the current movie before running the local queue.');end
+            end
+            [abort,file]=RunJob(job);
+        end
         if abort
             error('FIESTA:QueueStopped','Analysis stopped for %s. This job and later jobs remain queued. Partial results: %s',job.StackName,file);
         end
@@ -137,6 +148,20 @@ catch err
     problem=err;
 end
 setappdata(main.fig,'LocalQueueResults',files);setappdata(main.fig,'LocalQueueError',problem);
+
+function reuse=CanReuseLoaded(job)
+global Stack Config
+reuse=false;
+% Keep complex channel combinations/reconnects on the existing file-backed path.
+if numel(Stack)~=1||isempty(Stack{1})||job.FirstTFrame==0||~isempty(job.Drift),return;end
+if ~all(isfield(Config,{'StackName','Directory','StackReadOptions'}))|| ...
+        (iscell(Config.StackName)&&numel(Config.StackName)~=1)|| ...
+        (iscell(Config.Directory)&&numel(Config.Directory)~=1),return;end
+if isempty(Config.StackName)||isempty(Config.Directory)|| ...
+        ~isequaln(job.StackReadOptions,Config.StackReadOptions),return;end
+if isfield(job,'LocalSourceFiles')&&~isempty(job.LocalSourceFiles),files=job.LocalSourceFiles;
+else,files={fullfile(One(job.Directory),One(job.StackName))};end
+reuse=numel(files)==1&&strcmp(files{1},fullfile(One(Config.Directory),One(Config.StackName)));
 
 function Finish
 setappdata(0,'LocalQueueRunning',false);

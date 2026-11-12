@@ -12,6 +12,8 @@ function Report = batchFIONAviewerSIC(inputFolder, varargin)
 %   This is deliberately orchestration only: filtering, fitting, alignment,
 %   trace packaging, plotting, and figure export are all existing
 %   FIONAviewer functions.
+%   Optional population EFO screening caps the final grade at A or B using
+%   PopulationEFOMultiplier times the median eligible molecule EFO.
 
     p = inputParser;
     p.addOptional('inputFolder', '', @(x) ischar(x) || isstring(x));
@@ -21,6 +23,12 @@ function Report = batchFIONAviewerSIC(inputFolder, varargin)
     p.addParameter('ShowViewer', false, @(x) islogical(x) || (isnumeric(x) && isscalar(x)));
     p.addParameter('StagePauseSeconds', [], @(x) isempty(x) || (isnumeric(x) && isscalar(x) && x >= 0));
     p.addParameter('ResumeExisting', false, @(x) islogical(x) || (isnumeric(x) && isscalar(x)));
+    p.addParameter('InputFileNames', {}, @(x) iscellstr(x) || isstring(x));
+    p.addParameter('PopulationEFOGradeCap', 'off', @(x) ...
+        ((ischar(x) && isrow(x)) || (isstring(x) && isscalar(x))) && any(strcmpi(x,{'off','A','B'})));
+    p.addParameter('PopulationEFOMultiplier', 1.5, @(x) isnumeric(x) && isreal(x) && isscalar(x) && isfinite(x) && x > 1);
+    p.addParameter('PopulationEFOReference', [], @(x) isempty(x) || ...
+        (isnumeric(x) && isreal(x) && isscalar(x) && isfinite(x) && x > 0));
     p.parse(inputFolder, varargin{:}); opt = p.Results;
     if isempty(opt.StagePauseSeconds)
         if opt.ShowViewer, opt.StagePauseSeconds = 1; else, opt.StagePauseSeconds = 0; end
@@ -73,7 +81,40 @@ function Report = batchFIONAviewerSIC(inputFolder, varargin)
         fprintf('Ignoring %d hidden macOS metadata file(s) in %s.\n', ...
             ignoredCount, inputFolder);
     end
+    if ~isempty(opt.InputFileNames)
+        wanted = opt.InputFileNames;
+        if isstring(wanted), wanted = cellstr(wanted); end
+        files = files(ismember({files.name}, wanted));
+        if numel(files) ~= numel(wanted)
+            error('batchFIONAviewerSIC:InputFileNames', ...
+                'InputFileNames must name unique, existing FIONA MAT files in the input folder.');
+        end
+    end
     [~, order] = sort({files.name}); files = files(order);
+    gradeCap = validatestring(opt.PopulationEFOGradeCap, {'off','A','B'});
+    medians = nan(numel(files),1);
+    if ~strcmp(gradeCap,'off')
+        if ~opt.ResumeExisting, requireFreshFIONAEFOOutput(outputFolder); end
+        for k = 1:numel(files)
+            medians(k) = eligibleTraceMedianEFO(fullfile(inputFolder,files(k).name));
+        end
+    end
+    PopulationEFOScreen = buildFIONAPopulationEFOScreen(medians, ...
+        opt.PopulationEFOMultiplier, gradeCap, opt.PopulationEFOReference);
+    if ~strcmp(gradeCap,'off')
+        if isfinite(PopulationEFOScreen.ReferenceEFO)
+            fprintf('Population EFO: reference %.0f Hz (%s; %d valid traces); > %.0f Hz flags %d/%d traces for an %s cap.\n', ...
+                PopulationEFOScreen.ReferenceEFO, PopulationEFOScreen.ReferenceSource, ...
+                PopulationEFOScreen.ReferenceTraceCount, PopulationEFOScreen.ThresholdEFO, ...
+                nnz(PopulationEFOScreen.Flagged), numel(files), gradeCap);
+        else
+            warning('batchFIONAviewerSIC:PopulationEFOReference', ...
+                'Fewer than five eligible traces have positive median EFO; no grade cap was applied. Supply PopulationEFOReference to screen a small batch.');
+        end
+        if opt.ResumeExisting
+            verifyPopulationEFOResume(outputFolder, files, PopulationEFOScreen);
+        end
+    end
     Report = repmat(struct('InputFile','','OutputFile','','Succeeded',false,'Reason','', ...
         'LongAudit',[],'ShortAudit',[],'Steppiness',[],'FlagFigure','', ...
         'Grade','','GradeFolder','','StepStatisticsFile',''),numel(files),1);
@@ -86,6 +127,10 @@ function Report = batchFIONAviewerSIC(inputFolder, varargin)
             [existingFile, existingData] = findCompleteFIONAOutput(outputFolder, files(k).name);
             if ~isempty(existingFile)
                 Report(k) = reportExistingFIONAOutput(Report(k), existingFile, existingData);
+                if ~isfield(Report(k).Steppiness,'PopulationEFO')
+                    Report(k).Steppiness = applyFIONAPopulationEFOGradeCap( ...
+                        Report(k).Steppiness, PopulationEFOScreen, k);
+                end
                 RegionScores{k} = existingData.Steppiness.Regions;
                 for r = 1:numel(RegionScores{k})
                     RegionScores{k}(r).OutputFile = existingFile;
@@ -118,6 +163,8 @@ function Report = batchFIONAviewerSIC(inputFolder, varargin)
             data.BatchFIONAviewerSIC.LongAxis = longAudit;
             data.BatchFIONAviewerSIC.ShortAxis = shortAudit;
             data.Steppiness = scoreFIONASteppiness(data, 'DownsampleFactor', opt.DownsampleFactor);
+            data.Steppiness.Trace = applyFIONAPopulationEFOGradeCap( ...
+                data.Steppiness.Trace, PopulationEFOScreen, k);
             save(outputFile, 'data', '-v7');
             ExportFigure(app);
             Report(k).Succeeded = true; Report(k).Reason = 'Saved and exported';
@@ -152,8 +199,70 @@ function Report = batchFIONAviewerSIC(inputFolder, varargin)
         end
     end
     [Report, RegionScores] = organizeFIONAOutputsByGrade(Report, RegionScores, outputFolder);
-    save(fullfile(outputFolder, 'FIONAviewer_SIC5_batch_report.mat'), 'Report', 'opt', '-v7');
+    PopulationEFOScreen.InputFileNames = {files.name}.';
+    save(fullfile(outputFolder, 'FIONAviewer_SIC5_batch_report.mat'), 'Report', 'opt', 'PopulationEFOScreen', '-v7');
     writeFIONASteppinessReports(outputFolder, Report, RegionScores);
+end
+
+function value = eligibleTraceMedianEFO(inputFile)
+    value = NaN;
+    try
+        loaded = load(inputFile,'data');
+        data = loaded.data;
+        if isfield(data,'efoPreTruncationMedian')
+            efo = data.efoPreTruncationMedian;
+            if isnumeric(efo) && isreal(efo) && isscalar(efo) && isfinite(efo) && efo > 0
+                value = double(efo);
+                return
+            end
+        end
+        if isfield(data,'efo') && isnumeric(data.efo) && isreal(data.efo)
+            efo = double(data.efo(:));
+            efo = efo(isfinite(efo) & efo > 0);
+            if ~isempty(efo), value = median(efo); end
+        end
+    catch ME
+        warning('batchFIONAviewerSIC:PopulationEFORead', ...
+            'Could not read EFO from %s: %s', inputFile, ME.message);
+    end
+end
+
+function verifyPopulationEFOResume(outputFolder, files, screen)
+    names = {files.name};
+    folders = {outputFolder, fullfile(outputFolder,'S'), fullfile(outputFolder,'A'), ...
+        fullfile(outputFolder,'B'), fullfile(outputFolder,'C_or_lower')};
+    physicalNames = {};
+    for j = 1:numel(folders)
+        entries = dir(fullfile(folders{j},'*_fiona.mat'));
+        entries = entries(~startsWith({entries.name},'.'));
+        physicalNames = [physicalNames, {entries.name}]; %#ok<AGROW>
+    end
+    staged = dir(fullfile(outputFolder,'all','*_fiona.mat'));
+    staged = staged(~startsWith({staged.name},'.'));
+    if numel(unique(physicalNames)) ~= numel(physicalNames) || ...
+            ~all(ismember([physicalNames,{staged.name}],names))
+        error('batchFIONAviewerSIC:PopulationEFOResume', ...
+            'Existing output has duplicate traces or a different input cohort. Use a fresh OutputFolder.');
+    end
+    for k = 1:numel(files)
+        if ~ismember(names{k},physicalNames), continue, end
+        [existingFile, data] = findCompleteFIONAOutput(outputFolder,names{k});
+        if ~isempty(existingFile) && isfield(data.Steppiness.Trace,'PopulationEFO')
+            previous = data.Steppiness.Trace;
+            expected = applyFIONAPopulationEFOGradeCap(previous, screen, k);
+            savedFolder = fileparts(existingFile);
+            gradeFolder = fullfile(outputFolder,finalGradeFolderName(expected.Grade));
+            if isequaln(previous.PopulationEFO,expected.PopulationEFO) && ...
+                    strcmp(previous.Grade,expected.Grade) && ...
+                    (strcmp(savedFolder,outputFolder) || strcmp(savedFolder,gradeFolder))
+                continue
+            end
+        end
+        error('batchFIONAviewerSIC:PopulationEFOResume', ...
+            ['Existing output for %s is incomplete, manually retiered, or has a different EFO policy/reference. ' ...
+             'Use a fresh OutputFolder.'], ...
+            names{k});
+    end
 end
 
 function [existingFile, data] = findCompleteFIONAOutput(outputFolder, filename)

@@ -49,9 +49,7 @@ hVelocityStatsGui.fig = figure('Units','normalized','WindowStyle','normal','Dock
 
 fPlaceFig(hVelocityStatsGui.fig,'big');
 
-if ispc
-    set(hVelocityStatsGui.fig,'Color',[50 50 50]/255);
-end
+set(hVelocityStatsGui.fig,'Color',[50 50 50]/255);
 
 c = get(hVelocityStatsGui.fig,'Color');
 % Colors
@@ -222,16 +220,21 @@ function Export
 hVelocityStatsGui = getappdata(0,'hVelocityStatsGui');
 Data = getappdata(hVelocityStatsGui.fig,'Data');
 Units = getappdata(hVelocityStatsGui.fig,'Units');
+theme=fQuestDlg('Choose the exported histogram theme.','Export Histogram',{'Light','Dark','Cancel'},'Light');
+if isempty(theme)||strcmp(theme,'Cancel'),return;end
+background=[1 1 1];foreground=[0 0 0];
+if strcmp(theme,'Dark'),background=[50 50 50]/255;foreground=0.9*ones(1,3);end
 [FileName, PathName, FilterIndex] = uiputfile({'*.jpg','JPEG-File (*.jpg)';'*.png','PNG-File (*.png)';'*.eps','EPS-File (*.eps)'},'Export Histogram',fShared('GetSaveDir'));
 if FileName~=0
     file = [PathName FileName];
-    hFig = figure('Visible','on');
+    hFig = figure('Visible','on','Color',background,'InvertHardcopy','off');
     hAxes = axes('Parent',hFig,'TickDir','in');
     bar(hAxes,Data.hist(:,1),Data.hist(:,2),'BarWidth',1,'FaceColor',[179/255 199/255 1]); 
     if isfield(Data,'fit')
-        hold on
+        hold(hAxes,'on');
         f = Data.fit;
-        plot(f,'r-');
+        xFit=linspace(Data.xy{1}(1),Data.xy{1}(2),1001);
+        line(hAxes,xFit,f(xFit),'Color','red');
         params = coeffvalues(f);
         for m = 1:length(params)/3
             text(params(m*3-1),f(params(m*3-1))+max(Data.hist(:,2))*0.05,['Velocity: ' num2str(params(m*3-1),Units.fmt) ' ' char(177) ' ' num2str(params(m*3)/sqrt(2),Units.fmt) ' nm/s (SD)'],'VerticalAlignment','Bottom','HorizontalAlignment','center','Tag','fit','FontSize',12,'FontWeight','normal','BackgroundColor','w');   
@@ -250,6 +253,7 @@ if FileName~=0
     end
     set(hAxes,{'xlim','ylim'},Data.xy,'XTick',ticks);
     box on;
+    SetPlotTheme(hFig,background,foreground);
     switch FilterIndex
         case 1
             if isempty(strfind(file,'.jpg'))
@@ -560,7 +564,7 @@ else
     bar(hVelocityStatsGui.aResults,xout,n,'BarWidth',1,'FaceColor',lc); 
     set(hVelocityStatsGui.aResults,{'xlim','ylim'},Data.xy);
     n = hist(Data.vel{nObject},xout);
-    hold on
+    hold(hVelocityStatsGui.aResults,'on');
 %     bar(hVelocityStatsGui.aResults,xout,n,'BarWidth',1,'FaceColor',[179/255 199/255 1]);
     bar(hVelocityStatsGui.aResults,xout,n,'BarWidth',1,'FaceColor',[50/255 70/255 1]);
     if Data.hist(1,1)<0 && Data.hist(end,1)>0
@@ -575,23 +579,32 @@ else
 end
 set(hVelocityStatsGui.aResults,'Color',cbc);
 set(hVelocityStatsGui.aResults,'XColor','white'); set(hVelocityStatsGui.aResults,'YColor','white');
+SetPlotTheme(hVelocityStatsGui.fig,cbc,0.9*ones(1,3));
 setappdata(hVelocityStatsGui.fig,'Data',Data);
 
 function FitGauss
 hVelocityStatsGui = getappdata(0,'hVelocityStatsGui');
+button=findobj(hVelocityStatsGui.fig,'Tag','bFitGauss');
+if isempty(button)||strcmp(get(button,'Enable'),'off'),return;end
+set(button,'Enable','off');
+visibility=get(hVelocityStatsGui.fig,'HandleVisibility');
+set(hVelocityStatsGui.fig,'HandleVisibility','on');
+buttonCleanup=onCleanup(@()FinishFit(button,hVelocityStatsGui.fig,visibility));
 Data = getappdata(hVelocityStatsGui.fig,'Data');
 Units = getappdata(hVelocityStatsGui.fig,'Units');
 xout = Data.hist(:,1);
 n = Data.hist(:,2);
 legend(hVelocityStatsGui.aResults,'off');
 delete(findobj('Parent',hVelocityStatsGui.aResults,'-and','Tag','fit'));
-text(hVelocityStatsGui.aResults,(max(xout)-min(xout))/2,max(n)*1.1,'Choose peak(s) by left-click, press any key or right-click to continue.','VerticalAlignment','Bottom','HorizontalAlignment','center','Tag','choose');  
+text(hVelocityStatsGui.aResults,0.5,0.95,'Choose peak(s) by left-click, press any key or right-click to continue.','Units','normalized','VerticalAlignment','Top','HorizontalAlignment','center','Tag','choose','Color',0.9*ones(1,3));
 k = 0;
 p = 1;
 while k == 0
+    set(0,'CurrentFigure',hVelocityStatsGui.fig);
     k = waitforbuttonpress;
     if k == 0 
-        if strcmp(get(hVelocityStatsGui.fig,'SelectionType'),'normal')
+        if strcmp(get(hVelocityStatsGui.fig,'SelectionType'),'normal')&& ...
+                isequal(ancestor(hittest(hVelocityStatsGui.fig),'axes'),hVelocityStatsGui.aResults)
             cp = get(hVelocityStatsGui.aResults,'CurrentPoint');
             x(p) = cp(1,1);
             p = p + 1;
@@ -614,14 +627,15 @@ if p>1
     params = coeffvalues(f);
     Data.fit = f;
     delete(findobj('Parent',hVelocityStatsGui.aResults,'-and','Tag','choose'));
-    hold on;
-    h = plot(f,'r-');
-    set(h,'Tag','fit');
+    hold(hVelocityStatsGui.aResults,'on');
+    xFit=linspace(Data.xy{1}(1),Data.xy{1}(2),1001);
+    line(hVelocityStatsGui.aResults,xFit,f(xFit),'Color','red','Tag','fit');
     for m = 1:length(x)
-        text(hVelocityStatsGui.aResults,params(m*3-1),f(params(m*3-1))+max(n)*0.05,['Velocity: ' num2str(params(m*3-1),Units.fmt) ' ' char(177) ' ' num2str(params(m*3)/sqrt(2),Units.fmt) ' nm/s (SD)'],'VerticalAlignment','Bottom','HorizontalAlignment','center','Tag','fit','FontSize',12,'FontWeight','bold','BackgroundColor','w');   
+        text(hVelocityStatsGui.aResults,params(m*3-1),f(params(m*3-1))+max(n)*0.05,['Velocity: ' num2str(params(m*3-1),Units.fmt) ' ' char(177) ' ' num2str(params(m*3)/sqrt(2),Units.fmt) ' nm/s (SD)'],'VerticalAlignment','Bottom','HorizontalAlignment','center','Tag','fit','FontSize',12,'FontWeight','bold','BackgroundColor',get(hVelocityStatsGui.fig,'Color'),'Color',0.9*ones(1,3));
     end
     set(hVelocityStatsGui.aResults,{'xlim','ylim'},Data.xy);
-    legend(hVelocityStatsGui.aResults,{'all objects','current object','Gaussian fit'},'Location','best');
+    lg=legend(hVelocityStatsGui.aResults,{'all objects','current object','Gaussian fit'},'Location','best');
+    set(lg,'Color',get(hVelocityStatsGui.fig,'Color'),'TextColor',0.9*ones(1,3),'EdgeColor',0.9*ones(1,3));
     xlabel(hVelocityStatsGui.aResults,['velocity [' Units.str '/s]']);
     ylabel(hVelocityStatsGui.aResults,'frequency [counts]');
     legend(hVelocityStatsGui.aPlot,'show');
@@ -630,3 +644,13 @@ else
     Draw(hVelocityStatsGui)
 end
 
+function FinishFit(button,fig,visibility)
+if isgraphics(button),set(button,'Enable','on');end
+if isgraphics(fig),set(fig,'HandleVisibility',visibility);end
+
+function SetPlotTheme(fig,background,foreground)
+% Keep redrawn plots, fit labels and exported histograms consistent.
+set(findall(fig,'Type','axes'),'Color',background,'XColor',foreground,'YColor',foreground,'ZColor',foreground);
+set(findall(fig,'Type','text'),'Color',foreground);
+set(findall(fig,'Type','text','Tag','fit'),'BackgroundColor',background);
+set(findall(fig,'Type','legend'),'Color',background,'TextColor',foreground,'EdgeColor',foreground);
